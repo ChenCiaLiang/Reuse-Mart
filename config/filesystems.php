@@ -44,6 +44,27 @@ return [
             'throw' => false,
         ],
 
+        'ktp' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/ktp'),
+            'url' => env('APP_URL').'/storage/ktp',
+            'visibility' => 'public',
+        ],
+        
+        'logo_organisasi' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/logo'),
+            'url' => env('APP_URL').'/storage/logo_organisasi',
+            'visibility' => 'public',
+        ],
+        
+        'foto_profile' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/foto_profil'),
+            'url' => env('APP_URL').'/storage/foto_profil',
+            'visibility' => 'public',
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
