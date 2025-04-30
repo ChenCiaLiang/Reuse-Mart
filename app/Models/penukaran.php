@@ -7,5 +7,30 @@ use Illuminate\Database\Eloquent\Model;
 
 class penukaran extends Model
 {
-    use HasFactory;
+    protected $table = 'penukaran';
+
+    protected $fillable = [
+        'tanggalPenerimaan', 'tanggalPengajuan', 'idMerchandise', 'idPembeli'
+    ];
+
+    protected $casts = [
+        'tanggalPenerimaan' => 'datetime',
+        'tanggalPengajuan' => 'datetime'
+    ];
+
+    /**
+     * Relasi dengan Merchandise
+     */
+    public function merchandise(): BelongsTo
+    {
+        return $this->belongsTo(Merchandise::class, 'idMerchandise', 'idMerchandise');
+    }
+
+    /**
+     * Relasi dengan Pembeli
+     */
+    public function pembeli(): BelongsTo
+    {
+        return $this->belongsTo(Pembeli::class, 'idPembeli', 'idPembeli');
+    }
 }

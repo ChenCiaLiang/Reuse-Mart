@@ -7,5 +7,29 @@ use Illuminate\Database\Eloquent\Model;
 
 class transaksi_donasi extends Model
 {
-    use HasFactory;
+    protected $table = 'transaksi_donasi';
+
+    protected $fillable = [
+        'tanggalPemberian', 'namaPenerima', 'idRequest', 'idProduk'
+    ];
+
+    protected $casts = [
+        'tanggalPemberian' => 'datetime'
+    ];
+
+    /**
+     * Relasi dengan Request Donasi
+     */
+    public function requestDonasi(): BelongsTo
+    {
+        return $this->belongsTo(RequestDonasi::class, 'idRequest', 'idRequest');
+    }
+
+    /**
+     * Relasi dengan Produk
+     */
+    public function produk(): BelongsTo
+    {
+        return $this->belongsTo(Produk::class, 'idProduk', 'idProduk');
+    }
 }

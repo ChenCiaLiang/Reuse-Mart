@@ -7,5 +7,25 @@ use Illuminate\Database\Eloquent\Model;
 
 class detail_transaksi_penitipan extends Model
 {
-    use HasFactory;
+    protected $table = 'detail_transaksi_penitipan';
+
+    protected $fillable = [
+        'idTransaksiPenitipan', 'idProduk'
+    ];
+
+    /**
+     * Relasi dengan Transaksi Penitipan
+     */
+    public function transaksiPenitipan(): BelongsTo
+    {
+        return $this->belongsTo(TransaksiPenitipan::class, 'idTransaksiPenitipan', 'idTransaksiPenitipan');
+    }
+
+    /**
+     * Relasi dengan Produk
+     */
+    public function produk(): BelongsTo
+    {
+        return $this->belongsTo(Produk::class, 'idProduk', 'idProduk');
+    }
 }

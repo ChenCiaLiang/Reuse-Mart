@@ -7,5 +7,23 @@ use Illuminate\Database\Eloquent\Model;
 
 class merchandise extends Model
 {
-    use HasFactory;
+    protected $table = 'merchandise';
+    protected $primaryKey = 'idMerchandise';
+
+    protected $fillable = [
+        'nama', 'jumlahPoin', 'stok'
+    ];
+
+    protected $casts = [
+        'jumlahPoin' => 'integer',
+        'stok' => 'integer'
+    ];
+
+    /**
+     * Relasi dengan Penukaran
+     */
+    public function penukaran(): HasMany
+    {
+        return $this->hasMany(Penukaran::class, 'idMerchandise', 'idMerchandise');
+    }
 }

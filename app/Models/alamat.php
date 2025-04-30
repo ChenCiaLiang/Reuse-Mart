@@ -7,5 +7,22 @@ use Illuminate\Database\Eloquent\Model;
 
 class alamat extends Model
 {
-    use HasFactory;
+    protected $table = 'alamat';
+    protected $primaryKey = 'idAlamat';
+
+    protected $fillable = [
+        'alamatLengkap', 'jenis', 'statusDefault', 'idPembeli'
+    ];
+
+    protected $casts = [
+        'statusDefault' => 'boolean'
+    ];
+
+    /**
+     * Relasi dengan Pembeli
+     */
+    public function pembeli(): BelongsTo
+    {
+        return $this->belongsTo(Pembeli::class, 'idPembeli', 'idPembeli');
+    }
 }
