@@ -7,8 +7,6 @@
     <title>Login</title>
   </head>
   <body>
-    <h1 class="text-3xl font-bold underline">
-      Hello world!
-    </h1>
+    <p class="text-6xl bg-amber-600">hayo</p> 
   </body>
 </html>
