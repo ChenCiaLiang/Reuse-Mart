@@ -2,112 +2,79 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'name', 'email', 'username', 'password', 'user_type', 'user_id'
+        'username',
+        'email',
+        'password',
+        'role',
+        'userable_id',
+        'userable_type',
     ];
 
     protected $hidden = [
-        'password', 'remember_token',
+        'password',
+        'remember_token',
     ];
 
-    /**
-     * Menentukan apakah login menggunakan email atau username
-     */
-    public function getLoginIdentifierName()
-    {
-        if ($this->isPegawai()) {
-            return 'username';
-        }
-        return 'email';
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
 
-    public function userable(): MorphTo
+    public function userable()
     {
-        return $this->morphTo('user', 'user_type', 'user_id');
-    }
-
-    public function isPembeli()
-    {
-        return $this->user_type === 'App\\Models\\Pembeli';
-    }
-
-    public function isPenitip()
-    {
-        return $this->user_type === 'App\\Models\\Penitip';
-    }
-
-    public function isOrganisasi()
-    {
-        return $this->user_type === 'App\\Models\\Organisasi';
+        return $this->morphTo();
     }
 
     public function isPegawai()
     {
-        return $this->user_type === 'App\\Models\\Pegawai';
+        return $this->role === 'admin' ||
+            $this->role === 'cs' ||
+            $this->role === 'pegawai_gudang' ||
+            $this->role === 'hunter';
     }
 
-    /**
-     * Mendapatkan jabatan pegawai
-     */
-    public function getJabatan()
+    public function isAdmin()
     {
-        if ($this->isPegawai()) {
-            $pegawai = $this->userable;
-            return $pegawai->jabatan;
-        }
-        return null;
+        return $this->role === 'admin';
     }
 
-    /**
-     * Mendapatkan role pegawai
-     */
-    public function getPegawaiRole()
+    public function isCS()
     {
-        $jabatan = $this->getJabatan();
-        if ($jabatan) {
-            return $jabatan->nama ?? 'pegawai';
-        }
-        return null;
+        return $this->role === 'cs';
     }
 
-    /**
-     * Mendapatkan ability/permission berdasarkan user type
-     */
-    public function getAbilities()
+    public function isPegawaiGudang()
     {
-        if ($this->isPembeli()) {
-            return ['pembeli'];
-        } elseif ($this->isPenitip()) {
-            return ['penitip'];
-        } elseif ($this->isOrganisasi()) {
-            return ['organisasi'];
-        } elseif ($this->isPegawai()) {
-            $jabatan = $this->getPegawaiRole();
-            switch ($jabatan) {
-                case 'Admin':
-                    return ['admin'];
-                case 'Customer Service':
-                    return ['cs'];
-                case 'Pegawai Gudang':
-                case 'Gudang':
-                    return ['gudang'];
-                case 'Kurir':
-                    return ['kurir'];
-                case 'Hunter':
-                    return ['hunter'];
-                default:
-                    return ['pegawai'];
-            }
-        }
-        return [];
+        return $this->role === 'pegawai_gudang';
+    }
+
+    public function isHunter()
+    {
+        return $this->role === 'hunter';
+    }
+
+    public function isPembeli()
+    {
+        return $this->role === 'pembeli';
+    }
+
+    public function isPenitip()
+    {
+        return $this->role === 'penitip';
+    }
+
+    public function isOrganisasi()
+    {
+        return $this->role === 'organisasi';
     }
 }

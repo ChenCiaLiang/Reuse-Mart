@@ -3,58 +3,60 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
-class pegawai extends Model
+class Pegawai extends Authenticatable
 {
+    use HasApiTokens, HasFactory, Notifiable;
+
     protected $table = 'pegawai';
     protected $primaryKey = 'idPegawai';
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
-        'idPegawai', 'nama', 'username', 'password', 'foto_profile', 'idJabatan'
+        'idPegawai',
+        'nama',
+        'username',
+        'password',
+        'foto_profile',
+        'idJabatan',
     ];
 
-    protected $hidden = ['password'];
+    protected $hidden = [
+        'password',
+    ];
 
-    /**
-     * Relasi dengan User untuk autentikasi
-     */
-    public function user(): MorphOne
+    public function jabatan()
     {
-        return $this->morphOne(User::class, 'user', 'user_type', 'user_id');
+        return $this->belongsTo(Jabatan::class, 'idJabatan');
     }
 
-    /**
-     * Relasi dengan Jabatan
-     */
-    public function jabatan(): BelongsTo
+    public function getJabatanNama()
     {
-        return $this->belongsTo(Jabatan::class, 'idJabatan', 'idJabatan');
+        return $this->jabatan ? strtolower($this->jabatan->nama) : '';
     }
 
-    /**
-     * Relasi dengan Produk
-     */
-    public function produk(): HasMany
+    public function isAdmin()
     {
-        return $this->hasMany(Produk::class, 'idPegawai', 'idPegawai');
+        return $this->getJabatanNama() === 'admin';
     }
 
-    /**
-     * Relasi dengan Komisi
-     */
-    public function komisi(): HasMany
+    public function isCS()
     {
-        return $this->hasMany(Komisi::class, 'idPegawai', 'idPegawai');
+        return $this->getJabatanNama() === 'customer service';
     }
 
-    /**
-     * Relasi dengan Diskusi Produk
-     */
-    public function diskusiProduk(): HasMany
+    public function isPegawaiGudang()
     {
-        return $this->hasMany(DiskusiProduk::class, 'idPegawai', 'idPegawai');
+        $nama = $this->getJabatanNama();
+        return $nama === 'pegawai gudang' || $nama === 'gudang';
+    }
+
+    public function isHunter()
+    {
+        return $this->getJabatanNama() === 'hunter';
     }
 }

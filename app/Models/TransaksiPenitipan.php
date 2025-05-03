@@ -5,14 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class transaksi_penitipan extends Model
+class TransaksiPenitipan extends Model
 {
     protected $table = 'transaksi_penitipan';
     protected $primaryKey = 'idTransaksiPenitipan';
 
     protected $fillable = [
-        'tanggalMasukPenitipan', 'tanggalAkhirPenitipan', 'batasAmbil',
-        'statusPenitipan', 'statusPerpanjangan', 'pendapatan', 'idPenitip'
+        'tanggalMasukPenitipan',
+        'tanggalAkhirPenitipan',
+        'batasAmbil',
+        'statusPenitipan',
+        'statusPerpanjangan',
+        'pendapatan',
+        'idPenitip'
     ];
 
     protected $casts = [

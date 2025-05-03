@@ -5,13 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class alamat extends Model
+class Alamat extends Model
 {
     protected $table = 'alamat';
     protected $primaryKey = 'idAlamat';
 
     protected $fillable = [
-        'alamatLengkap', 'jenis', 'statusDefault', 'idPembeli'
+        'alamatLengkap',
+        'jenis',
+        'statusDefault',
+        'idPembeli'
     ];
 
     protected $casts = [

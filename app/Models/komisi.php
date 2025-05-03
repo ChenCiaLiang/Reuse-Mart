@@ -5,15 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class komisi extends Model
+class Komisi extends Model
 {
     protected $table = 'komisi';
     protected $primaryKey = 'idTransaksi';
     public $incrementing = false;
 
     protected $fillable = [
-        'idTransaksi', 'komisiPenitip', 'komisiHunter', 'komisiReuse',
-        'idPegawai', 'idPenitip'
+        'idTransaksi',
+        'komisiPenitip',
+        'komisiHunter',
+        'komisiReuse',
+        'idPegawai',
+        'idPenitip'
     ];
 
     protected $casts = [

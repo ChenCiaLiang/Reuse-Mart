@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class produk extends Model
+class Produk extends Model
 {
     protected $table = 'produk';
     protected $primaryKey = 'idProduk';
@@ -13,9 +13,17 @@ class produk extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'idProduk', 'gambar', 'tanggalGaransi', 'harga', 'status',
-        'berat', 'hargaJual', 'deskripsi', 'ratingProduk',
-        'idKategori', 'idPegawai'
+        'idProduk',
+        'gambar',
+        'tanggalGaransi',
+        'harga',
+        'status',
+        'berat',
+        'hargaJual',
+        'deskripsi',
+        'ratingProduk',
+        'idKategori',
+        'idPegawai'
     ];
 
     protected $casts = [

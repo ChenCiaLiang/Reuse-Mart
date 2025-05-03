@@ -5,13 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class request_donasi extends Model
+class RequestDonasi extends Model
 {
     protected $table = 'request_donasi';
     protected $primaryKey = 'idRequest';
 
     protected $fillable = [
-        'tanggalRequest', 'request', 'status', 'penerima', 'idOrganisasi'
+        'tanggalRequest',
+        'request',
+        'status',
+        'penerima',
+        'idOrganisasi'
     ];
 
     protected $casts = [
