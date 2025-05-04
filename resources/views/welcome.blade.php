@@ -4,17 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ReUseMart - Tentang Kami</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    @vite('resources/css/app.css')
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
+        html {
+            scroll-behavior: smooth;
+        }
         .hero-section {
-            background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/api/placeholder/1200/500');
+            background-image: url('{{ asset("images/bg/tree.jpg") }}');
             background-size: cover;
             background-position: center;
         }
         .category-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2; /* Memastikan konten berada di atas overlay */
         }
     </style>
 </head>
@@ -24,22 +32,24 @@
         <div class="container mx-auto px-4 py-3">
             <div class="flex justify-between items-center">
                 <div class="flex items-center">
-                    <img src="/api/placeholder/40/40" alt="ReUseMart Logo" class="h-10">
+                    <img src="{{ asset('images/Logo/Logo.jpg') }}" alt="ReUseMart Logo" class="h-10 rounded">
                     <span class="text-xl font-bold ml-2">ReUseMart</span>
                 </div>
                 <nav class="hidden md:block">
                     <ul class="flex space-x-6">
-                        <li><a href="#" class="hover:text-green-200">Beranda</a></li>
-                        <li><a href="#" class="hover:text-green-200">Kategori</a></li>
-                        <li><a href="#" class="hover:text-green-200">Tentang Kami</a></li>
-                        <li><a href="#" class="hover:text-green-200">Cara Kerja</a></li>
-                        <li><a href="#" class="hover:text-green-200">Kontak</a></li>
+                        <li><a href="#home" class="hover:text-green-200">Beranda</a></li>
+                        <li><a href="#about" class="hover:text-green-200">Tentang Kami</a></li>
+                        <li><a href="#how-it-works" class="hover:text-green-200">Cara Kerja</a></li>
+                        <li><a href="#categories" class="hover:text-green-200">Kategori</a></li>
+                        <li><a href="#benefits" class="hover:text-green-200">Keuntungan</a></li>
+                        <li><a href="#location" class="hover:text-green-200">Lokasi</a></li>
                     </ul>
                 </nav>
                 <div class="flex items-center space-x-4">
                     <a href="#" class="hover:text-green-200"><i class="fas fa-search"></i></a>
-                    <a href="#" class="hover:text-green-200"><i class="fas fa-user"></i></a>
                     <a href="#" class="hover:text-green-200"><i class="fas fa-shopping-cart"></i></a>
+                    <a href="{{ url('/login') }}" class="bg-white text-green-700 hover:bg-gray-100 px-3 py-1 rounded text-sm font-medium transition duration-300">Masuk</a>
+                    <a href="{{ url('/register/pembeli') }}" class="bg-white text-green-700 hover:bg-gray-100 px-3 py-1 rounded text-sm font-medium transition duration-300">Daftar</a>
                     <button class="md:hidden hover:text-green-200"><i class="fas fa-bars"></i></button>
                 </div>
             </div>
@@ -47,19 +57,19 @@
     </header>
 
     <!-- Hero Section -->
-    <section class="hero-section text-white py-20">
+    <section id="home" class="hero-section text-white py-20">
         <div class="container mx-auto px-4 text-center">
             <h1 class="text-4xl md:text-5xl font-bold mb-4">Selamat Datang di ReUseMart</h1>
             <p class="text-xl mb-8">Platform untuk menjual dan membeli barang bekas berkualitas</p>
             <div class="flex justify-center space-x-4">
-                <a href="#" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300">Jelajahi Produk</a>
+                <a href="{{ url('/produk/index') }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300">Jelajahi Produk</a>
                 <a href="#" class="bg-white hover:bg-gray-100 text-green-700 font-bold py-3 px-6 rounded-lg transition duration-300">Titipkan Barang</a>
             </div>
         </div>
     </section>
 
     <!-- About Us Section -->
-    <section class="py-16 bg-white">
+    <section id="about" class="py-16 bg-white">
         <div class="container mx-auto px-4">
             <div class="mb-12 text-center">
                 <h2 class="text-3xl font-bold text-gray-800 mb-4">Tentang ReUseMart</h2>
@@ -75,14 +85,14 @@
                     <p class="text-gray-600">Tidak hanya itu, platform ini juga menjadi jembatan bagi mereka yang ingin mendapatkan barang berkualitas dengan harga terjangkau, sekaligus berkontribusi dalam upaya pengurangan limbah.</p>
                 </div>
                 <div>
-                    <img src="/api/placeholder/600/400" alt="ReUseMart Office" class="rounded-lg shadow-lg">
+                    <img src="{{ asset('images/bg/office.jpeg') }}" alt="ReUseMart Office" class="rounded-lg shadow-lg">
                 </div>
             </div>
         </div>
     </section>
 
     <!-- How It Works Section -->
-    <section class="py-16 bg-gray-100">
+    <section id="how-it-works" class="py-16 bg-gray-100">
         <div class="container mx-auto px-4">
             <div class="mb-12 text-center">
                 <h2 class="text-3xl font-bold text-gray-800 mb-4">Bagaimana Kami Bekerja</h2>
@@ -141,7 +151,7 @@
     </section>
 
     <!-- Categories Section -->
-    <section class="py-16 bg-white">
+    <section id="categories" class="py-16 bg-white">
         <div class="container mx-auto px-4">
             <div class="mb-12 text-center">
                 <h2 class="text-3xl font-bold text-gray-800 mb-4">Kategori Barang</h2>
@@ -224,7 +234,7 @@
     </section>
 
     <!-- Benefits Section -->
-    <section class="py-16 bg-gray-100">
+    <section id="benefits" class="py-16 bg-gray-100">
         <div class="container mx-auto px-4">
             <div class="mb-12 text-center">
                 <h2 class="text-3xl font-bold text-gray-800 mb-4">Keuntungan Menggunakan ReUseMart</h2>
@@ -304,7 +314,7 @@
     </section>
 
     <!-- Location Section -->
-    <section class="py-16 bg-white">
+    <section id="location" class="py-16 bg-white">
         <div class="container mx-auto px-4">
             <div class="mb-12 text-center">
                 <h2 class="text-3xl font-bold text-gray-800 mb-4">Lokasi Kami</h2>
@@ -313,8 +323,7 @@
 
             <div class="grid md:grid-cols-2 gap-12 items-center">
                 <div>
-                    <div class="bg-gray-200 rounded-lg h-80 flex items-center justify-center">
-                        <span class="text-gray-500">Peta Lokasi</span>
+                    <div class="bg-gray-200 rounded-lg h-80 flex items-center justify-center" style="background-image: url('{{ asset('images/bg/map.jpeg') }}'); background-size: cover; background-position: center;">
                     </div>
                 </div>
                 <div>
@@ -429,5 +438,33 @@
             </div>
         </div>
     </footer>
+    <script>
+        // Highlight active nav item based on scroll position
+        window.addEventListener('scroll', function() {
+            const sections = document.querySelectorAll('section[id]');
+            const navItems = document.querySelectorAll('nav ul li a');
+            
+            let current = '';
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                
+                if (scrollY >= (sectionTop - 100)) {
+                    current = section.getAttribute('id');
+                }
+            });
+            
+            navItems.forEach(item => {
+                item.classList.remove('text-green-200');
+                item.classList.add('hover:text-green-200');
+                
+                if (item.getAttribute('href').substring(1) === current) {
+                    item.classList.add('text-green-200');
+                    item.classList.remove('hover:text-green-200');
+                }
+            });
+        });
+    </script>
 </body>
 </html>

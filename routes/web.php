@@ -1,6 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ProdukController;
+
+// Halaman dashboard
+Route::get('/', function () {
+    return view('welcome');
+})->name('dashboard');
 
 // Halaman Login
 Route::get('/login', function () {
@@ -16,6 +22,12 @@ Route::get('/register/pembeli', function () {
 Route::get('/register/organisasi', function () {
     return view('auth.register-organisasi');
 })->name('register.organisasi');
+
+Route::prefix('produk')->group(function () {
+    Route::get('/index', [ProdukController::class, 'index'])->name('produk.index');
+    Route::get('/show/{id}', [ProdukController::class, 'show'])->name('produk.show');
+});
+
 
 // Halaman-halaman dashboard yang memerlukan autentikasi
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {

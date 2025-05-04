@@ -85,6 +85,13 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Link Kembali ke Dashboard -->
+            <div class="mt-6 text-center">
+                <a href="{{ url('/') }}" class="text-green-600 hover:text-green-800 font-medium">
+                    Kembali ke Dashboard
+                </a>
+            </div>
         </div>
     </main>
     <script>
