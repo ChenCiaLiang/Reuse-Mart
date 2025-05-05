@@ -15,13 +15,10 @@ Route::prefix('pegawai')->group(function () {
         Route::get('/me', [PegawaiAuthController::class, 'me']);
         Route::post('/logout', [PegawaiAuthController::class, 'logout']);
         Route::post('/changePassword', [PegawaiAuthController::class, 'changePassword']);
-        // Register pegawai baru (hanya untuk Admin)
         Route::middleware('role:admin')->post('/register', [PegawaiAuthController::class, 'register']);
-        // Route::post('/register', [PegawaiAuthController::class, 'register']);
     });
 });
 
-// Routes untuk Pembeli
 Route::prefix('pembeli')->group(function () {
     Route::post('/login', [PembeliAuthController::class, 'login']);
     Route::post('/register', [PembeliAuthController::class, 'register']);
@@ -33,7 +30,6 @@ Route::prefix('pembeli')->group(function () {
     });
 });
 
-// Routes untuk Penitip
 Route::prefix('penitip')->group(function () {
     Route::post('/login', [PenitipAuthController::class, 'login']);
 
@@ -47,7 +43,6 @@ Route::prefix('penitip')->group(function () {
     });
 });
 
-// Routes untuk Organisasi
 Route::prefix('organisasi')->group(function () {
     Route::post('/login', [OrganisasiAuthController::class, 'login']);
     Route::post('/register', [OrganisasiAuthController::class, 'register']);
@@ -55,6 +50,6 @@ Route::prefix('organisasi')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [OrganisasiAuthController::class, 'me']);
         Route::post('/logout', [OrganisasiAuthController::class, 'logout']);
-        Route::post('/change-password', [OrganisasiAuthController::class, 'changePassword']);
+        Route::post('/changePassword', [OrganisasiAuthController::class, 'changePassword']);
     });
 });

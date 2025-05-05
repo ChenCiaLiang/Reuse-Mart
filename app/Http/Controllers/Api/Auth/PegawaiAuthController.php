@@ -178,7 +178,6 @@ class PegawaiAuthController extends Controller
             $token = \App\Models\PersonalAccessToken::where('token', $tokenHash)->first();
 
             if ($token) {
-                // Set token secara manual ke user
                 $user->withAccessToken($token);
             }
 

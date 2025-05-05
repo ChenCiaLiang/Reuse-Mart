@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('idOrganisasi', 10)->primary();
             $table->string('nama', 50);
             $table->string('email', 50)->unique();
-            $table->string('password', 50);
+            $table->string('password');
             $table->string('logo')->default('');
             $table->string('alamat');
             $table->timestamps();
