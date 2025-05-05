@@ -5,18 +5,19 @@ use App\Http\Controllers\Api\Auth\PegawaiAuthController;
 use App\Http\Controllers\Api\Auth\PembeliAuthController;
 use App\Http\Controllers\Api\Auth\PenitipAuthController;
 use Illuminate\Support\Facades\Route;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Illuminate\Http\Request;
 
 // Routes untuk Pegawai (Admin, CS, Pegawai Gudang, Hunter)
 Route::prefix('pegawai')->group(function () {
     Route::post('/login', [PegawaiAuthController::class, 'login']);
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/me', [PegawaiAuthController::class, 'me']);
         Route::post('/logout', [PegawaiAuthController::class, 'logout']);
-        Route::post('/change-password', [PegawaiAuthController::class, 'changePassword']);
+        Route::post('/changePassword', [PegawaiAuthController::class, 'changePassword']);
         // Register pegawai baru (hanya untuk Admin)
-        // Route::middleware('role:admin')->post('/register', [PegawaiAuthController::class, 'register']);
-        Route::post('/register', [PegawaiAuthController::class, 'register']);
+        Route::middleware('role:admin')->post('/register', [PegawaiAuthController::class, 'register']);
+        // Route::post('/register', [PegawaiAuthController::class, 'register']);
     });
 });
 

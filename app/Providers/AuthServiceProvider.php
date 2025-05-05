@@ -28,33 +28,20 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
-        // Konfigurasi Sanctum untuk multi-model autentikasi
-        Auth::viaRequest('sanctum', function ($request) {
-            $token = $request->bearerToken();
+        Gate::define('admin', function ($user) {
+            return $user instanceof Pegawai && $user->isAdmin();
+        });
 
-            if (!$token) {
-                return null;
-            }
+        Gate::define('customer-service', function ($user) {
+            return $user instanceof Pegawai && $user->isCS();
+        });
 
-            // Cek di semua model yang bisa diautentikasi
-            $models = [
-                Pegawai::class,
-                Pembeli::class,
-                Penitip::class,
-                Organisasi::class,
-            ];
+        Gate::define('pegawai-gudang', function ($user) {
+            return $user instanceof Pegawai && $user->isPegawaiGudang();
+        });
 
-            foreach ($models as $model) {
-                $user = (new $model)->whereHas('tokens', function ($query) use ($token) {
-                    $query->where('token', hash('sha256', $token));
-                })->first();
-
-                if ($user) {
-                    return $user;
-                }
-            }
-
-            return null;
+        Gate::define('hunter', function ($user) {
+            return $user instanceof Pegawai && $user->isHunter();
         });
     }
 }

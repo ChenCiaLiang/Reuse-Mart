@@ -46,10 +46,10 @@ class PegawaiAuthController extends Controller
 
             // Buat token baru dengan abilities sesuai role
             // $token = $pegawai->createToken($deviceName, ['pegawai', $role]);
-            $token = $pegawai->createToken('auth_token', ['pegawai', $role]);
+            $token = $pegawai->createToken('auth_token', ['pegawai', $role])->plainTextToken;
 
             return response()->json([
-                'access_token' => $token->plainTextToken,
+                'access_token' => $token,
                 'token_type' => 'Bearer',
                 'user' => [
                     'id' => $pegawai->idPegawai,
@@ -161,6 +161,7 @@ class PegawaiAuthController extends Controller
 
         $pegawai->password = Hash::make($request->password);
         $pegawai->save();
+        $request->user()->currentAccessToken()->delete();
 
         return response()->json([
             'message' => 'Password berhasil diubah'
@@ -170,32 +171,33 @@ class PegawaiAuthController extends Controller
     // Mendapatkan data pegawai yang login
     public function me(Request $request)
     {
-        $pegawai = $request->user();
+        $user = $request->user();
 
-        if (!$pegawai) {
-            return response()->json(['message' => 'Bukan Pegawai'], 401);
+        if ($user) {
+            $tokenHash = hash('sha256', $request->bearerToken());
+            $token = \App\Models\PersonalAccessToken::where('token', $tokenHash)->first();
+
+            if ($token) {
+                // Set token secara manual ke user
+                $user->withAccessToken($token);
+            }
+
+            return response()->json($user);
         }
 
-        $jabatan = Jabatan::find($pegawai->idJabatan);
-        $tokenAbilities = $pegawai->currentAccessToken()->abilities ?? [];
-        $role = $tokenAbilities[1] ?? '';
-
-        return response()->json([
-            'user' => [
-                'id' => $pegawai->idPegawai,
-                'username' => $pegawai->username,
-                'nama' => $pegawai->nama,
-                'userType' => 'pegawai',
-                'role' => $role,
-                'jabatan' => $jabatan->nama
-            ]
-        ]);
+        return response()->json(['message' => 'Unauthorized'], 401);
     }
 
-    // Logout pegawai
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $token = $request->user()->currentAccessToken();
+        if ($token) {
+            $token->delete();
+        } else {
+            // Hapus token secara manual jika currentAccessToken() null
+            $tokenHash = hash('sha256', $request->bearerToken());
+            \App\Models\PersonalAccessToken::where('token', $tokenHash)->delete();
+        }
 
         return response()->json([
             'message' => 'Berhasil logout'

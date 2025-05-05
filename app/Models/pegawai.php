@@ -59,4 +59,26 @@ class Pegawai extends Authenticatable
     {
         return $this->getJabatanNama() === 'hunter';
     }
+
+    public function currentAccessToken()
+    {
+        return $this->tokens()->where('token', hash('sha256', request()->bearerToken()))->first();
+    }
+
+    public function tokens()
+    {
+        return $this->morphMany(
+            \Laravel\Sanctum\PersonalAccessToken::class,
+            'tokenable',
+            'tokenable_type',
+            'tokenable_id'
+        );
+    }
+
+    // Tambahkan metode ini di model Pegawai
+    public function withAccessToken($token)
+    {
+        $this->accessToken = $token;
+        return $this;
+    }
 }
