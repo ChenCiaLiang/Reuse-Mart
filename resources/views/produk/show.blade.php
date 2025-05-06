@@ -39,22 +39,22 @@
                 <div class="w-full md:w-1/2 mb-6 md:mb-0 md:pr-6">
                     <!-- Main Image -->
                     <div class="bg-gray-100 rounded-lg p-2 mb-4">
-                        <img id="mainImage" src="{{ asset('images/produk/' . $gambarArray[0]) }}" 
-                             alt="{{ $produk->deskripsi }}" class="w-full rounded-lg"
-                             onerror="this.src='{{ asset('images/produk/default.jpg') }}'">
+                        <img id="mainImage" src="{{ asset('images/produk/' . ($gambarProduk->count() > 0 ? $gambarProduk[0]->gambar : 'default.jpg')) }}" 
+                            alt="{{ $produk->deskripsi }}" class="w-full rounded-lg"
+                            onerror="this.src='{{ asset('images/produk/default.jpg') }}'">
                     </div>
                     
                     <!-- Thumbnail Images -->
-                    @if(count($gambarArray) > 1)
+                    @if($gambarProduk->count() > 1)
                     <div class="flex flex-wrap gap-2">
-                        @foreach($gambarArray as $index => $gambar)
+                        @foreach($gambarProduk as $index => $gp)
                         <div class="thumbnail cursor-pointer w-20 h-20 rounded-md overflow-hidden border-2 
-                                  {{ $index === 0 ? 'border-green-600' : 'border-transparent' }}"
-                             onclick="changeImage('{{ asset('images/produk/' . $gambar) }}', this)">
-                            <img src="{{ asset('images/produk/' . $gambar) }}" 
-                                 alt="{{ $produk->deskripsi }} - Gambar {{ $index + 1 }}"
-                                 class="w-full h-full object-cover"
-                                 onerror="this.src='{{ asset('images/produk/default.jpg') }}'">
+                                {{ $index === 0 ? 'border-green-600' : 'border-transparent' }}"
+                            onclick="changeImage('{{ asset('images/produk/' . $gp->gambar) }}', this)">
+                            <img src="{{ asset('images/produk/' . $gp->gambar) }}" 
+                                alt="{{ $produk->deskripsi }} - Gambar {{ $index + 1 }}"
+                                class="w-full h-full object-cover"
+                                onerror="this.src='{{ asset('images/produk/default.jpg') }}'">
                         </div>
                         @endforeach
                     </div>
@@ -151,27 +151,22 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                 @foreach($produkTerkait as $p)
                 <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300">
-                    <div class="relative h-48 overflow-hidden">
-                        @php
-                            $gambarP = explode(',', $p->gambar);
-                            $gambarUtama = count($gambarP) > 0 ? $gambarP[0] : '';
-                        @endphp
-                        <img src="{{ asset('images/produk/' . $gambarUtama) }}" 
-                             alt="{{ $p->deskripsi }}" class="w-full h-full object-cover"
-                             onerror="this.src='{{ asset('images/produk/default.jpg') }}'">
-                        @if($p->tanggalGaransi && \Carbon\Carbon::parse($p->tanggalGaransi)->isFuture())
-                        <div class="absolute top-0 right-0 bg-green-600 text-white text-xs py-1 px-2 m-2 rounded">
-                            Garansi
+                    <a href="{{ route('produk.show', $p->idProduk) }}" class="block">
+                        <div class="relative h-48 overflow-hidden">
+                            <img src="{{ asset('images/produk/' . $p->thumbnail) }}" 
+                                alt="{{ $p->deskripsi }}" class="w-full h-full object-cover"
+                                onerror="this.src='{{ asset('images/produk/default.jpg') }}'">
+                            @if($p->tanggalGaransi && \Carbon\Carbon::parse($p->tanggalGaransi)->isFuture())
+                            <div class="absolute top-0 right-0 bg-green-600 text-white text-xs py-1 px-2 m-2 rounded">
+                                Garansi
+                            </div>
+                            @endif
                         </div>
-                        @endif
-                    </div>
+                    </a>
                     <div class="p-4">
                         <h3 class="text-lg font-semibold mb-2 truncate">{{ $p->deskripsi }}</h3>
                         <div class="flex justify-between items-center">
                             <span class="text-green-700 font-bold">Rp {{ number_format($p->hargaJual, 0, ',', '.') }}</span>
-                            <a href="{{ route('produk.show', $p->idProduk) }}" class="text-green-600 hover:text-green-800">
-                                <i class="fas fa-eye"></i>
-                            </a>
                         </div>
                     </div>
                 </div>

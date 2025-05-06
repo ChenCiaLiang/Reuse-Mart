@@ -57,7 +57,7 @@
             <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300">
                 <a href="{{ route('produk.show', $p->idProduk) }}">
                     <div class="relative h-48 overflow-hidden">
-                        <img src="{{ asset('images/produk/' . $p->gambar . '.jpg') }}" alt="{{ $p->deskripsi }}" 
+                        <img src="{{ asset('images/produk/' . $p->thumbnail) }}" alt="{{ $p->deskripsi }}" 
                             class="w-full h-full object-cover" onerror="this.src='{{ asset('images/produk/default.jpg') }}'">
                         @if($p->tanggalGaransi && \Carbon\Carbon::parse($p->tanggalGaransi)->isFuture())
                         <div class="absolute top-0 right-0 bg-green-600 text-white text-xs py-1 px-2 m-2 rounded">

@@ -85,4 +85,24 @@ class Produk extends Model
     {
         return $this->hasMany(TransaksiDonasi::class, 'idProduk', 'idProduk');
     }
+
+    /**
+     * Mendapatkan semua gambar yang terkait dengan produk ini.
+     */
+    public function gambarProduk()
+    {
+        return $this->hasMany(GambarProduk::class, 'idProduk', 'idProduk');
+    }
+    
+    /**
+     * Mendapatkan gambar utama produk ini.
+     */
+    public function gambarUtama()
+    {
+        // Jika Anda memiliki kolom isUtama di tabel gambar_produk
+        // return $this->hasOne(GambarProduk::class, 'idProduk', 'idProduk')->where('isUtama', 1);
+        
+        // Atau cukup ambil gambar pertama sebagai gambar utama
+        return $this->hasOne(GambarProduk::class, 'idProduk', 'idProduk');
+    }
 }
