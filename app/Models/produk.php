@@ -39,6 +39,27 @@ class Produk extends Model
     ];
 
     /**
+     * Mendapatkan array gambar produk
+     */
+    public function getGambarArrayAttribute()
+    {
+        if (empty($this->gambar)) {
+            return ['default.jpg'];
+        }
+        
+        return explode(',', $this->gambar);
+    }
+
+    /**
+     * Mendapatkan thumbnail produk (gambar pertama)
+     */
+    public function getThumbnailAttribute()
+    {
+        $gambarArray = $this->gambar_array;
+        return $gambarArray[0];
+    }
+
+    /**
      * Relasi dengan Kategori
      */
     public function kategori(): BelongsTo
@@ -85,24 +106,16 @@ class Produk extends Model
     {
         return $this->hasMany(TransaksiDonasi::class, 'idProduk', 'idProduk');
     }
-
-    /**
-     * Mendapatkan semua gambar yang terkait dengan produk ini.
-     */
-    public function gambarProduk()
-    {
-        return $this->hasMany(GambarProduk::class, 'idProduk', 'idProduk');
-    }
     
     /**
-     * Mendapatkan gambar utama produk ini.
+     * Cek apakah produk masih dalam garansi
      */
-    public function gambarUtama()
+    public function isInWarranty()
     {
-        // Jika Anda memiliki kolom isUtama di tabel gambar_produk
-        // return $this->hasOne(GambarProduk::class, 'idProduk', 'idProduk')->where('isUtama', 1);
+        if (!$this->tanggalGaransi) {
+            return false;
+        }
         
-        // Atau cukup ambil gambar pertama sebagai gambar utama
-        return $this->hasOne(GambarProduk::class, 'idProduk', 'idProduk');
+        return $this->tanggalGaransi->isFuture();
     }
 }

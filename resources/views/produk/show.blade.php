@@ -39,19 +39,19 @@
                 <div class="w-full md:w-1/2 mb-6 md:mb-0 md:pr-6">
                     <!-- Main Image -->
                     <div class="bg-gray-100 rounded-lg p-2 mb-4">
-                        <img id="mainImage" src="{{ asset('images/produk/' . ($gambarProduk->count() > 0 ? $gambarProduk[0]->gambar : 'default.jpg')) }}" 
+                        <img id="mainImage" src="{{ asset('images/produk/' . $gambarArray[0]) }}" 
                             alt="{{ $produk->deskripsi }}" class="w-full rounded-lg"
                             onerror="this.src='{{ asset('images/produk/default.jpg') }}'">
                     </div>
                     
                     <!-- Thumbnail Images -->
-                    @if($gambarProduk->count() > 1)
+                    @if(count($gambarArray) > 1)
                     <div class="flex flex-wrap gap-2">
-                        @foreach($gambarProduk as $index => $gp)
+                        @foreach($gambarArray as $index => $gambar)
                         <div class="thumbnail cursor-pointer w-20 h-20 rounded-md overflow-hidden border-2 
                                 {{ $index === 0 ? 'border-green-600' : 'border-transparent' }}"
-                            onclick="changeImage('{{ asset('images/produk/' . $gp->gambar) }}', this)">
-                            <img src="{{ asset('images/produk/' . $gp->gambar) }}" 
+                            onclick="changeImage('{{ asset('images/produk/' . $gambar) }}', this)">
+                            <img src="{{ asset('images/produk/' . $gambar) }}" 
                                 alt="{{ $produk->deskripsi }} - Gambar {{ $index + 1 }}"
                                 class="w-full h-full object-cover"
                                 onerror="this.src='{{ asset('images/produk/default.jpg') }}'">
@@ -176,10 +176,106 @@
         @endif
     </main>
 
-    <!-- Footer (sama seperti halaman index) -->
+    <!-- Footer -->
     <footer class="bg-gray-800 text-white py-12">
-        <!-- Isi footer (sama seperti halaman index) -->
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-xl font-bold mb-4">ReUseMart</h3>
+                    <p class="text-gray-400 mb-4">Platform untuk menjual dan membeli barang bekas berkualitas dengan sistem penitipan.</p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-facebook-square text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-instagram text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-twitter-square text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white">
+                            <i class="fab fa-youtube text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-bold mb-4">Navigasi</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="{{ url('/') }}" class="hover:text-white">Beranda</a></li>
+                        <li><a href="{{ url('/#about') }}" class="hover:text-white">Tentang Kami</a></li>
+                        <li><a href="{{ url('/#how-it-works') }}" class="hover:text-white">Cara Kerja</a></li>
+                        <li><a href="{{ url('/#categories') }}" class="hover:text-white">Kategori</a></li>
+                        <li><a href="{{ url('/#benefits') }}" class="hover:text-white">Keuntungan</a></li>
+                        <li><a href="{{ url('/#location') }}" class="hover:text-white">Lokasi</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-bold mb-4">Layanan</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#" class="hover:text-white">Penitipan Barang</a></li>
+                        <li><a href="#" class="hover:text-white">Pembelian</a></li>
+                        <li><a href="#" class="hover:text-white">Pengiriman</a></li>
+                        <li><a href="#" class="hover:text-white">Program Reward</a></li>
+                        <li><a href="#" class="hover:text-white">Donasi</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-bold mb-4">Hubungi Kami</h3>
+                    <ul class="space-y-2 text-gray-400">
+                        <li class="flex items-start">
+                            <i class="fas fa-map-marker-alt mt-1 mr-2"></i>
+                            <span>Jl. Green Eco Park No. 456, Yogyakarta</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-phone-alt mt-1 mr-2"></i>
+                            <span>+62 274 123456</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-envelope mt-1 mr-2"></i>
+                            <span>info@reusemart.com</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-clock mt-1 mr-2"></i>
+                            <span>08:00 - 20:00 WIB (Setiap Hari)</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-700 mt-10 pt-6 text-center text-gray-400">
+                <p>&copy; 2025 ReUseMart. Hak Cipta Dilindungi. Dikembangkan oleh GreenTech Solutions.</p>
+            </div>
+        </div>
     </footer>
+
+    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-900">Login Diperlukan</h3>
+                <button onclick="closeModal()" class="text-gray-500 hover:text-gray-800">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="mb-6">
+                <p class="text-gray-700 mb-4">Anda perlu login terlebih dahulu untuk melakukan pembelian di ReUseMart.</p>
+                <div class="flex items-center text-sm text-gray-600 mb-4">
+                    <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                    <span>Dengan login, Anda dapat menikmati fitur keranjang belanja dan melakukan pembelian produk.</span>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                <a href="{{ url('/login') }}" class="bg-green-600 hover:bg-green-700 text-white text-center py-2 px-4 rounded-lg transition duration-300 flex-1">
+                    Login
+                </a>
+                <a href="{{ url('/register/pembeli') }}" class="border-2 border-green-600 text-green-600 hover:bg-green-50 text-center py-2 px-4 rounded-lg transition duration-300 flex-1">
+                    Daftar
+                </a>
+            </div>
+        </div>
+    </div>
 
     <script>
         function changeImage(src, element) {
@@ -196,6 +292,33 @@
             element.classList.remove('border-transparent');
             element.classList.add('border-green-600');
         }
+
+        // Fungsi untuk menampilkan modal
+        function showModal() {
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Mencegah scrolling di belakang modal
+        }
+
+        // Fungsi untuk menutup modal
+        function closeModal() {
+            document.getElementById('loginModal').classList.add('hidden');
+            document.body.style.overflow = 'auto'; // Mengembalikan scrolling
+        }
+
+        // Menambahkan event listener ke tombol keranjang dan beli sekarang
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tombol tambah ke keranjang
+            const addToCartBtn = document.querySelector('.bg-green-600.w-full');
+            if (addToCartBtn) {
+                addToCartBtn.addEventListener('click', showModal);
+            }
+            
+            // Tombol beli sekarang
+            const buyNowBtn = document.querySelector('.border-2.border-green-600.w-full');
+            if (buyNowBtn) {
+                buyNowBtn.addEventListener('click', showModal);
+            }
+        });
     </script>
 </body>
 </html>

@@ -57,7 +57,11 @@
             <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300">
                 <a href="{{ route('produk.show', $p->idProduk) }}">
                     <div class="relative h-48 overflow-hidden">
-                        <img src="{{ asset('images/produk/' . $p->thumbnail) }}" alt="{{ $p->deskripsi }}" 
+                        @php
+                            $gambarArray = $p->gambar ? explode(',', $p->gambar) : ['default.jpg'];
+                            $thumbnail = $gambarArray[0];
+                        @endphp
+                        <img src="{{ asset('images/produk/' . $thumbnail) }}" alt="{{ $p->deskripsi }}" 
                             class="w-full h-full object-cover" onerror="this.src='{{ asset('images/produk/default.jpg') }}'">
                         @if($p->tanggalGaransi && \Carbon\Carbon::parse($p->tanggalGaransi)->isFuture())
                         <div class="absolute top-0 right-0 bg-green-600 text-white text-xs py-1 px-2 m-2 rounded">
@@ -174,5 +178,57 @@
             </div>
         </div>
     </footer>
+
+    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-900">Login Diperlukan</h3>
+                <button onclick="closeModal()" class="text-gray-500 hover:text-gray-800">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="mb-6">
+                <p class="text-gray-700 mb-4">Anda perlu login terlebih dahulu untuk melakukan pembelian di ReUseMart.</p>
+                <div class="flex items-center text-sm text-gray-600 mb-4">
+                    <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                    <span>Dengan login, Anda dapat menikmati fitur keranjang belanja dan melakukan pembelian produk.</span>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                <a href="{{ url('/login') }}" class="bg-green-600 hover:bg-green-700 text-white text-center py-2 px-4 rounded-lg transition duration-300 flex-1">
+                    Login
+                </a>
+                <a href="{{ url('/register/pembeli') }}" class="border-2 border-green-600 text-green-600 hover:bg-green-50 text-center py-2 px-4 rounded-lg transition duration-300 flex-1">
+                    Daftar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fungsi untuk menampilkan modal
+        function showModal() {
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Mencegah scrolling di belakang modal
+        }
+
+        // Fungsi untuk menutup modal
+        function closeModal() {
+            document.getElementById('loginModal').classList.add('hidden');
+            document.body.style.overflow = 'auto'; // Mengembalikan scrolling
+        }
+
+        // Menambahkan event listener ke tombol beli di setiap produk
+        document.addEventListener('DOMContentLoaded', function() {
+            const buyButtons = document.querySelectorAll('.bg-green-600.hover\\:bg-green-700.text-white.px-3.py-1.rounded-full');
+            buyButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showModal();
+                });
+            });
+        });
+    </script>
+
 </body>
 </html>
