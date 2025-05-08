@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProdukController;
+use App\Http\Controllers\PegawaiController;
+use App\Http\Controllers\AdminController;
 
 // Halaman dashboard
 Route::get('/', function () {
@@ -9,9 +11,14 @@ Route::get('/', function () {
 })->name('dashboard');
 
 // Halaman Login
-Route::get('/login', function () {
+Route::post('/login', function () {
     return view('login');
 })->name('login');
+
+// Halaman Logout
+Route::post('/logout', function () {
+    return view('logout');
+})->name('logout');
 
 // Register untuk Pembeli
 Route::get('/register/pembeli', function () {
@@ -28,17 +35,40 @@ Route::prefix('produk')->group(function () {
     Route::get('/show/{id}', [ProdukController::class, 'show'])->name('produk.show');
 });
 
+Route::get('/dashboard', function () {
+    return view('admin.dashboard');
+})->name('admin.dashboard');
+Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
+// Routes untuk mengelola pegawai
+Route::prefix('pegawai')->group(function () {
+Route::get('/', [PegawaiController::class, 'index'])->name('admin.pegawai.index');
+Route::get('/create', [PegawaiController::class, 'create'])->name('admin.pegawai.create');
+Route::post('/', [PegawaiController::class, 'store'])->name('admin.pegawai.store');
+Route::get('/{id}', [PegawaiController::class, 'show'])->name('admin.pegawai.show');
+Route::get('/{id}/edit', [PegawaiController::class, 'edit'])->name('admin.pegawai.edit');
+Route::put('/{id}', [PegawaiController::class, 'update'])->name('admin.pegawai.update');
+Route::delete('/{id}', [PegawaiController::class, 'destroy'])->name('admin.pegawai.destroy');
+});
+
 
 // Halaman-halaman dashboard yang memerlukan autentikasi
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     // Dashboard Admin
-    Route::middleware(['role:admin'])->prefix('admin')->group(function () {
+    /*Route::middleware(['role:admin'])->prefix('admin')->group(function () {
         Route::get('/dashboard', function () {
             return view('admin.dashboard');
-        })->name('admin.dashboard');
-
-        // Route lain untuk admin
+        })->name('admin.dashboard');*/
+    // Routes untuk mengelola pegawai
+    /*Route::prefix('pegawai')->group(function () {
+        Route::get('/', [PegawaiController::class, 'index'])->name('admin.pegawai.index');
+        Route::get('/create', [PegawaiController::class, 'create'])->name('admin.pegawai.create');
+        Route::post('/', [PegawaiController::class, 'store'])->name('admin.pegawai.store');
+        Route::get('/{id}', [PegawaiController::class, 'show'])->name('admin.pegawai.show');
+        Route::get('/{id}/edit', [PegawaiController::class, 'edit'])->name('admin.pegawai.edit');
+        Route::put('/{id}', [PegawaiController::class, 'update'])->name('admin.pegawai.update');
+        Route::delete('/{id}', [PegawaiController::class, 'destroy'])->name('admin.pegawai.destroy');
     });
+    });*/
 
     // Dashboard Customer Service
     Route::middleware(['role:customer service'])->prefix('cs')->group(function () {
