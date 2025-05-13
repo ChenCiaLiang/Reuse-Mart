@@ -4,6 +4,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\PegawaiController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Auth\LoginController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 // Halaman dashboard
 Route::get('/', function () {
@@ -11,9 +14,41 @@ Route::get('/', function () {
 })->name('dashboard');
 
 // Halaman Login
-Route::post('/login', function () {
-    return view('login');
+Route::get('/login', function () {
+    return view('auth.login');
 })->name('login');
+
+Route::post('/login', function (Request $request) {
+    $loginController = new LoginController();
+    $result = $loginController->login($request);
+
+    // Jika ini adalah response JSON, ambil kontennya
+    $data = json_decode($result->getContent(), true);
+
+    if ($result->getStatusCode() === 200) {
+        // Simpan token ke session
+        session(['access_token' => $data['access_token']]);
+
+        // Redirect berdasarkan tipe user
+        switch ($data['user']['userType']) {
+            case 'pegawai':
+                return redirect()->route('admin.dashboard');
+            case 'pembeli':
+                return redirect()->route('dashboard');
+            case 'penitip':
+                return redirect()->route('dashboard');
+            case 'organisasi':
+                return redirect()->route('dashboard');
+            default:
+                return redirect('/');
+        }
+    }
+
+    // Jika login gagal
+    return back()->withErrors([
+        'loginID' => $data['message'] ?? 'Login gagal',
+    ])->withInput();
+})->name('login.submit');
 
 // Halaman Logout
 Route::post('/logout', function () {
@@ -41,13 +76,13 @@ Route::get('/dashboard', function () {
 Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
 // Routes untuk mengelola pegawai
 Route::prefix('pegawai')->group(function () {
-Route::get('/', [PegawaiController::class, 'index'])->name('admin.pegawai.index');
-Route::get('/create', [PegawaiController::class, 'create'])->name('admin.pegawai.create');
-Route::post('/', [PegawaiController::class, 'store'])->name('admin.pegawai.store');
-Route::get('/{id}', [PegawaiController::class, 'show'])->name('admin.pegawai.show');
-Route::get('/{id}/edit', [PegawaiController::class, 'edit'])->name('admin.pegawai.edit');
-Route::put('/{id}', [PegawaiController::class, 'update'])->name('admin.pegawai.update');
-Route::delete('/{id}', [PegawaiController::class, 'destroy'])->name('admin.pegawai.destroy');
+    Route::get('/', [PegawaiController::class, 'index'])->name('admin.pegawai.index');
+    Route::get('/create', [PegawaiController::class, 'create'])->name('admin.pegawai.create');
+    Route::post('/', [PegawaiController::class, 'store'])->name('admin.pegawai.store');
+    Route::get('/{id}', [PegawaiController::class, 'show'])->name('admin.pegawai.show');
+    Route::get('/{id}/edit', [PegawaiController::class, 'edit'])->name('admin.pegawai.edit');
+    Route::put('/{id}', [PegawaiController::class, 'update'])->name('admin.pegawai.update');
+    Route::delete('/{id}', [PegawaiController::class, 'destroy'])->name('admin.pegawai.destroy');
 });
 
 

@@ -36,5 +36,7 @@ class RouteServiceProvider extends ServiceProvider
             Route::middleware('web')
                 ->group(base_path('routes/web.php'));
         });
+        $this->app['url']->forceScheme('http');
+        $this->app['request']->server->set('HTTPS', 'off');
     }
 }

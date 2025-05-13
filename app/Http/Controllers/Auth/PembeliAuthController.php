@@ -1,15 +1,15 @@
 <?php
 
-namespace App\Http\Controllers\Api\Auth;
+namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\Organisasi;
+use App\Models\Pembeli;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
-class OrganisasiAuthController extends Controller
+class PembeliAuthController extends Controller
 {
     public function login(Request $request)
     {
@@ -23,25 +23,26 @@ class OrganisasiAuthController extends Controller
                 return response()->json(['errors' => $validator->errors()], 422);
             }
 
-            $organisasi = Organisasi::where('email', $request->email)->first();
-            if (!$organisasi || !Hash::check($request->password, $organisasi->password)) {
+            $pembeli = Pembeli::where('email', $request->email)->first();
+            if (!$pembeli || !Hash::check($request->password, $pembeli->password)) {
                 return response()->json([
                     'message' => 'Email atau password tidak valid'
                 ], 401);
             }
 
-            $organisasi->tokens()->delete();
-            $token = $organisasi->createToken('auth_token', ['organisasi'])->plainTextToken;
+            $pembeli->tokens()->delete();
+            $token = $pembeli->createToken('auth_token', ['pembeli'])->plainTextToken;
 
             return response()->json([
                 'access_token' => $token,
                 'token_type' => 'Bearer',
                 'user' => [
-                    'id' => $organisasi->idOrganisasi,
-                    'email' => $organisasi->email,
-                    'nama' => $organisasi->nama,
-                    'userType' => 'organisasi',
-                    'logo' => $organisasi->logo
+                    'id' => $pembeli->idPembeli,
+                    'nama' => $pembeli->nama,
+                    'email' => $pembeli->email,
+                    'foto_profile' => $pembeli->foto_profile,
+                    'poin' => $pembeli->poin,
+                    'userType' => 'pembeli',
                 ]
             ]);
         } catch (\Exception $e) {
@@ -57,7 +58,7 @@ class OrganisasiAuthController extends Controller
             'nama' => 'required|string|max:50',
             'email' => 'required|string|email|max:50|unique:organisasi,email',
             'password' => 'required|string|min:6',
-            'logo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'foto_profile' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
             'alamat' => 'required|string|max:255'
         ]);
 
@@ -67,7 +68,7 @@ class OrganisasiAuthController extends Controller
 
         DB::beginTransaction();
         try {
-            $latestOrganisasi = Organisasi::orderBy('idOrganisasi', 'desc')->first();
+            $latestOrganisasi = Pembeli::orderBy('idOrganisasi', 'desc')->first();
             $nextId = 1;
             if ($latestOrganisasi) {
                 $lastId = (int) substr($latestOrganisasi->idOrganisasi, 3);
@@ -86,7 +87,7 @@ class OrganisasiAuthController extends Controller
                 $logoPath = 'organisasi/default_logo.png';
             }
 
-            $organisasi = Organisasi::create([
+            $pembeli = Pembeli::create([
                 'idOrganisasi' => $idOrganisasi,
                 'nama' => $request->nama,
                 'email' => $request->email,
@@ -99,10 +100,10 @@ class OrganisasiAuthController extends Controller
             return response()->json([
                 'message' => 'Pendaftaran organisasi berhasil',
                 'user' => [
-                    'id' => $organisasi->idOrganisasi,
-                    'email' => $organisasi->email,
-                    'nama' => $organisasi->nama,
-                    'logo' => asset($organisasi->logo),
+                    'id' => $pembeli->idOrganisasi,
+                    'email' => $pembeli->email,
+                    'nama' => $pembeli->nama,
+                    'logo' => asset($pembeli->logo),
                     'userType' => 'organisasi',
                 ]
             ], 201);

@@ -1,9 +1,10 @@
 <?php
 
-use App\Http\Controllers\Api\Auth\OrganisasiAuthController;
-use App\Http\Controllers\Api\Auth\PegawaiAuthController;
-use App\Http\Controllers\Api\Auth\PembeliAuthController;
-use App\Http\Controllers\Api\Auth\PenitipAuthController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\OrganisasiAuthController;
+use App\Http\Controllers\Auth\PegawaiAuthController;
+use App\Http\Controllers\Auth\PembeliAuthController;
+use App\Http\Controllers\Auth\PenitipAuthController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Illuminate\Http\Request;
@@ -53,3 +54,5 @@ Route::prefix('organisasi')->group(function () {
         Route::post('/changePassword', [OrganisasiAuthController::class, 'changePassword']);
     });
 });
+
+Route::post('/loginAuth', [LoginController::class, 'login']);
