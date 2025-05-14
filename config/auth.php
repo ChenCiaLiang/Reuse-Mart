@@ -46,6 +46,22 @@ return [
             'provider' => 'pegawai',
             'hash' => false,
         ],
+        'pembeli' => [
+            'driver' => 'session',
+            'provider' => 'pembelis',
+        ],
+
+        // Tambahkan guard untuk penitip
+        'penitip' => [
+            'driver' => 'session',
+            'provider' => 'penitips',
+        ],
+
+        // Tambahkan guard untuk organisasi
+        'organisasi' => [
+            'driver' => 'session',
+            'provider' => 'organisasis',
+        ],
     ],
 
     /*
@@ -70,9 +86,23 @@ return [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,
         ],
-        'pegawai' => [
+
+        // Provider untuk pembeli
+        'pembelis' => [
             'driver' => 'eloquent',
-            'model' => App\Models\Pegawai::class,
+            'model' => App\Models\Pembeli::class,
+        ],
+
+        // Provider untuk penitip
+        'penitips' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Penitip::class,
+        ],
+
+        // Provider untuk organisasi
+        'organisasis' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Organisasi::class,
         ],
     ],
 

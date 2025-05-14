@@ -28,17 +28,25 @@ Route::post('/login', function (Request $request) {
     if ($result->getStatusCode() === 200) {
         // Simpan token ke session
         session(['access_token' => $data['access_token']]);
+        session([
+            'user_id' => $data['user']['id'],
+            'user_type' => $data['user']['userType'],
+            'user_name' => $data['user']['nama'],
+            'user_email' => $data['user']['email'] ?? null,
+            'user_foto_profile' => $data['user']['foto_profile'] ?? null,
+            'user_poin' => $data['user']['poin'] ?? null,
+        ]);
 
         // Redirect berdasarkan tipe user
         switch ($data['user']['userType']) {
             case 'pegawai':
                 return redirect()->route('admin.dashboard');
             case 'pembeli':
-                return redirect()->route('dashboard');
+                return redirect()->route('customer.homePage');
             case 'penitip':
-                return redirect()->route('dashboard');
+                return redirect()->route('customer.homePage');
             case 'organisasi':
-                return redirect()->route('dashboard');
+                return redirect()->route('customer.homePage');
             default:
                 return redirect('/');
         }
@@ -133,32 +141,15 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     });
 
     // Dashboard Pembeli
-    Route::middleware(['role:pembeli'])->prefix('pembeli')->group(function () {
-        Route::get('/dashboard', function () {
-            return view('pembeli.dashboard');
-        })->name('pembeli.dashboard');
 
-        // Route lain untuk pembeli
-    });
-
-    // Dashboard Penitip
-    Route::middleware(['role:penitip'])->prefix('penitip')->group(function () {
-        Route::get('/dashboard', function () {
-            return view('penitip.dashboard');
-        })->name('penitip.dashboard');
-
-        // Route lain untuk penitip
-    });
-
-    // Dashboard Organisasi
-    Route::middleware(['role:organisasi'])->prefix('organisasi')->group(function () {
-        Route::get('/dashboard', function () {
-            return view('organisasi.dashboard');
-        })->name('organisasi.dashboard');
-
-        // Route lain untuk organisasi
-    });
 });
+Route::get('/homePage', function () {
+    return view('customer.homePage');
+})->name('customer.homePage');
+
+Route::get('/profile', function () {
+    return view('customer.profile');
+})->name('customer.profile');
 
 // Halaman Unauthorized
 Route::get('/unauthorized', function () {
