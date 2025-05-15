@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 
 // Routes untuk Pegawai (Admin, CS, Pegawai Gudang, Hunter)
 Route::prefix('pegawai')->group(function () {
-    Route::post('/login', [PegawaiAuthController::class, 'login']);
+    Route::post('/login', [LoginController::class, 'login']);
     Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/me', [PegawaiAuthController::class, 'me']);
         Route::post('/logout', [PegawaiAuthController::class, 'logout']);
@@ -21,7 +21,7 @@ Route::prefix('pegawai')->group(function () {
 });
 
 Route::prefix('pembeli')->group(function () {
-    Route::post('/login', [PembeliAuthController::class, 'login']);
+    Route::post('/login', [LoginController::class, 'login']);
     Route::post('/register', [PembeliAuthController::class, 'register']);
 
     Route::middleware('auth:sanctum')->group(function () {
@@ -32,7 +32,7 @@ Route::prefix('pembeli')->group(function () {
 });
 
 Route::prefix('penitip')->group(function () {
-    Route::post('/login', [PenitipAuthController::class, 'login']);
+    Route::post('/login', [LoginController::class, 'login']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [PenitipAuthController::class, 'me']);
@@ -45,7 +45,7 @@ Route::prefix('penitip')->group(function () {
 });
 
 Route::prefix('organisasi')->group(function () {
-    Route::post('/login', [OrganisasiAuthController::class, 'login']);
+    Route::post('/login', [LoginController::class, 'login']);
     Route::post('/register', [OrganisasiAuthController::class, 'register']);
 
     Route::middleware('auth:sanctum')->group(function () {
@@ -54,5 +54,3 @@ Route::prefix('organisasi')->group(function () {
         Route::post('/changePassword', [OrganisasiAuthController::class, 'changePassword']);
     });
 });
-
-Route::post('/loginAuth', [LoginController::class, 'login']);

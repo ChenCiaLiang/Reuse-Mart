@@ -26,15 +26,17 @@ Route::post('/login', function (Request $request) {
     $data = json_decode($result->getContent(), true);
 
     if ($result->getStatusCode() === 200) {
-        // Simpan token ke session
-        session(['access_token' => $data['access_token']]);
+
         session([
+            'access_token' => $data['access_token'],
             'user_id' => $data['user']['id'],
             'user_type' => $data['user']['userType'],
             'user_name' => $data['user']['nama'],
+            'user_username' => $data['user']['username'] ?? null,
             'user_email' => $data['user']['email'] ?? null,
             'user_foto_profile' => $data['user']['foto_profile'] ?? null,
             'user_poin' => $data['user']['poin'] ?? null,
+            'user_idJabatan' => $data['user']['idJabatan'] ?? null,
         ]);
 
         // Redirect berdasarkan tipe user

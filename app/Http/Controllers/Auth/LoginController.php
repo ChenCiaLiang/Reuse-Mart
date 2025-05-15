@@ -62,10 +62,12 @@ class LoginController extends Controller
                         'token_type' => 'Bearer',
                         'user' => [
                             'id' => $user->idPenitip,
-                            'email' => $user->email,
                             'nama' => $user->nama,
+                            'email' => $user->email,
                             'userType' => 'penitip',
                             'poin' => $user->poin,
+                            'bonus' => $user->bonus,
+                            'komisi' => $user->komisi,
                             'saldo' => $user->saldo,
                             'rating' => $user->rating,
                         ]
@@ -83,91 +85,37 @@ class LoginController extends Controller
                         'token_type' => 'Bearer',
                         'user' => [
                             'id' => $user->idOrganisasi,
-                            'email' => $user->email,
                             'nama' => $user->nama,
+                            'email' => $user->email,
                             'userType' => 'organisasi',
-                            'logo' => $user->logo
+                            'logo' => $user->logo,
+                            'alamat' => $user->alamat,
+                        ]
+                    ]);
+                }
+            } else {
+                $user = Pegawai::where('username', $identifier)->first();
+                if ($user && Hash::check($password, $user->password)) {
+                    $user->tokens()->delete();
+                    $jabatan = Jabatan::find($user->idJabatan);
+                    $role = strtolower($jabatan->nama);
+                    $token = $user->createToken('auth_token', ['pegawai', $role])->plainTextToken;
+
+                    return response()->json([
+                        'access_token' => $token,
+                        'token_type' => 'Bearer',
+                        'user' => [
+                            'id' => $user->idPegawai,
+                            'username' => $user->username,
+                            'nama' => $user->nama,
+                            'userType' => 'pegawai',
+                            'role' => $role,
+                            'jabatan' => $jabatan->nama,
+                            'foto_profile' => $user->foto_profile
                         ]
                     ]);
                 }
             }
-            // Cek apakah format identifier adalah ID Penitip (Txx)
-            // else if (preg_match('/^T\d+/', $identifier)) {
-            //     $user = Penitip::where('idPenitip', $identifier)->first();
-            //     if ($user && Hash::check($password, $user->password)) {
-            //         $user->tokens()->delete();
-            //         $token = $user->createToken('auth_token', ['penitip'])->plainTextToken;
-
-            //         return response()->json([
-            //             'access_token' => $token,
-            //             'token_type' => 'Bearer',
-            //             'user' => [
-            //                 'id' => $user->idPenitip,
-            //                 'email' => $user->email,
-            //                 'nama' => $user->nama,
-            //                 'userType' => 'penitip',
-            //                 'poin' => $user->poin,
-            //                 'saldo' => $user->saldo,
-            //                 'rating' => $user->rating,
-            //             ]
-            //         ]);
-            //     }
-            // }
-            // // Cek apakah format identifier adalah ID Organisasi (ORGxx)
-            // else if (preg_match('/^ORG\d+/', $identifier)) {
-            //     $user = Organisasi::where('idOrganisasi', $identifier)->first();
-            //     if ($user && Hash::check($password, $user->password)) {
-            //         $user->tokens()->delete();
-            //         $token = $user->createToken('auth_token', ['organisasi'])->plainTextToken;
-
-            //         return response()->json([
-            //             'access_token' => $token,
-            //             'token_type' => 'Bearer',
-            //             'user' => [
-            //                 'id' => $user->idOrganisasi,
-            //                 'email' => $user->email,
-            //                 'nama' => $user->nama,
-            //                 'userType' => 'organisasi',
-            //                 'logo' => $user->logo
-            //             ]
-            //         ]);
-            //     }
-            // }
-            // // Cek apakah format identifier adalah ID Pegawai (Pxx) atau username
-            // else {
-            //     // Coba dengan ID Pegawai
-            //     if (preg_match('/^P\d+/', $identifier)) {
-            //         $user = Pegawai::where('idPegawai', $identifier)->first();
-            //     } else {
-            //         // Coba dengan username
-            //         $user = Pegawai::where('username', $identifier)->first();
-            //     }
-
-            //     if ($user && Hash::check($password, $user->password)) {
-            //         $user->tokens()->delete();
-
-            //         $jabatan = Jabatan::find($user->idJabatan);
-            //         $role = strtolower($jabatan->nama);
-
-            //         $token = $user->createToken('auth_token', ['pegawai', $role])->plainTextToken;
-
-            //         return response()->json([
-            //             'access_token' => $token,
-            //             'token_type' => 'Bearer',
-            //             'user' => [
-            //                 'id' => $user->idPegawai,
-            //                 'username' => $user->username,
-            //                 'nama' => $user->nama,
-            //                 'userType' => 'pegawai',
-            //                 'role' => $role,
-            //                 'jabatan' => $jabatan->nama,
-            //                 'foto_profile' => $user->foto_profile
-            //             ]
-            //         ]);
-            //     }
-            // }
-
-            // Jika semua percobaan login gagal
             return response()->json([
                 'message' => 'Username/email atau password tidak valid'
             ], 401);
