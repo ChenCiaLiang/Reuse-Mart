@@ -115,6 +115,13 @@ Route::middleware(['auth.penitip'])->group(function () {
     Route::get('/penitip/transaksi/{id}', [App\Http\Controllers\PenitipController::class, 'detailTransaksi'])->name('penitip.transaksi.detail');
 });
 
+// Routes untuk profil pembeli
+Route::middleware(['auth.pembeli'])->group(function () {
+    Route::get('/pembeli/profile', [App\Http\Controllers\PembeliController::class, 'profile'])->name('pembeli.profile');
+    Route::get('/pembeli/history', [App\Http\Controllers\PembeliController::class, 'historyTransaksi'])->name('pembeli.history');
+    Route::get('/pembeli/transaksi/{idTransaksi}', [App\Http\Controllers\PembeliController::class, 'detailTransaksi'])->name('pembeli.transaksi.detail');
+});
+
 Route::prefix('produk')->group(function () {
     Route::get('/index', [ProdukController::class, 'index'])->name('produk.index');
     Route::get('/show/{id}', [ProdukController::class, 'show'])->name('produk.show');
@@ -217,16 +224,16 @@ Route::get('/homePage', function () {
     return view('customer.homePage');
 })->name('customer.homePage');
 
-Route::get('/profile', function () {
-    return view('customer.profile');
-})->name('customer.profile');
+// Route::get('/profile', function () {
+//     return view('customer.profile');
+// })->name('customer.profile');
 
 // Route::get('/homePage', function () {
 //     return view('customer.homePage');
 // })->name('customer.homePage');
 
 Route::get('/profile', function () {
-    if (session('user_type') === 'penitip') {
+    if (session('user')['userType'] === 'penitip') {
         return redirect()->route('penitip.profile');
     }
     return view('customer.profile');

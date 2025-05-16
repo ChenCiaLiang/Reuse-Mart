@@ -15,23 +15,23 @@ class DiskusiProdukController extends Controller
     public function index(Request $request, $idProduk)
     {
         $produk = Produk::findOrFail($idProduk);
-        
+
         $diskusi = DiskusiProduk::where('idProduk', $idProduk)
-                               ->with(['pembeli', 'pegawai'])
-                               ->orderBy('tanggalDiskusi', 'asc')
-                               ->get();
-        
+            ->with(['pembeli', 'pegawai'])
+            ->orderBy('tanggalDiskusi', 'asc')
+            ->get();
+
         if ($request->expectsJson()) {
             return response()->json(['diskusi' => $diskusi]);
         }
-        
+
         return view('produk.diskusi', [
             'produk' => $produk,
             'diskusi' => $diskusi
         ]);
     }
 
-/**
+    /**
      * Menambah pesan diskusi produk
      */
     public function store(Request $request, $id)
@@ -48,7 +48,7 @@ class DiskusiProdukController extends Controller
         }
 
         // Cek login secara manual menggunakan session
-        if (!session('user_id') || (!in_array(session('user_type'), ['pembeli', 'pegawai']))) {
+        if (!session('user')['id'] || (!in_array(session('user')['userType'], ['pembeli', 'pegawai']))) {
             return redirect()->route('login')
                 ->with('error', 'Anda harus login terlebih dahulu untuk mengirim diskusi.');
         }
@@ -64,11 +64,11 @@ class DiskusiProdukController extends Controller
         ];
 
         // Cek tipe user (Pembeli atau CS)
-        if (session('user_type') === 'pembeli') {
-            $diskusiData['idPembeli'] = session('user_id');
+        if (session('user')['userType'] === 'pembeli') {
+            $diskusiData['idPembeli'] = session('user')['id'];
             $diskusiData['idPegawai'] = null;
-        } elseif (session('user_type') === 'pegawai' && strtolower(session('user_role')) === 'customer service') {
-            $diskusiData['idPegawai'] = session('user_id');
+        } elseif (session('user')['userType'] === 'pegawai' && strtolower(session('user')['role']) === 'customer service') {
+            $diskusiData['idPegawai'] = session('user')['id'];
             $diskusiData['idPembeli'] = null;
         } else {
             return redirect()->back()

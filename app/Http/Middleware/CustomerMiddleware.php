@@ -10,7 +10,7 @@ class CustomerMiddleware
     public function handle(Request $request, Closure $next)
     {
         // Cek tipe user dari session
-        $userType = session('user_type');
+        $userType = session('user')['userType'];
 
         // Pastikan user adalah customer (pembeli, penitip, atau organisasi)
         if (!in_array($userType, ['pembeli', 'penitip', 'organisasi'])) {

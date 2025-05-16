@@ -13,9 +13,9 @@
                 <div class="flex flex-col md:flex-row items-center">
                     <!-- Profile Image -->
                     <div class="flex-shrink-0 mb-6 md:mb-0 md:mr-8">
-                        @if(session('user_type') == 'pembeli' && !empty(session('user_foto_profile')))
+                        @if(!empty($pembeli->foto_profile))
                             <img class="h-32 w-32 rounded-full object-cover border-4 border-green-100" 
-                                src="{{ asset(session('user_foto_profile')) }}" 
+                                src="{{ asset($pembeli->foto_profile) }}" 
                                 alt="Foto Profil">
                         @else
                             <div class="h-32 w-32 rounded-full flex items-center justify-center bg-green-100 border-4 border-green-50">
@@ -28,14 +28,14 @@
                     
                     <!-- Profile Details -->
                     <div class="flex-grow text-center md:text-left">
-                        <h2 class="text-2xl font-bold text-gray-800">{{ session('user_name') }}</h2>
+                        <h2 class="text-2xl font-bold text-gray-800">{{ $pembeli->nama }}</h2>
                         <p class="text-gray-600 mt-1">
                             <span class="inline-flex items-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
                                     <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                                    <path d="M18 8.118l-8 4-8-4V14$pembeli->email-2V8.118z" />
                                 </svg>
-                                {{ session('user_email') }}
+                                {{ $pembeli->email }}
                             </span>
                         </p>
                         
@@ -43,7 +43,7 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V8z" />
                             </svg>
-                            <span class="font-medium text-green-700">{{ number_format(session('user_poin') ?? 0) }} Poin</span>
+                            <span class="font-medium text-green-700">{{ number_format($pembeli->poin ?? 0) }} Poin</span>
                         </div>
                     </div>
                 </div>
@@ -98,58 +98,41 @@
                     </div>
                 </div>
                 
-                <!-- Recent Orders Card -->
-                <div class="bg-white p-6 rounded-lg shadow-sm mt-4">
-                    <div class="flex items-center space-x-2 font-semibold text-gray-900 leading-8 mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd" />
-                        </svg>
-                        <span class="tracking-wide">Transaksi Terbaru</span>
-                    </div>
-                    @if(isset($recentOrders) && count($recentOrders) > 0)
+                <!-- Recent Transactions -->
+                <div class="mt-8 border-t border-gray-200 pt-6">
+                    <h3 class="text-lg font-semibold mb-4">Transaksi Pembelian Terbaru</h3>
+                    
+                    @if(count($transaksiPenjualan) > 0)
                         <div class="overflow-x-auto">
-                            <table class="min-w-full table-auto">
+                            <table class="min-w-full bg-white">
                                 <thead class="bg-gray-50">
                                     <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            ID Transaksi
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Tanggal
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Total
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Status
-                                        </th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Aksi
-                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID Transaksi</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tanggal</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Produk</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harga Jual</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aksi</th>
                                     </tr>
                                 </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    @foreach($recentOrders as $order)
+                                <tbody class="divide-y divide-gray-200">
+                                    @foreach($transaksiPenjualan as $transaksi)
                                     <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ $order->idTransaksi }}
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            {{ $transaksi->idTransaksi }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ \Carbon\Carbon::parse($order->tanggalPesan)->format('d M Y') }}
+                                            {{ \Carbon\Carbon::parse($transaksi->tanggalLunas)->format('d/m/Y') }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            Rp {{ number_format($order->total, 0, ',', '.') }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                                {{ $order->status == 'Selesai' ? 'bg-green-100 text-green-800' : 
-                                                   ($order->status == 'Disiapkan' ? 'bg-blue-100 text-blue-800' : 
-                                                   ($order->status == 'Dikirim' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800')) }}">
-                                                {{ $order->status }}
-                                            </span>
+                                            {{ $transaksi->deskripsi }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <a href="{{ route('customer.orderDetail', $order->idTransaksi) }}" class="text-green-600 hover:text-green-900">Detail</a>
+                                            Rp {{ number_format($transaksi->hargaJual, 0, ',', '.') }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <a href="{{ route('pembeli.transaksi.detail', $transaksi->idTransaksi) }}" class="text-green-600 hover:text-green-900">
+                                                Detail
+                                            </a>
                                         </td>
                                     </tr>
                                     @endforeach
@@ -157,18 +140,14 @@
                             </table>
                         </div>
                     @else
-                        <div class="text-center py-8">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-300 mx-auto mb-4" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd" />
+                        <div class="text-center py-8 bg-gray-50 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                             </svg>
-                            <p class="text-gray-500">Belum ada transaksi terbaru</p>
-                            <a href="{{ route('produk.index') }}" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                                Mulai Belanja
-                            </a>
+                            <p class="text-gray-500">Belum ada transaksi penjualan</p>
                         </div>
                     @endif
                 </div>
-                <!-- End of Recent Orders Card -->
             </div>
         </div>
     </div>

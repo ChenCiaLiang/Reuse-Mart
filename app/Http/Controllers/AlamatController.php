@@ -21,7 +21,7 @@ class AlamatController extends Controller
         }
 
         // Ambil ID pembeli dari session untuk web
-        $idPembeli = session('user_id');
+        $idPembeli = session('user')['id'];
         $alamat = Alamat::where('idPembeli', $idPembeli)->get();
         return view('customer.alamat.index', ['alamat' => $alamat]);
     }
@@ -56,13 +56,13 @@ class AlamatController extends Controller
         if ($request->expectsJson()) {
             $idPembeli = $request->user()->idPembeli;
         } else {
-            $idPembeli = session('user_id');
+            $idPembeli = session('user')['id'];
         }
 
         // Jika alamat ini diset sebagai default, ubah semua alamat lain menjadi non-default
         if ($request->statusDefault) {
             Alamat::where('idPembeli', $idPembeli)
-                  ->update(['statusDefault' => false]);
+                ->update(['statusDefault' => false]);
         }
 
         // Jika ini alamat pertama, jadikan default
@@ -94,7 +94,7 @@ class AlamatController extends Controller
     public function show($id, Request $request)
     {
         $alamat = Alamat::findOrFail($id);
-        
+
         // Cek apakah alamat ini milik pembeli yang sedang login
         if ($request->expectsJson()) {
             if ($request->user()->idPembeli != $alamat->idPembeli) {
@@ -102,7 +102,7 @@ class AlamatController extends Controller
             }
             return response()->json(['alamat' => $alamat]);
         } else {
-            if (session('user_id') != $alamat->idPembeli) {
+            if (session('user')['id'] != $alamat->idPembeli) {
                 return redirect()->route('unauthorized');
             }
             return view('customer.alamat.show', ['alamat' => $alamat]);
@@ -115,12 +115,12 @@ class AlamatController extends Controller
     public function edit($id)
     {
         $alamat = Alamat::findOrFail($id);
-        
+
         // Cek apakah alamat ini milik pembeli yang sedang login
-        if (session('user_id') != $alamat->idPembeli) {
+        if (session('user')['id'] != $alamat->idPembeli) {
             return redirect()->route('unauthorized');
         }
-        
+
         return view('customer.alamat.edit', ['alamat' => $alamat]);
     }
 
@@ -143,7 +143,7 @@ class AlamatController extends Controller
         }
 
         $alamat = Alamat::findOrFail($id);
-        
+
         // Cek apakah alamat ini milik pembeli yang sedang login
         if ($request->expectsJson()) {
             if ($request->user()->idPembeli != $alamat->idPembeli) {
@@ -151,17 +151,17 @@ class AlamatController extends Controller
             }
             $idPembeli = $request->user()->idPembeli;
         } else {
-            if (session('user_id') != $alamat->idPembeli) {
+            if (session('user')['id'] != $alamat->idPembeli) {
                 return redirect()->route('unauthorized');
             }
-            $idPembeli = session('user_id');
+            $idPembeli = session('user')['id'];
         }
 
         // Jika alamat ini diset sebagai default, ubah semua alamat lain menjadi non-default
         if ($request->statusDefault) {
             Alamat::where('idPembeli', $idPembeli)
-                  ->where('idAlamat', '!=', $id)
-                  ->update(['statusDefault' => false]);
+                ->where('idAlamat', '!=', $id)
+                ->update(['statusDefault' => false]);
         }
 
         // Update alamat
@@ -187,14 +187,14 @@ class AlamatController extends Controller
     public function destroy($id, Request $request)
     {
         $alamat = Alamat::findOrFail($id);
-        
+
         // Cek apakah alamat ini milik pembeli yang sedang login
         if ($request->expectsJson()) {
             if ($request->user()->idPembeli != $alamat->idPembeli) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
         } else {
-            if (session('user_id') != $alamat->idPembeli) {
+            if (session('user')['id'] != $alamat->idPembeli) {
                 return redirect()->route('unauthorized');
             }
         }
@@ -202,8 +202,8 @@ class AlamatController extends Controller
         // Jika alamat yang dihapus adalah default, pilih alamat lain menjadi default
         if ($alamat->statusDefault) {
             $anotherAddress = Alamat::where('idPembeli', $alamat->idPembeli)
-                                    ->where('idAlamat', '!=', $id)
-                                    ->first();
+                ->where('idAlamat', '!=', $id)
+                ->first();
             if ($anotherAddress) {
                 $anotherAddress->statusDefault = true;
                 $anotherAddress->save();
@@ -228,24 +228,24 @@ class AlamatController extends Controller
     public function search(Request $request)
     {
         $search = $request->input('search');
-        
+
         if ($request->expectsJson()) {
             $idPembeli = $request->user()->idPembeli;
         } else {
-            $idPembeli = session('user_id');
+            $idPembeli = session('user')['id'];
         }
-        
+
         $alamat = Alamat::where('idPembeli', $idPembeli)
-                         ->where(function($query) use ($search) {
-                             $query->where('alamatLengkap', 'like', "%{$search}%")
-                                   ->orWhere('jenis', 'like', "%{$search}%");
-                         })
-                         ->get();
-        
+            ->where(function ($query) use ($search) {
+                $query->where('alamatLengkap', 'like', "%{$search}%")
+                    ->orWhere('jenis', 'like', "%{$search}%");
+            })
+            ->get();
+
         if ($request->expectsJson()) {
             return response()->json(['alamat' => $alamat]);
         }
-        
+
         return view('customer.alamat.index', ['alamat' => $alamat, 'search' => $search]);
     }
 }

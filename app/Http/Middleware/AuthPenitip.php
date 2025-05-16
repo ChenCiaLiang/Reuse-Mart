@@ -17,7 +17,7 @@ class AuthPenitip
     public function handle(Request $request, Closure $next)
     {
         // Cek apakah user sudah login dan merupakan penitip
-        if (!session('user_id') || session('user_type') !== 'penitip') {
+        if (!session('user')['id'] || session('user')['userType'] !== 'penitip') {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Unauthorized'], 401);
             }

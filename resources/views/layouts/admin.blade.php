@@ -88,8 +88,8 @@
                             --}}
 
                             <!-- kode test tanpa uth -->
-                            <p class="text-sm font-medium">{{ session('user.nama') ?? 'Nama' }}</p>
-                            <p class="text-xs text-gray-500">{{ session('user.jabatan') ?? 'Jabatan' }}</p>
+                            <p class="text-sm font-medium">{{ session('user')['nama'] ?? 'Nama' }}</p>
+                            <p class="text-xs text-gray-500">{{ session('user')['jabatan'] ?? 'Jabatan' }}</p>
                         </div>
                     </button>
                     </div>

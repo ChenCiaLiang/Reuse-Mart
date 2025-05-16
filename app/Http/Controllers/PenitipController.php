@@ -139,17 +139,17 @@ class PenitipController extends Controller
     public function profile()
     {
         // Ambil ID penitip dari session
-        $idPenitip = session('user_id');
-        
+        $idPenitip = session('user')['id'];
+
         // Dapatkan data penitip
         $penitip = Penitip::findOrFail($idPenitip);
-        
+
         // Dapatkan transaksi penitipan terbaru (5 terakhir)
         $transaksiPenitipan = TransaksiPenitipan::where('idPenitip', $idPenitip)
             ->orderBy('tanggalMasukPenitipan', 'desc')
             ->limit(5)
             ->get();
-            
+
         // Dapatkan transaksi penjualan terbaru (5 terakhir)
         // Kita perlu join beberapa tabel untuk mendapatkan transaksi penjualan dari barang yang dititipkan
         $transaksiPenjualan = TransaksiPenjualan::join('detail_transaksi_penjualan', 'transaksi_penjualan.idTransaksi', '=', 'detail_transaksi_penjualan.idTransaksi')
@@ -162,22 +162,22 @@ class PenitipController extends Controller
             ->select('transaksi_penjualan.*', 'produk.deskripsi', 'produk.hargaJual')
             ->limit(5)
             ->get();
-            
+
         return view('penitip.profile', compact('penitip', 'transaksiPenitipan', 'transaksiPenjualan'));
     }
-    
+
     /**
      * Menampilkan histori transaksi
      */
     public function historyTransaksi(Request $request)
     {
         // Ambil ID penitip dari session
-        $idPenitip = session('user_id');
-        
+        $idPenitip = session('user')['id'];
+
         // Filter berdasarkan tanggal jika ada
         $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date'))->startOfDay() : Carbon::now()->subMonths(3)->startOfDay();
         $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date'))->endOfDay() : Carbon::now()->endOfDay();
-        
+
         // Query yang diperbaiki menggunakan relasi komisi
         $transaksiPenjualan = TransaksiPenjualan::join('komisi', 'transaksi_penjualan.idTransaksi', '=', 'komisi.idTransaksi')
             ->join('detail_transaksi_penjualan', 'transaksi_penjualan.idTransaksi', '=', 'detail_transaksi_penjualan.idTransaksi')
@@ -188,7 +188,7 @@ class PenitipController extends Controller
             ->select('transaksi_penjualan.*', 'produk.deskripsi', 'produk.hargaJual')
             ->distinct()
             ->paginate(10);
-        
+
         // Tambahkan variabel debug untuk troubleshooting
         $debug = [
             'idPenitip' => $idPenitip,
@@ -197,42 +197,42 @@ class PenitipController extends Controller
             'count' => $transaksiPenjualan->count(),
             'total' => $transaksiPenjualan->total()
         ];
-        
+
         return view('penitip.history', compact('transaksiPenjualan', 'startDate', 'endDate', 'debug'));
-    }    
+    }
     /**
      * Menampilkan detail transaksi
      */
     public function detailTransaksi($idTransaksi)
     {
         try {
-        // Ambil ID penitip dari session
-        $idPenitip = session('user_id');
-        
-        // Dapatkan detail transaksi
-        $transaksi = TransaksiPenjualan::findOrFail($idTransaksi);
-        
-        // Dapatkan produk yang dijual
-        $detailTransaksi = DetailTransaksiPenjualan::where('idTransaksi', $idTransaksi)
-            ->with('produk')
-            ->get();
-            
-        // Pastikan produk ini milik penitip yang login melalui komisi
-        $isOwner = \App\Models\Komisi::where('idTransaksi', $idTransaksi)
-            ->where('idPenitip', $idPenitip)
-            ->exists();
-        
-        if (!$isOwner) {
-            return redirect()->route('penitip.profile')->with('error', 'Anda tidak memiliki akses ke transaksi ini');
-        }
-        
-        // Dapatkan pembeli
-        $pembeli = $transaksi->pembeli;
-        
-        // Dapatkan komisi
-        $komisi = $transaksi->komisi;
-        
-    return view('penitip.detail-transaksi', compact('transaksi', 'detailTransaksi', 'pembeli', 'komisi'));
+            // Ambil ID penitip dari session
+            $idPenitip = session('user')['id'];
+
+            // Dapatkan detail transaksi
+            $transaksi = TransaksiPenjualan::findOrFail($idTransaksi);
+
+            // Dapatkan produk yang dijual
+            $detailTransaksi = DetailTransaksiPenjualan::where('idTransaksi', $idTransaksi)
+                ->with('produk')
+                ->get();
+
+            // Pastikan produk ini milik penitip yang login melalui komisi
+            $isOwner = \App\Models\Komisi::where('idTransaksi', $idTransaksi)
+                ->where('idPenitip', $idPenitip)
+                ->exists();
+
+            if (!$isOwner) {
+                return redirect()->route('penitip.profile')->with('error', 'Anda tidak memiliki akses ke transaksi ini');
+            }
+
+            // Dapatkan pembeli
+            $pembeli = $transaksi->pembeli;
+
+            // Dapatkan komisi
+            $komisi = $transaksi->komisi;
+
+            return view('penitip.detail-transaksi', compact('transaksi', 'detailTransaksi', 'pembeli', 'komisi'));
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error("Error in detailTransaksi: " . $e->getMessage());
             return redirect()->route('penitip.profile')->with('error', 'Terjadi kesalahan saat mengakses detail transaksi');

@@ -17,7 +17,7 @@ class AuthPembeli
     public function handle(Request $request, Closure $next)
     {
         // Cek apakah user sudah login dan merupakan pembeli
-        if (!session('user_id') || session('user_type') !== 'pembeli') {
+        if (!session('user')['id'] || session('user')['userType'] !== 'pembeli') {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Unauthorized'], 401);
             }

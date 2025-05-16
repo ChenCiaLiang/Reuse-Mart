@@ -182,7 +182,7 @@
                 </div>
 
                 <!-- Form Tambah Diskusi -->
-                @if(session('user_id') && (session('user_type') === 'pembeli' || (session('user_type') === 'pegawai' && session('user_role') === 'customer service')))
+                @if(session('user')['id'] && (session('user')['userType'] === 'pembeli' || (session('user')['userType'] === 'pegawai' && session('user')['role'] === 'customer service')))
                     <div class="bg-white border border-gray-200 rounded-lg p-6">
                         <h3 class="text-lg font-semibold text-gray-800 mb-4">Kirim Pertanyaan</h3>
                         

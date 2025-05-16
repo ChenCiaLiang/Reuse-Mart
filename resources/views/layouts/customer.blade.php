@@ -23,7 +23,7 @@
             position: relative;
             z-index: 2;
         }
-        @yield('additional-styles')
+        @yield('additional-styles');
     </style>
     @yield('head-scripts')
 </head>
@@ -49,7 +49,10 @@
                 <div class="flex items-center space-x-4">
                     <a href="#" class="hover:text-green-200"><i class="fas fa-search"></i></a>
                     <a href="#" class="hover:text-green-200"><i class="fas fa-shopping-cart"></i></a>
-                    <a class="nav-link" style="color: white;" href="{{ route('customer.profile') }}"><i
+                    @php
+                        $userType = session('user')['userType'] ?? null;
+                    @endphp
+                    <a class="nav-link" style="color: white;" href="{{ route($userType . '.profile') }}"><i
                                     class="fa-solid fa-user" style="border-bottom:1px;"></i></a>
                     <button class="md:hidden hover:text-green-200"><i class="fas fa-bars"></i></button>
                 </div>
