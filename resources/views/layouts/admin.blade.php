@@ -35,7 +35,7 @@
                 <span>Manajemen Jabatan</span>
             </a> --}}
             
-            <a href="#" class="flex items-center px-6 py-3 hover:bg-green-700">
+            <a href="{{ route('admin.organisasi.index') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('admin.organisasi.*') ? 'bg-green-700' : '' }}">
                 <i class="fas fa-building mr-3"></i>
                 <span>Manajemen Organisasi</span>
             </a>

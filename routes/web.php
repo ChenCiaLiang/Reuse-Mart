@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\PegawaiController;
 use App\Http\Controllers\PenitipController;
+use App\Http\Controllers\OrganisasiController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Http\Request;
@@ -102,8 +103,27 @@ Route::post('/register/pembeli', [App\Http\Controllers\Auth\PembeliAuthControlle
 
 // Register untuk Organisasi
 Route::get('/register/organisasi', function () {
-    return view('auth.register-organisasi');
+    return view('auth.register.organisasi');
 })->name('register.organisasi');
+
+// Proses Registrasi Organisasi
+Route::post('/register/organisasi', [App\Http\Controllers\Auth\OrganisasiAuthController::class, 'register'])->name('register.organisasi.submit');
+
+// Routes untuk mengelola organisasi
+Route::prefix('admin/organisasi')->group(function () {
+    Route::get('/', [OrganisasiController::class, 'index'])->name('admin.organisasi.index');
+    Route::get('/{id}', [OrganisasiController::class, 'show'])->name('admin.organisasi.show');
+    Route::get('/{id}/edit', [OrganisasiController::class, 'edit'])->name('admin.organisasi.edit');
+    Route::put('/{id}', [OrganisasiController::class, 'update'])->name('admin.organisasi.update');
+    Route::delete('/{id}', [OrganisasiController::class, 'destroy'])->name('admin.organisasi.destroy');
+});
+
+// Routes untuk profil penitip
+Route::middleware(['auth.penitip'])->group(function () {
+    Route::get('/penitip/profile', [App\Http\Controllers\PenitipController::class, 'profile'])->name('penitip.profile');
+    Route::get('/penitip/history', [App\Http\Controllers\PenitipController::class, 'historyTransaksi'])->name('penitip.history');
+    Route::get('/penitip/transaksi/{id}', [App\Http\Controllers\PenitipController::class, 'detailTransaksi'])->name('penitip.transaksi.detail');
+});
 
 Route::prefix('produk')->group(function () {
     Route::get('/index', [ProdukController::class, 'index'])->name('produk.index');
@@ -208,6 +228,9 @@ Route::get('/homePage', function () {
 })->name('customer.homePage');
 
 Route::get('/profile', function () {
+    if (session('user_type') === 'penitip') {
+        return redirect()->route('penitip.profile');
+    }
     return view('customer.profile');
 })->name('customer.profile');
 

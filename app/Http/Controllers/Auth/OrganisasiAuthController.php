@@ -20,34 +20,56 @@ class OrganisasiAuthController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return response()->json(['errors' => $validator->errors()], 422);
+                if ($request->expectsJson()) {
+                    return response()->json(['errors' => $validator->errors()], 422);
+                }
+                return back()->withErrors($validator)->withInput();
             }
 
             $organisasi = Organisasi::where('email', $request->email)->first();
             if (!$organisasi || !Hash::check($request->password, $organisasi->password)) {
-                return response()->json([
-                    'message' => 'Email atau password tidak valid'
-                ], 401);
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'message' => 'Email atau password tidak valid'
+                    ], 401);
+                }
+                return back()->withErrors(['email' => 'Email atau password tidak valid'])->withInput();
             }
 
             $organisasi->tokens()->delete();
             $token = $organisasi->createToken('auth_token', ['organisasi'])->plainTextToken;
 
-            return response()->json([
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'access_token' => $token,
+                    'token_type' => 'Bearer',
+                    'user' => [
+                        'id' => $organisasi->idOrganisasi,
+                        'email' => $organisasi->email,
+                        'nama' => $organisasi->nama,
+                        'userType' => 'organisasi',
+                        'logo' => $organisasi->logo
+                    ]
+                ]);
+            }
+
+            // Set session data untuk web interface
+            session([
                 'access_token' => $token,
-                'token_type' => 'Bearer',
-                'user' => [
-                    'id' => $organisasi->idOrganisasi,
-                    'email' => $organisasi->email,
-                    'nama' => $organisasi->nama,
-                    'userType' => 'organisasi',
-                    'logo' => $organisasi->logo
-                ]
+                'user_id' => $organisasi->idOrganisasi,
+                'user_type' => 'organisasi',
+                'user_name' => $organisasi->nama,
+                'user_email' => $organisasi->email,
             ]);
+
+            return redirect()->route('customer.homePage');
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error: ' . $e->getMessage()
-            ], 500);
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Error: ' . $e->getMessage()
+                ], 500);
+            }
+            return back()->with('error', 'Error: ' . $e->getMessage())->withInput();
         }
     }
 
@@ -62,7 +84,12 @@ class OrganisasiAuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            // Jika request dari API, kembalikan JSON
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+            // Jika request dari web, redirect dengan error
+            return redirect()->back()->withErrors($validator)->withInput();
         }
 
         DB::beginTransaction();
@@ -96,22 +123,47 @@ class OrganisasiAuthController extends Controller
             ]);
             DB::commit();
 
-            return response()->json([
-                'message' => 'Pendaftaran organisasi berhasil',
-                'user' => [
-                    'id' => $organisasi->idOrganisasi,
-                    'email' => $organisasi->email,
-                    'nama' => $organisasi->nama,
-                    'logo' => asset($organisasi->logo),
-                    'userType' => 'organisasi',
-                ]
-            ], 201);
+            // Jika API request, kembalikan JSON
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Pendaftaran organisasi berhasil',
+                    'user' => [
+                        'id' => $organisasi->idOrganisasi,
+                        'email' => $organisasi->email,
+                        'nama' => $organisasi->nama,
+                        'logo' => asset($organisasi->logo),
+                        'userType' => 'organisasi',
+                    ]
+                ], 201);
+            }
+
+            // Jika web request, set session dan redirect
+            session([
+                'access_token' => $organisasi->createToken('auth_token', ['organisasi'])->plainTextToken,
+                'user_id' => $organisasi->idOrganisasi,
+                'user_type' => 'organisasi',
+                'user_name' => $organisasi->nama,
+                'user_email' => $organisasi->email,
+            ]);
+
+            return redirect()->route('customer.homePage')
+                ->with('success', 'Pendaftaran organisasi berhasil!');
+                
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'message' => 'Pendaftaran gagal',
-                'error' => $e->getMessage()
-            ], 500);
+            
+            // Jika API request, kembalikan JSON
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Pendaftaran gagal',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+            
+            // Jika web request, redirect dengan error
+            return redirect()->back()
+                ->with('error', 'Pendaftaran gagal: ' . $e->getMessage())
+                ->withInput();
         }
     }
 
@@ -145,8 +197,15 @@ class OrganisasiAuthController extends Controller
             \App\Models\PersonalAccessToken::where('token', $tokenHash)->delete();
         }
 
-        return response()->json([
-            'message' => 'Berhasil logout'
-        ]);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Berhasil logout'
+            ]);
+        }
+
+        // Untuk web, hapus session dan redirect
+        session()->flush();
+        return redirect()->route('login')
+            ->with('success', 'Berhasil logout');
     }
 }

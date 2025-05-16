@@ -3,9 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Penitip;
+use App\Models\TransaksiPenitipan;
+use App\Models\TransaksiPenjualan;
+use App\Models\DetailTransaksiPenitipan;
+use App\Models\DetailTransaksiPenjualan;
+use App\Models\Produk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class PenitipController extends Controller
 {
@@ -125,5 +131,111 @@ class PenitipController extends Controller
 
         return redirect()->route('cs.penitip.index')
             ->with('success', 'Penitip berhasil dihapus!');
+    }
+
+    /**
+     * Menampilkan profil penitip
+     */
+    public function profile()
+    {
+        // Ambil ID penitip dari session
+        $idPenitip = session('user_id');
+        
+        // Dapatkan data penitip
+        $penitip = Penitip::findOrFail($idPenitip);
+        
+        // Dapatkan transaksi penitipan terbaru (5 terakhir)
+        $transaksiPenitipan = TransaksiPenitipan::where('idPenitip', $idPenitip)
+            ->orderBy('tanggalMasukPenitipan', 'desc')
+            ->limit(5)
+            ->get();
+            
+        // Dapatkan transaksi penjualan terbaru (5 terakhir)
+        // Kita perlu join beberapa tabel untuk mendapatkan transaksi penjualan dari barang yang dititipkan
+        $transaksiPenjualan = TransaksiPenjualan::join('detail_transaksi_penjualan', 'transaksi_penjualan.idTransaksi', '=', 'detail_transaksi_penjualan.idTransaksi')
+            ->join('produk', 'detail_transaksi_penjualan.idProduk', '=', 'produk.idProduk')
+            ->join('detail_transaksi_penitipan', 'produk.idProduk', '=', 'detail_transaksi_penitipan.idProduk')
+            ->join('transaksi_penitipan', 'detail_transaksi_penitipan.idTransaksiPenitipan', '=', 'transaksi_penitipan.idTransaksiPenitipan')
+            ->where('transaksi_penitipan.idPenitip', $idPenitip)
+            ->whereNotNull('transaksi_penjualan.tanggalLunas') // Hanya transaksi yang sudah lunas
+            ->orderBy('transaksi_penjualan.tanggalLunas', 'desc')
+            ->select('transaksi_penjualan.*', 'produk.deskripsi', 'produk.hargaJual')
+            ->limit(5)
+            ->get();
+            
+        return view('penitip.profile', compact('penitip', 'transaksiPenitipan', 'transaksiPenjualan'));
+    }
+    
+    /**
+     * Menampilkan histori transaksi
+     */
+    public function historyTransaksi(Request $request)
+    {
+        // Ambil ID penitip dari session
+        $idPenitip = session('user_id');
+        
+        // Filter berdasarkan tanggal jika ada
+        $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date'))->startOfDay() : Carbon::now()->subMonths(3)->startOfDay();
+        $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date'))->endOfDay() : Carbon::now()->endOfDay();
+        
+        // Query yang diperbaiki menggunakan relasi komisi
+        $transaksiPenjualan = TransaksiPenjualan::join('komisi', 'transaksi_penjualan.idTransaksi', '=', 'komisi.idTransaksi')
+            ->join('detail_transaksi_penjualan', 'transaksi_penjualan.idTransaksi', '=', 'detail_transaksi_penjualan.idTransaksi')
+            ->join('produk', 'detail_transaksi_penjualan.idProduk', '=', 'produk.idProduk')
+            ->where('komisi.idPenitip', $idPenitip)
+            ->whereBetween('transaksi_penjualan.tanggalLunas', [$startDate, $endDate])
+            ->orderBy('transaksi_penjualan.tanggalLunas', 'desc')
+            ->select('transaksi_penjualan.*', 'produk.deskripsi', 'produk.hargaJual')
+            ->distinct()
+            ->paginate(10);
+        
+        // Tambahkan variabel debug untuk troubleshooting
+        $debug = [
+            'idPenitip' => $idPenitip,
+            'startDate' => $startDate->format('Y-m-d H:i:s'),
+            'endDate' => $endDate->format('Y-m-d H:i:s'),
+            'count' => $transaksiPenjualan->count(),
+            'total' => $transaksiPenjualan->total()
+        ];
+        
+        return view('penitip.history', compact('transaksiPenjualan', 'startDate', 'endDate', 'debug'));
+    }    
+    /**
+     * Menampilkan detail transaksi
+     */
+    public function detailTransaksi($idTransaksi)
+    {
+        try {
+        // Ambil ID penitip dari session
+        $idPenitip = session('user_id');
+        
+        // Dapatkan detail transaksi
+        $transaksi = TransaksiPenjualan::findOrFail($idTransaksi);
+        
+        // Dapatkan produk yang dijual
+        $detailTransaksi = DetailTransaksiPenjualan::where('idTransaksi', $idTransaksi)
+            ->with('produk')
+            ->get();
+            
+        // Pastikan produk ini milik penitip yang login melalui komisi
+        $isOwner = \App\Models\Komisi::where('idTransaksi', $idTransaksi)
+            ->where('idPenitip', $idPenitip)
+            ->exists();
+        
+        if (!$isOwner) {
+            return redirect()->route('penitip.profile')->with('error', 'Anda tidak memiliki akses ke transaksi ini');
+        }
+        
+        // Dapatkan pembeli
+        $pembeli = $transaksi->pembeli;
+        
+        // Dapatkan komisi
+        $komisi = $transaksi->komisi;
+        
+    return view('penitip.detail-transaksi', compact('transaksi', 'detailTransaksi', 'pembeli', 'komisi'));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Error in detailTransaksi: " . $e->getMessage());
+            return redirect()->route('penitip.profile')->with('error', 'Terjadi kesalahan saat mengakses detail transaksi');
+        }
     }
 }

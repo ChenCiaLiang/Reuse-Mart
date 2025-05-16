@@ -67,5 +67,6 @@ class Kernel extends HttpKernel
         'auth.sanctum' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         'role' => \App\Http\Middleware\CheckRole::class,
         'auth.pembeli' => \App\Http\Middleware\AuthPembeli::class,
+        'auth.penitip' => \App\Http\Middleware\AuthPenitip::class,
     ];
 }
