@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Produk;
+use App\Models\DiskusiProduk;
 use App\Models\KategoriProduk;
 
 class ProdukController extends Controller
@@ -43,6 +44,12 @@ class ProdukController extends Controller
                             ->limit(4)
                             ->get();
         
-        return view('produk.show', compact('produk', 'gambarArray', 'produkTerkait'));
+        // Tambahkan kode ini untuk mengambil diskusi produk
+        $diskusi = DiskusiProduk::where('idProduk', $id)
+                            ->with(['pembeli', 'pegawai'])
+                            ->orderBy('tanggalDiskusi', 'desc')
+                            ->get();
+        
+        return view('produk.show', compact('produk', 'gambarArray', 'produkTerkait', 'diskusi'));
     }
 }

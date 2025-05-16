@@ -141,6 +141,77 @@
                     @endif
                 </div>
             </div>
+            
+            <!-- Diskusi Produk Section - Bagian Baru yang Ditambahkan -->
+            <div class="mt-12 border-t pt-8">
+                <h2 class="text-xl font-bold mb-6">Diskusi Produk</h2>
+                
+                <!-- Flash Message untuk notifikasi sukses -->
+                @if(session('success'))
+                    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
+                        <p>{{ session('success') }}</p>
+                    </div>
+                @endif
+                
+                <!-- Daftar Diskusi -->
+                <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                    @if(isset($diskusi) && count($diskusi) > 0)
+                        <div class="space-y-4">
+                            @foreach($diskusi as $item)
+                                <div class="p-4 rounded-lg {{ $item->idPembeli ? 'bg-gray-100' : 'bg-green-50' }}">
+                                    <div class="flex justify-between mb-2">
+                                        <div class="font-medium">
+                                            @if($item->idPembeli)
+                                                {{ $item->pembeli->nama ?? 'Pembeli' }}
+                                            @else
+                                                {{ $item->pegawai->nama ?? 'Customer Service' }}
+                                                <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full ml-2">CS</span>
+                                            @endif
+                                        </div>
+                                        <div class="text-sm text-gray-500">{{ $item->tanggalDiskusi->format('d M Y H:i') }}</div>
+                                    </div>
+                                    <p class="text-gray-700">{{ $item->pesan }}</p>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="py-4 text-center text-gray-500">
+                            <p>Belum ada diskusi untuk produk ini.</p>
+                        </div>
+                    @endif
+                </div>
+
+                <!-- Form Tambah Diskusi -->
+                @if(session('user_id') && (session('user_type') === 'pembeli' || (session('user_type') === 'pegawai' && session('user_role') === 'customer service')))
+                    <div class="bg-white border border-gray-200 rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Kirim Pertanyaan</h3>
+                        
+                        <form action="{{ route('produk.diskusi.store', $produk->idProduk) }}" method="POST">
+                            @csrf
+                            
+                            <div class="mb-4">
+                                <textarea name="pesan" rows="3" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                        placeholder="Tulis pertanyaan atau komentar tentang produk ini...">{{ old('pesan') }}</textarea>
+                                
+                                @error('pesan')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            
+                            <div class="flex justify-end">
+                                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                                    Kirim Pesan
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                @else
+                    <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4">
+                        <p>Silakan <a href="{{ route('login') }}" class="font-medium underline">login</a> sebagai pembeli atau customer service untuk bertanya tentang produk ini.</p>
+                    </div>
+                @endif
+            </div>
         </div>
         
         <!-- Related Products -->

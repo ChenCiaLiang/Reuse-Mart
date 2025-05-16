@@ -60,13 +60,19 @@ class PembeliAuthController extends Controller
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:50',
             'email' => 'required|string|email|max:50|unique:pembeli,email|unique:penitip,email|unique:organisasi',
-            'password' => 'required|string|min:6',
+            'password' => 'required|string|min:6|confirmed',
             'foto_profile' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            // Jika request mengharapkan JSON, kembalikan respons JSON
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+            // Jika request dari web form, kembalikan ke halaman dengan error
+            return redirect()->back()->withErrors($validator)->withInput();
         }
+        
         DB::beginTransaction();
         try {
             $fotoPath = null;
@@ -87,24 +93,50 @@ class PembeliAuthController extends Controller
                 'poin' => 0,
             ]);
             DB::commit();
-
-            return response()->json([
-                'message' => 'Pendaftaran pembeli berhasil',
-                'user' => [
-                    'id' => $pembeli->idPembeli,
-                    'email' => $pembeli->email,
-                    'nama' => $pembeli->nama,
-                    'foto_profile' => asset($pembeli->foto_profile),
-                    'poin' => $pembeli->poin,
-                    'userType' => 'pembeli',
-                ]
-            ], 201);
+            
+            // Jika request mengharapkan JSON, kembalikan respons JSON
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Pendaftaran pembeli berhasil',
+                    'user' => [
+                        'id' => $pembeli->idPembeli,
+                        'email' => $pembeli->email,
+                        'nama' => $pembeli->nama,
+                        'foto_profile' => asset($pembeli->foto_profile),
+                        'poin' => $pembeli->poin,
+                        'userType' => 'pembeli',
+                    ]
+                ], 201);
+            }
+            
+            // Untuk web form, buat token dan set session
+            $token = $pembeli->createToken('auth_token', ['pembeli'])->plainTextToken;
+            
+            session([
+                'access_token' => $token,
+                'user_id' => $pembeli->idPembeli, 
+                'user_type' => 'pembeli',
+                'user_name' => $pembeli->nama,
+                'user_email' => $pembeli->email,
+                'user_foto_profile' => $pembeli->foto_profile,
+                'user_poin' => $pembeli->poin,
+            ]);
+            
+            return redirect()->route('customer.homePage')->with('success', 'Registrasi berhasil!');
+            
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'message' => 'Pendaftaran gagal',
-                'error' => $e->getMessage()
-            ], 500);
+            
+            // Jika request mengharapkan JSON, kembalikan respons JSON
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Pendaftaran gagal',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+            
+            // Untuk web form, kembalikan ke halaman dengan error
+            return redirect()->back()->withErrors(['error' => 'Pendaftaran gagal: ' . $e->getMessage()])->withInput();
         }
     }
 

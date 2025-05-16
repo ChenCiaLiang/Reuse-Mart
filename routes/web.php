@@ -67,8 +67,11 @@ Route::post('/logout', function () {
 
 // Register untuk Pembeli
 Route::get('/register/pembeli', function () {
-    return view('auth.register-pembeli');
+    return view('auth.register.pembeli');
 })->name('register.pembeli');
+
+// Registrasi Pembeli
+Route::post('/register/pembeli', [App\Http\Controllers\Auth\PembeliAuthController::class, 'register'])->name('register.pembeli.submit');
 
 // Register untuk Organisasi
 Route::get('/register/organisasi', function () {
@@ -95,6 +98,24 @@ Route::prefix('pegawai')->group(function () {
     Route::delete('/{id}', [PegawaiController::class, 'destroy'])->name('admin.pegawai.destroy');
 });
 
+// Manajemen Alamat Pembeli
+Route::middleware(['auth.pembeli'])->prefix('alamat')->name('alamat.')->group(function() {
+    Route::get('/', [App\Http\Controllers\AlamatController::class, 'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\AlamatController::class, 'create'])->name('create');
+    Route::post('/', [App\Http\Controllers\AlamatController::class, 'store'])->name('store');
+    Route::get('/search', [App\Http\Controllers\AlamatController::class, 'search'])->name('search');
+    Route::get('/{id}', [App\Http\Controllers\AlamatController::class, 'show'])->name('show');
+    Route::get('/{id}/edit', [App\Http\Controllers\AlamatController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [App\Http\Controllers\AlamatController::class, 'update'])->name('update');
+    Route::delete('/{id}', [App\Http\Controllers\AlamatController::class, 'destroy'])->name('destroy');
+});
+
+// Rute untuk diskusi produk
+Route::get('/produk/{id}/diskusi', [App\Http\Controllers\DiskusiProdukController::class, 'index'])
+    ->name('produk.diskusi');
+
+Route::post('/produk/{id}/diskusi', [App\Http\Controllers\DiskusiProdukController::class, 'store'])
+    ->name('produk.diskusi.store');
 
 // Halaman-halaman dashboard yang memerlukan autentikasi
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
