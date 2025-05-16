@@ -130,10 +130,7 @@ Route::prefix('produk')->group(function () {
     Route::get('/show/{id}', [ProdukController::class, 'show'])->name('produk.show');
 });
 
-Route::get('/dashboard', function () {
-    return view('admin.dashboard');
-})->name('admin.dashboard');
-
+Route::prefix('admin')->group(function () {
 Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
 // Routes untuk mengelola pegawai
 Route::prefix('pegawai')->group(function () {
@@ -144,6 +141,7 @@ Route::prefix('pegawai')->group(function () {
     Route::get('/{id}/edit', [PegawaiController::class, 'edit'])->name('admin.pegawai.edit');
     Route::put('/{id}', [PegawaiController::class, 'update'])->name('admin.pegawai.update');
     Route::delete('/{id}', [PegawaiController::class, 'destroy'])->name('admin.pegawai.destroy');
+});
 });
 
 Route::prefix('penitip')->group(function () {
@@ -180,9 +178,10 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     /*Route::middleware(['role:admin'])->prefix('admin')->group(function () {
         Route::get('/dashboard', function () {
             return view('admin.dashboard');
-        })->name('admin.dashboard');*/
+        })->name('admin.dashboard');
+        Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
     // Routes untuk mengelola pegawai
-    /*Route::prefix('pegawai')->group(function () {
+    Route::prefix('pegawai')->group(function () {
         Route::get('/', [PegawaiController::class, 'index'])->name('admin.pegawai.index');
         Route::get('/create', [PegawaiController::class, 'create'])->name('admin.pegawai.create');
         Route::post('/', [PegawaiController::class, 'store'])->name('admin.pegawai.store');
