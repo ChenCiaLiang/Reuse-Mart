@@ -67,6 +67,37 @@
                         </a>
                     </div>
                 </div>
+
+                <!-- Alamat Section -->
+                <div class="bg-white p-6 rounded-lg shadow-sm mt-4 border border-gray-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-2 font-semibold text-gray-900">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="tracking-wide">Alamat Saya</span>
+                        </div>
+                        <a href="{{ route('alamat.index') }}" class="text-green-600 hover:text-green-800 font-medium text-sm flex items-center">
+                            Kelola Alamat
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                    </div>
+                    
+                    <div class="text-gray-700">
+                        <p class="mb-3">Kelola alamat pengiriman Anda untuk memudahkan proses belanja.</p>
+                        <div class="flex mt-4">
+                            <a href="{{ route('alamat.create') }}" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                                </svg>
+                                Tambah Alamat Baru
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Recent Orders Card -->
                 <div class="bg-white p-6 rounded-lg shadow-sm mt-4">
                     <div class="flex items-center space-x-2 font-semibold text-gray-900 leading-8 mb-4">

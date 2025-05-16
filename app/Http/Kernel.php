@@ -66,5 +66,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'auth.sanctum' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         'role' => \App\Http\Middleware\CheckRole::class,
+        'auth.pembeli' => \App\Http\Middleware\AuthPembeli::class,
     ];
 }
