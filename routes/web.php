@@ -110,10 +110,7 @@ Route::prefix('produk')->group(function () {
     Route::get('/show/{id}', [ProdukController::class, 'show'])->name('produk.show');
 });
 
-Route::get('/dashboard', function () {
-    return view('admin.dashboard');
-})->name('admin.dashboard');
-
+Route::prefix('admin')->group(function () {
 Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
 // Routes untuk mengelola pegawai
 Route::prefix('pegawai')->group(function () {
@@ -124,6 +121,7 @@ Route::prefix('pegawai')->group(function () {
     Route::get('/{id}/edit', [PegawaiController::class, 'edit'])->name('admin.pegawai.edit');
     Route::put('/{id}', [PegawaiController::class, 'update'])->name('admin.pegawai.update');
     Route::delete('/{id}', [PegawaiController::class, 'destroy'])->name('admin.pegawai.destroy');
+});
 });
 
 Route::prefix('penitip')->group(function () {
