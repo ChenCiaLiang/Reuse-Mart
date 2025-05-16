@@ -160,9 +160,10 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     /*Route::middleware(['role:admin'])->prefix('admin')->group(function () {
         Route::get('/dashboard', function () {
             return view('admin.dashboard');
-        })->name('admin.dashboard');*/
+        })->name('admin.dashboard');
+        Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
     // Routes untuk mengelola pegawai
-    /*Route::prefix('pegawai')->group(function () {
+    Route::prefix('pegawai')->group(function () {
         Route::get('/', [PegawaiController::class, 'index'])->name('admin.pegawai.index');
         Route::get('/create', [PegawaiController::class, 'create'])->name('admin.pegawai.create');
         Route::post('/', [PegawaiController::class, 'store'])->name('admin.pegawai.store');
