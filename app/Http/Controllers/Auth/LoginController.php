@@ -125,4 +125,21 @@ class LoginController extends Controller
             ], 500);
         }
     }
+
+    public function logout(Request $request)
+    {
+        dd($request->all());
+        $token = $request->user()->currentAccessToken();
+        if ($token) {
+            $token->delete();
+        } else {
+            // Hapus token secara manual jika currentAccessToken() null
+            $tokenHash = hash('sha256', $request->bearerToken());
+            \App\Models\PersonalAccessToken::where('token', $tokenHash)->delete();
+        }
+
+        return response()->json([
+            'message' => 'Berhasil logout'
+        ]);
+    }
 }

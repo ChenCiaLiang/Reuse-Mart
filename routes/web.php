@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\PegawaiController;
+use App\Http\Controllers\PenitipController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Http\Request;
@@ -37,12 +38,24 @@ Route::post('/login', function (Request $request) {
             'user_foto_profile' => $data['user']['foto_profile'] ?? null,
             'user_poin' => $data['user']['poin'] ?? null,
             'user_idJabatan' => $data['user']['idJabatan'] ?? null,
+            'user_jabatan' => $data['user']['jabatan'] ?? null,
         ]);
 
         // Redirect berdasarkan tipe user
         switch ($data['user']['userType']) {
             case 'pegawai':
-                return redirect()->route('admin.dashboard');
+                switch ($data['user']['jabatan']) {
+                    case 'Admin':
+                        return redirect()->route('admin.dashboard');
+                    case 'Customer Service':
+                        return redirect()->route('cs.penitip.index');
+                    case 'Pegawai Gudang':
+                        return redirect()->route('gudang.dashboard');
+                    case 'Hunter':
+                        return redirect()->route('hunter.dashboard');
+                    default:
+                        return redirect('/');
+                }
             case 'pembeli':
                 return redirect()->route('customer.homePage');
             case 'penitip':
@@ -61,8 +74,22 @@ Route::post('/login', function (Request $request) {
 })->name('login.submit');
 
 // Halaman Logout
-Route::post('/logout', function () {
-    return view('logout');
+Route::post('/logout', function (Request $request) {
+    if (session()->has('access_token')) {
+        $token = session('access_token');
+        $request->server->set('HTTP_AUTHORIZATION', 'Bearer ' . $token);
+        $controller = new \App\Http\Controllers\Auth\LoginController();
+        $controller->logout($request);
+    }
+
+    // 2. Hapus semua data session
+    session()->flush();
+
+    // 3. Regenerate CSRF token untuk keamanan
+    session()->regenerateToken();
+
+    // 4. Redirect ke halaman login
+    return redirect('/login')->with('success', 'Anda berhasil logout.');
 })->name('logout');
 
 // Register untuk Pembeli
@@ -83,6 +110,7 @@ Route::prefix('produk')->group(function () {
 Route::get('/dashboard', function () {
     return view('admin.dashboard');
 })->name('admin.dashboard');
+
 Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
 // Routes untuk mengelola pegawai
 Route::prefix('pegawai')->group(function () {
@@ -95,6 +123,15 @@ Route::prefix('pegawai')->group(function () {
     Route::delete('/{id}', [PegawaiController::class, 'destroy'])->name('admin.pegawai.destroy');
 });
 
+Route::prefix('penitip')->group(function () {
+    Route::get('/', [PenitipController::class, 'index'])->name('cs.penitip.index');
+    Route::get('/create', [PenitipController::class, 'create'])->name('cs.penitip.create');
+    Route::post('/', [PenitipController::class, 'store'])->name('cs.penitip.store');
+    Route::get('/{id}', [PenitipController::class, 'show'])->name('cs.penitip.show');
+    Route::get('/{id}/edit', [PenitipController::class, 'edit'])->name('cs.penitip.edit');
+    Route::put('/{id}', [PenitipController::class, 'update'])->name('cs.penitip.update');
+    Route::delete('/{id}', [PenitipController::class, 'destroy'])->name('cs.penitip.destroy');
+});
 
 // Halaman-halaman dashboard yang memerlukan autentikasi
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
@@ -116,13 +153,13 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
     });*/
 
     // Dashboard Customer Service
-    Route::middleware(['role:customer service'])->prefix('cs')->group(function () {
-        Route::get('/dashboard', function () {
-            return view('cs.dashboard');
-        })->name('cs.dashboard');
+    // Route::middleware(['role:customer service'])->prefix('cs')->group(function () {
+    //     Route::get('/dashboard', function () {
+    //         return view('cs.dashboard');
+    //     })->name('cs.dashboard');
 
-        // Route lain untuk CS
-    });
+    //     // Route lain untuk CS
+    // });
 
     // Dashboard Pegawai Gudang
     Route::middleware(['role:pegawai gudang,gudang'])->prefix('gudang')->group(function () {

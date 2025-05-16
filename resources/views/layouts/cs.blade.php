@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - ReUseMart</title>
+    <title>Customer Service Dashboard - ReUseMart</title>
     @vite('resources/css/app.css')
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 </head>
@@ -15,34 +15,13 @@
                 <img src="{{ asset('images/Logo/Logo.jpg') }}" alt="ReUseMart Logo" class="h-8 rounded">
                 <span class="text-lg font-bold">ReUseMart</span>
             </div>
-            <p class="text-xs text-green-300 mt-1">Panel Admin</p>
+            <p class="text-xs text-green-300 mt-1">Panel Customer Service</p>
         </div>
         
         <nav class="mt-5">
-            <a href="{{ route('admin.dashboard') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('admin.dashboard') ? 'bg-green-700' : '' }}">
-                <i class="fas fa-home mr-3"></i>
-                <span>Dashboard</span>
-            </a>
-            
-            <a href="{{ route('admin.pegawai.index') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('admin.pegawai.*') ? 'bg-green-700' : '' }}">
+            <a href="{{ route('cs.penitip.index') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('cs.penitip.*') ? 'bg-green-700' : '' }}">
                 <i class="fas fa-users mr-3"></i>
-                <span>Manajemen Pegawai</span>
-            </a>
-            
-            <!-- Tambahkan menu lain sesuai kebutuhan -->
-            {{-- <a href="#" class="flex items-center px-6 py-3 hover:bg-green-700">
-                <i class="fas fa-user-tie mr-3"></i>
-                <span>Manajemen Jabatan</span>
-            </a> --}}
-            
-            <a href="#" class="flex items-center px-6 py-3 hover:bg-green-700">
-                <i class="fas fa-building mr-3"></i>
-                <span>Manajemen Organisasi</span>
-            </a>
-            
-            <a href="#" class="flex items-center px-6 py-3 hover:bg-green-700">
-                <i class="fas fa-gift mr-3"></i>
-                <span>Manajemen Merchandise</span>
+                <span>Manajemen Penitip</span>
             </a>
         </nav>
         
@@ -63,18 +42,18 @@
         <header class="bg-white shadow-md px-6 py-3 flex justify-between items-center">
             <div>
                 <h1 class="text-lg font-semibold text-gray-700">
-                    @if(request()->routeIs('admin.dashboard'))
+                    @if(request()->routeIs('cs.dashboard'))
                         Dashboard
-                    @elseif(request()->routeIs('admin.pegawai.index'))
-                        Manajemen Pegawai
-                    @elseif(request()->routeIs('admin.pegawai.create'))
-                        Tambah Pegawai Baru
-                    @elseif(request()->routeIs('admin.pegawai.edit'))
-                        Edit Pegawai
-                    @elseif(request()->routeIs('admin.pegawai.show'))
-                        Detail Pegawai
+                    @elseif(request()->routeIs('cs.penitip.index'))
+                        Manajemen Penitip
+                    @elseif(request()->routeIs('cs.penitip.create'))
+                        Tambah Penitip Baru
+                    @elseif(request()->routeIs('cs.penitip.edit'))
+                        Edit Penitip
+                    @elseif(request()->routeIs('cs.penitip.show'))
+                        Detail Penitip
                     @else
-                        ReUseMart Admin Panel
+                        ReUseMart Customer Service Panel
                     @endif
                 </h1>
             </div>

@@ -59,7 +59,7 @@ class PembeliAuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:50',
-            'email' => 'required|string|email|max:50|unique:pembeli,email|unique:penitip,email|unique:organisasi',
+            'email' => 'required|string|email|max:50|unique:pembeli,email|unique:penitip,email|unique:organisasi,email',
             'password' => 'required|string|min:6',
             'foto_profile' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
