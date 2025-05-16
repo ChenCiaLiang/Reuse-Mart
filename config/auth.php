@@ -51,13 +51,11 @@ return [
             'provider' => 'pembelis',
         ],
 
-        // Tambahkan guard untuk penitip
         'penitip' => [
             'driver' => 'session',
             'provider' => 'penitips',
         ],
 
-        // Tambahkan guard untuk organisasi
         'organisasi' => [
             'driver' => 'session',
             'provider' => 'organisasis',

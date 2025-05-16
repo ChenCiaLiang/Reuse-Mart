@@ -41,7 +41,7 @@ class Kernel extends HttpKernel
         'api' => [
             'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-            \App\Http\Middleware\AttachTokenToUser::class, // Tambahkan ini
+            \App\Http\Middleware\AttachTokenToUser::class,
         ],
     ];
 

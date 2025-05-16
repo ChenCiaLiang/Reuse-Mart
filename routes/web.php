@@ -18,28 +18,17 @@ Route::get('/', function () {
 // Halaman Login
 Route::get('/login', function () {
     return view('auth.login');
-})->name('login');
+})->name('login')->middleware('guest');
 
 Route::post('/login', function (Request $request) {
     $loginController = new LoginController();
     $result = $loginController->login($request);
 
-    // Jika ini adalah response JSON, ambil kontennya
     $data = json_decode($result->getContent(), true);
-
     if ($result->getStatusCode() === 200) {
-
         session([
             'access_token' => $data['access_token'],
-            'user_id' => $data['user']['id'],
-            'user_type' => $data['user']['userType'],
-            'user_name' => $data['user']['nama'],
-            'user_username' => $data['user']['username'] ?? null,
-            'user_email' => $data['user']['email'] ?? null,
-            'user_foto_profile' => $data['user']['foto_profile'] ?? null,
-            'user_poin' => $data['user']['poin'] ?? null,
-            'user_idJabatan' => $data['user']['idJabatan'] ?? null,
-            'user_jabatan' => $data['user']['jabatan'] ?? null,
+            'user' => $data['user'],
         ]);
 
         // Redirect berdasarkan tipe user
@@ -74,24 +63,25 @@ Route::post('/login', function (Request $request) {
     ])->withInput();
 })->name('login.submit');
 
-// Halaman Logout
-Route::post('/logout', function (Request $request) {
-    if (session()->has('access_token')) {
-        $token = session('access_token');
-        $request->server->set('HTTP_AUTHORIZATION', 'Bearer ' . $token);
-        $controller = new \App\Http\Controllers\Auth\LoginController();
-        $controller->logout($request);
-    }
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-    // 2. Hapus semua data session
-    session()->flush();
+// Route::post('/logout', function (Request $request) {
+//     if (session()->has('access_token')) {
+//         $token = session('access_token');
+//         $request->server->set('HTTP_AUTHORIZATION', 'Bearer ' . $token);
+//         $controller = new \App\Http\Controllers\Auth\LoginController();
+//         $controller->logout($request);
+//     }
 
-    // 3. Regenerate CSRF token untuk keamanan
-    session()->regenerateToken();
+//     // 2. Hapus semua data session
+//     session()->flush();
 
-    // 4. Redirect ke halaman login
-    return redirect('/login')->with('success', 'Anda berhasil logout.');
-})->name('logout');
+//     // 3. Regenerate CSRF token untuk keamanan
+//     session()->regenerateToken();
+
+//     // 4. Redirect ke halaman login
+//     return redirect('/login')->with('success', 'Anda berhasil logout.');
+// })->name('logout');
 
 // Register untuk Pembeli
 Route::get('/register/pembeli', function () {
@@ -131,17 +121,17 @@ Route::prefix('produk')->group(function () {
 });
 
 Route::prefix('admin')->group(function () {
-Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
-// Routes untuk mengelola pegawai
-Route::prefix('pegawai')->group(function () {
-    Route::get('/', [PegawaiController::class, 'index'])->name('admin.pegawai.index');
-    Route::get('/create', [PegawaiController::class, 'create'])->name('admin.pegawai.create');
-    Route::post('/', [PegawaiController::class, 'store'])->name('admin.pegawai.store');
-    Route::get('/{id}', [PegawaiController::class, 'show'])->name('admin.pegawai.show');
-    Route::get('/{id}/edit', [PegawaiController::class, 'edit'])->name('admin.pegawai.edit');
-    Route::put('/{id}', [PegawaiController::class, 'update'])->name('admin.pegawai.update');
-    Route::delete('/{id}', [PegawaiController::class, 'destroy'])->name('admin.pegawai.destroy');
-});
+    Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
+    // Routes untuk mengelola pegawai
+    Route::prefix('pegawai')->group(function () {
+        Route::get('/', [PegawaiController::class, 'index'])->name('admin.pegawai.index');
+        Route::get('/create', [PegawaiController::class, 'create'])->name('admin.pegawai.create');
+        Route::post('/', [PegawaiController::class, 'store'])->name('admin.pegawai.store');
+        Route::get('/{id}', [PegawaiController::class, 'show'])->name('admin.pegawai.show');
+        Route::get('/{id}/edit', [PegawaiController::class, 'edit'])->name('admin.pegawai.edit');
+        Route::put('/{id}', [PegawaiController::class, 'update'])->name('admin.pegawai.update');
+        Route::delete('/{id}', [PegawaiController::class, 'destroy'])->name('admin.pegawai.destroy');
+    });
 });
 
 Route::prefix('penitip')->group(function () {
@@ -174,6 +164,7 @@ Route::post('/produk/{id}/diskusi', [App\Http\Controllers\DiskusiProdukControlle
 
 // Halaman-halaman dashboard yang memerlukan autentikasi
 Route::middleware(['auth:sanctum', 'verified'])->group(function () {
+
     // Dashboard Admin
     /*Route::middleware(['role:admin'])->prefix('admin')->group(function () {
         Route::get('/dashboard', function () {
@@ -219,12 +210,20 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
         // Route lain untuk hunter
     });
 
-    // Dashboard Pembeli
-
+    // Dashboard Customer
 });
+
 Route::get('/homePage', function () {
     return view('customer.homePage');
 })->name('customer.homePage');
+
+Route::get('/profile', function () {
+    return view('customer.profile');
+})->name('customer.profile');
+
+// Route::get('/homePage', function () {
+//     return view('customer.homePage');
+// })->name('customer.homePage');
 
 Route::get('/profile', function () {
     if (session('user_type') === 'penitip') {

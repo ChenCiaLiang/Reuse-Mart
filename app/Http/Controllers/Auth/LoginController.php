@@ -36,7 +36,6 @@ class LoginController extends Controller
                 if ($user && Hash::check($password, $user->password)) {
                     $user->tokens()->delete();
                     $token = $user->createToken('auth_token', ['pembeli'])->plainTextToken;
-
                     return response()->json([
                         'access_token' => $token,
                         'token_type' => 'Bearer',
@@ -100,7 +99,6 @@ class LoginController extends Controller
                     $jabatan = Jabatan::find($user->idJabatan);
                     $role = strtolower($jabatan->nama);
                     $token = $user->createToken('auth_token', ['pegawai', $role])->plainTextToken;
-
                     return response()->json([
                         'access_token' => $token,
                         'token_type' => 'Bearer',
@@ -128,18 +126,15 @@ class LoginController extends Controller
 
     public function logout(Request $request)
     {
-        dd($request->all());
-        $token = $request->user()->currentAccessToken();
-        if ($token) {
-            $token->delete();
-        } else {
-            // Hapus token secara manual jika currentAccessToken() null
-            $tokenHash = hash('sha256', $request->bearerToken());
-            \App\Models\PersonalAccessToken::where('token', $tokenHash)->delete();
-        }
+        $id = $request->session()->all()['user']['id'];
+        \App\Models\PersonalAccessToken::where('tokenable_id', $id)->delete();
+        // if ($id) {
+        //     $id->delete();
+        // } else {
+        //     // Hapus token secara manual jika currentAccessToken() null
+        //     // $tokenHash = hash('sha256', $request->bearerToken());
+        // }
 
-        return response()->json([
-            'message' => 'Berhasil logout'
-        ]);
+        return redirect()->route('login')->with('success', 'Logout berhasil');
     }
 }
