@@ -19,84 +19,44 @@ use Illuminate\Support\Facades\Validator;
 
 class PegawaiController extends Controller
 {
+    /**
+     * Menampilkan daftar pegawai
+     */
     public function index(Request $request)
     {
         // Pencarian pegawai
         $search = $request->input('search');
 
         $pegawai = Pegawai::when($search, function ($query) use ($search) {
-            return $query->where('nama', 'like', '%' . $search . '%')
-                ->orWhere('idPegawai', 'like', '%' . $search . '%')
-                ->orWhere('username', 'like', '%' . $search . '%');
-        })
+                return $query->where('nama', 'like', '%' . $search . '%')
+                    ->orWhere('email', 'like', '%' . $search . '%')
+                    ->orWhere('noTelp', 'like', '%' . $search . '%')
+                    ->orWhere('alamat', 'like', '%' . $search . '%')
+                    ->orWhere('tanggalLahir', 'like', '%' . $search . '%')
+                    ->orWhereHas('jabatan', function($jq) use ($search) {
+                        $jq->where('nama', 'like', '%' . $search . '%');
+                    });
+            })
             ->orderBy('nama')
             ->paginate(10);
 
         return view('pegawai.admin.manajemenPegawai.index', compact('pegawai', 'search'));
     }
 
+    /**
+     * Menampilkan form tambah pegawai
+     */
     public function create()
     {
         $jabatan = Jabatan::all();
         return view('pegawai.admin.manajemenPegawai.create', compact('jabatan'));
     }
 
+    /**
+     * Menyimpan data pegawai baru
+     */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'nama' => 'required|string|max:50',
-            'email' => 'required|string|email|max:50|unique:pembeli,email|unique:penitip,email|unique:organisasi,email|unique:pegawai,email',
-            'password' => 'required|string|min:6|confirmed',
-            'noTelp' => 'required|string|max:15',
-            'alamat' => 'required|string|max:255',
-            'tanggalLahir' => 'required|date',
-            'idJabatan' => 'required|exists:jabatan,idJabatan',
-        ]);
-
-        if ($validator->fails()) {
-            if ($request->expectsJson()) {
-                return response()->json(['errors' => $validator->errors()], 422);
-            }
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
-
-        $pegawai = Pegawai::create([
-            'nama' => $request->nama,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'noTelp' => $request->noTelp,
-            'alamat' => $request->alamat,
-            'tanggalLahir' => $request->tanggalLahir,
-            'idJabatan' => $request->idJabatan,
-        ]);
-
-        if ($request->expectsJson()) {
-            return response()->json([
-                'message' => 'Pegawai berhasil terdaftar',
-                'data' => $pegawai,
-            ], 201);
-        }
-
-        return redirect()->route('admin.pegawai.index')->with('success', 'Pegawai berhasil terdaftar');
-    }
-
-    public function show($id)
-    {
-        $pegawai = Pegawai::findOrFail($id);
-        return view('pegawai.admin.manajemenPegawai.show', compact('pegawai'));
-    }
-
-    public function edit($id)
-    {
-        $pegawai = Pegawai::findOrFail($id);
-        $jabatan = Jabatan::orderBy('nama')->get();
-        return view('pegawai.admin.manajemenPegawai.edit', compact('pegawai', 'jabatan'));
-    }
-
-    public function update(Request $request, $id)
-    {
-        $pegawai = Pegawai::findOrFail($id);
-
         // Validasi input
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:50',
@@ -115,25 +75,98 @@ class PegawaiController extends Controller
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
+        // Buat pegawai baru
+        $pegawai = Pegawai::create([
+            'nama' => $request->nama,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'noTelp' => $request->noTelp,
+            'alamat' => $request->alamat,
+            'tanggalLahir' => $request->tanggalLahir,
+            'idJabatan' => $request->idJabatan,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Pegawai berhasil ditambahkan',
+                'data' => $pegawai
+            ], 201);
+        }
+
+        return redirect()->route('admin.pegawai.index')
+            ->with('success', 'Pegawai berhasil ditambahkan');
+    }
+
+    /**
+     * Menampilkan detail pegawai
+     */
+    public function show($id)
+    {
+        $pegawai = Pegawai::findOrFail($id);
+        return view('pegawai.admin.manajemenPegawai.show', compact('pegawai'));
+    }
+
+    /**
+     * Menampilkan form edit pegawai
+     */
+    public function edit($id)
+    {
+        $pegawai = Pegawai::findOrFail($id);
+        $jabatan = Jabatan::orderBy('nama')->get();
+        return view('pegawai.admin.manajemenPegawai.edit', compact('pegawai', 'jabatan'));
+    }
+
+    /**
+     * Update data pegawai
+     */
+    public function update(Request $request, $id)
+    {
+        $pegawai = Pegawai::findOrFail($id);
+        
+        // Validasi input
+        $validator = Validator::make($request->all(), [
+            'nama' => 'required|string|max:50',
+            'email' => 'required|string|email|max:50|unique:pembeli,email|unique:penitip,email|unique:organisasi,email|unique:pegawai,email,' . $id . ',idPegawai',
+            'password' => 'nullable|string|min:6|confirmed',
+            'noTelp' => 'required|string|max:15',
+            'alamat' => 'required|string|max:255',
+            'tanggalLahir' => 'required|date',
+            'idJabatan' => 'required|exists:jabatan,idJabatan',
+        ]);
+
+        if ($validator->fails()) {
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
         // Update pegawai
         $pegawai->nama = $request->nama;
-        $pegawai->username = $request->username;
+        $pegawai->email = $request->email;
         if ($request->filled('password')) {
             $pegawai->password = Hash::make($request->password);
         }
+        $pegawai->noTelp = $request->noTelp;
+        $pegawai->alamat = $request->alamat;
+        $pegawai->tanggalLahir = $request->tanggalLahir;
         $pegawai->idJabatan = $request->idJabatan;
         $pegawai->save();
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'Pegawai berhasil diupdate',
-                'data' => $pegawai,
-            ], 201);
+                'message' => 'Data pegawai berhasil diperbarui',
+                'data' => $pegawai
+            ]);
         }
 
-        return redirect()->route('admin.pegawai.index')->with('success', 'Pegawai berhasil diupdate');
+        return redirect()->route('admin.pegawai.index')
+            ->with('success', 'Data pegawai berhasil diperbarui');
     }
 
+    /**
+     * Hapus data pegawai
+     */
     public function destroy(Request $request, $id)
     {
         $pegawai = Pegawai::findOrFail($id);
@@ -141,15 +174,14 @@ class PegawaiController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'Pegawai berhasil dihapus',
-                'data' => $pegawai,
-            ], 201);
+                'message' => 'Pegawai berhasil dihapus'
+            ]);
         }
 
-        return redirect()->route('admin.pegawai.index')->with('success', 'Pegawai berhasil dihapus');
+        return redirect()->route('admin.pegawai.index')
+            ->with('success', 'Pegawai berhasil dihapus');
     }
-
-    public function adminDashboard()
+     public function adminDashboard()
     {
         // Data jumlah pengguna
         $totalPegawai = Pegawai::count();

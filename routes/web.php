@@ -8,6 +8,7 @@ use App\Http\Controllers\OrganisasiController;
 use App\Http\Controllers\PembeliController;
 use App\Http\Controllers\PenitipController;
 use App\Http\Controllers\ProdukController;
+use App\Http\Controllers\RequestDonasiController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -30,6 +31,12 @@ Route::middleware('guest')->group(function () {
             return view('auth.register.organisasi');
         })->name('organisasiPage');
         Route::post('/organisasi', [AuthController::class, 'registerOrganisasi'])->name('organisasi');
+    });
+
+    Route::prefix('produk')->group(function () {
+        Route::get('/index', [ProdukController::class, 'index'])->name('produk.index');
+        Route::get('/show/{id}', [ProdukController::class, 'show'])->name('produk.show');
+        Route::get('/popup', [ProdukController::class, 'indexPopup'])->name('produk.showPopup');
     });
 });
 
@@ -84,6 +91,20 @@ Route::prefix('pegawai')->middleware('RolePegawai:pegawai')->group(function () {
         Route::get('/dashboard', function () {
             return view('pegawai.cs.index');
         })->name('dashboard');
+    });
+
+    //owner
+    Route::prefix('owner')->name('owner.')->group(function () {
+        Route::get('/dashboard', [RequestDonasiController::class, 'dashboard'])->name('dashboard');
+        // Manajemen donasi
+        Route::prefix('donasi')->name('donasi.')->group(function () {
+            Route::get('/request', [RequestDonasiController::class, 'index'])->name('request');
+            Route::get('/history', [RequestDonasiController::class, 'historyDonasi'])->name('history');
+            Route::get('/barang', [RequestDonasiController::class, 'barangDonasi'])->name('barang');
+            Route::post('/alokasi', [RequestDonasiController::class, 'alokasikanBarang'])->name('alokasi');
+            Route::get('/edit/{id}', [RequestDonasiController::class, 'editDonasi'])->name('edit');
+            Route::put('/update/{id}', [RequestDonasiController::class, 'updateDonasi'])->name('update');
+        });
     });
 });
 

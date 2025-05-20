@@ -27,8 +27,10 @@
                     </ul>
                 </nav>
                 <div class="flex items-center space-x-4">
+                    <a href="#" class="hover:text-green-200"><i class="fas fa-search"></i></a>
                     <a href="#" class="hover:text-green-200"><i class="fas fa-shopping-cart"></i></a>
                     <a href="{{ url('/login') }}" class="bg-white text-green-700 hover:bg-gray-100 px-3 py-1 rounded text-sm font-medium transition duration-300">Masuk</a>
+                    <a href="{{ url('/register/pembeli') }}" class="bg-white text-green-700 hover:bg-gray-100 px-3 py-1 rounded text-sm font-medium transition duration-300">Daftar</a>
                     <button class="md:hidden hover:text-green-200"><i class="fas fa-bars"></i></button>
                 </div>
             </div>
@@ -49,69 +51,11 @@
 
     <!-- Main Content -->
     <main class="container mx-auto px-4 py-8">
-        <!-- Search and Filter Section -->
-        <div class="bg-white rounded-lg shadow-md p-4 mb-8">
-            <form action="{{ route('produk.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="md:col-span-2">
-                    <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Cari Produk</label>
-                    <input type="text" name="search" id="search" value="{{ $search ?? '' }}" 
-                        placeholder="Cari berdasarkan deskripsi produk..." 
-                        class="w-full border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-600">
-                </div>
-                
-                <div>
-                    <label for="kategori" class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
-                    <select name="kategori" id="kategori" 
-                            class="w-full border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-600">
-                        <option value="">Semua Kategori</option>
-                        @foreach($kategoriList as $k)
-                            <option value="{{ $k->idKategori }}" {{ isset($kategori) && $kategori == $k->idKategori ? 'selected' : '' }}>
-                                {{ $k->nama }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                
-                <div class="flex items-end">
-                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition duration-300">
-                        <i class="fas fa-search mr-2"></i>Cari
-                    </button>
-                    @if($search || $kategori)
-                        <a href="{{ route('produk.index') }}" class="ml-2 bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-md transition duration-300">
-                            Reset
-                        </a>
-                    @endif
-                </div>
-            </form>
-        </div>
-
-        <!-- Search Results Info -->
-        @if($search || $kategori)
-            <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 mb-6">
-                <p>
-                    Menampilkan hasil pencarian untuk 
-                    @if($search)
-                        kata kunci "<strong>{{ $search }}</strong>"
-                    @endif
-                    
-                    @if($search && $kategori)
-                        pada 
-                    @endif
-                    
-                    @if($kategori)
-                        kategori "<strong>{{ $kategoriList->where('idKategori', $kategori)->first()->nama }}</strong>"
-                    @endif
-                    
-                    ({{ count($produk) }} produk ditemukan)
-                </p>
-            </div>
-        @endif
-        
         <!-- Product Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             @forelse($produk as $p)
             <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300">
-                <a href="{{ route('produk.show', $p->idProduk) }}">
+                <div class="cursor-pointer" onclick="showProductModal('{{ $p->idProduk }}')">
                     <div class="relative h-48 overflow-hidden">
                         @php
                             $gambarArray = $p->gambar ? explode(',', $p->gambar) : ['default.jpg'];
@@ -125,9 +69,10 @@
                         </div>
                         @endif
                     </div>
-                </a>
+                </div>
                 <div class="p-4">
-                    <h3 class="text-lg font-semibold mb-2 truncate">{{ $p->deskripsi }}</h3>
+                    <!-- Judul juga bisa diklik untuk memunculkan modal -->
+                    <h3 class="text-lg font-semibold mb-2 truncate cursor-pointer" onclick="showProductModal('{{ $p->idProduk }}')">{{ $p->deskripsi }}</h3>
                     <div class="flex items-center mb-2">
                         <div class="flex text-yellow-400">
                             @for($i = 1; $i <= 5; $i++)
@@ -235,6 +180,7 @@
         </div>
     </footer>
 
+    <!-- Modal Login -->
     <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
         <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
             <div class="flex justify-between items-center mb-4">
@@ -254,34 +200,185 @@
                 <a href="{{ url('/login') }}" class="bg-green-600 hover:bg-green-700 text-white text-center py-2 px-4 rounded-lg transition duration-300 flex-1">
                     Login
                 </a>
+                <a href="{{ url('/register/pembeli') }}" class="border-2 border-green-600 text-green-600 hover:bg-green-50 text-center py-2 px-4 rounded-lg transition duration-300 flex-1">
+                    Daftar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detail Produk -->
+    <div id="productDetailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden overflow-y-auto">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-screen overflow-y-auto">
+            <!-- Header Modal -->
+            <div class="flex justify-between items-center border-b border-gray-200 px-6 py-3">
+                <h3 class="text-xl font-bold text-gray-900" id="modalTitle">Detail Produk</h3>
+                <button onclick="closeProductModal()" class="text-gray-500 hover:text-gray-800 focus:outline-none">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Konten Modal -->
+            <div class="p-6">
+                <div class="flex flex-col md:flex-row gap-6">
+                    <!-- Gambar Produk -->
+                    <div class="w-full md:w-1/2">
+                        <div class="bg-gray-100 rounded-lg p-2 mb-4">
+                            <img id="modalMainImage" src="" alt="Gambar Produk" class="w-full rounded-lg">
+                        </div>
+                        
+                        <!-- Thumbnail Images -->
+                        <div id="modalThumbnails" class="flex flex-wrap gap-2"></div>
+                    </div>
+                    
+                    <!-- Informasi Produk -->
+                    <div class="w-full md:w-1/2">
+                        <h2 id="modalProductName" class="text-2xl font-bold mb-2"></h2>
+                        
+                        <!-- Rating -->
+                        <div class="flex items-center mb-4">
+                            <div id="modalRating" class="flex text-yellow-400"></div>
+                            <span id="modalRatingValue" class="text-gray-600 text-sm ml-1"></span>
+                        </div>
+                        
+                        <!-- Harga -->
+                        <div id="modalPrice" class="text-3xl font-bold text-green-700 mb-4"></div>
+                        
+                        <!-- Status -->
+                        <div class="mb-4">
+                            <span class="text-gray-700">Status: </span>
+                            <span id="modalStatus" class="font-medium text-green-600"></span>
+                        </div>
+                        
+                        <!-- Badge Garansi -->
+                        <div id="modalWarrantyBadge" class="mb-4 hidden">
+                            <span class="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full">
+                                <i class="fas fa-shield-alt mr-1"></i> <span id="modalWarrantyText"></span>
+                            </span>
+                        </div>
+                        
+                        <!-- Berat -->
+                        <div class="mb-4">
+                            <span class="text-gray-700">Berat: </span>
+                            <span id="modalWeight" class="font-medium"></span>
+                        </div>
+                        
+                        <!-- Kategori -->
+                        <div class="mb-6">
+                            <span class="text-gray-700">Kategori: </span>
+                            <span id="modalCategory" class="font-medium"></span>
+                        </div>
+                        
+                        <!-- Tombol -->
+                        <div class="space-y-3">
+                            <button class="w-full bg-green-600 hover:bg-green-700 text-white text-center py-3 rounded-lg transition duration-300" onclick="showLoginModal()">
+                                <i class="fas fa-shopping-cart mr-2"></i> Tambahkan ke Keranjang
+                            </button>
+                            <button class="w-full border-2 border-green-600 text-green-600 hover:bg-green-50 text-center py-3 rounded-lg transition duration-300" onclick="showLoginModal()">
+                                Beli Sekarang
+                            </button>
+                            <a href="" id="modalDetailLink" class="inline-block w-full text-center text-green-600 hover:text-green-800 mt-4">
+                                Lihat Detail Lengkap
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Deskripsi Produk -->
+                <div class="mt-8 border-t pt-6">
+                    <h3 class="text-lg font-bold mb-3">Deskripsi Produk</h3>
+                    <p id="modalDescription" class="text-gray-700"></p>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Fungsi untuk menampilkan modal
-        function showModal() {
-            document.getElementById('loginModal').classList.remove('hidden');
-            document.body.style.overflow = 'hidden'; // Mencegah scrolling di belakang modal
+        const productsData = @json($produk);
+        
+        function showProductModal(productId) {
+        const product = productsData.find(p => p.idProduk === productId);
+        if (!product) {
+            console.error('Produk tidak ditemukan:', productId);
+            return;
         }
-
-        // Fungsi untuk menutup modal
+        
+        document.getElementById('modalTitle').textContent = 'Detail Produk';
+        document.getElementById('modalProductName').textContent = product.deskripsi || 'Tanpa Deskripsi';
+        document.getElementById('modalPrice').textContent = 'Rp ' + (product.hargaJual ? formatNumber(product.hargaJual) : '0');
+        document.getElementById('modalStatus').textContent = product.status || 'Tidak Diketahui';
+        document.getElementById('modalWeight').textContent = (product.berat || '0') + ' kg';
+        
+        document.getElementById('productDetailModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+        
+        function closeProductModal() {
+            document.getElementById('productDetailModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+        
+        function changeModalImage(src, element) {
+            document.getElementById('modalMainImage').src = src;
+            
+            const thumbnails = document.querySelectorAll('#modalThumbnails .thumbnail');
+            thumbnails.forEach(thumb => {
+                thumb.classList.remove('border-green-600');
+                thumb.classList.add('border-transparent');
+            });
+            
+            element.classList.remove('border-transparent');
+            element.classList.add('border-green-600');
+        }
+        
+        function formatNumber(number) {
+            return new Intl.NumberFormat('id-ID').format(number);
+        }
+        
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+        }
+        
+        function showLoginModal() {
+            closeProductModal();
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        
         function closeModal() {
             document.getElementById('loginModal').classList.add('hidden');
-            document.body.style.overflow = 'auto'; // Mengembalikan scrolling
+            document.body.style.overflow = 'auto';
         }
-
-        // Menambahkan event listener ke tombol beli di setiap produk
+        
         document.addEventListener('DOMContentLoaded', function() {
             const buyButtons = document.querySelectorAll('.bg-green-600.hover\\:bg-green-700.text-white.px-3.py-1.rounded-full');
             buyButtons.forEach(button => {
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
-                    showModal();
+                    showLoginModal();
                 });
+            });
+            
+            document.getElementById('productDetailModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeProductModal();
+                }
+            });
+            
+            document.getElementById('loginModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeModal();
+                }
+            });
+            
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeProductModal();
+                    closeModal();
+                }
             });
         });
     </script>
-
 </body>
 </html>

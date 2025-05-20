@@ -46,7 +46,6 @@
                     </ul>
                 </nav>
                 <div class="flex items-center space-x-4">
-                    <a href="#" class="hover:text-green-200"><i class="fas fa-search"></i></a>
                     <a href="#" class="hover:text-green-200"><i class="fas fa-shopping-cart"></i></a>
                     <a href="{{ url('/login') }}" class="bg-white text-green-700 hover:bg-gray-100 px-3 py-1 rounded text-sm font-medium transition duration-300">Masuk</a>
                     <button class="md:hidden hover:text-green-200"><i class="fas fa-bars"></i></button>

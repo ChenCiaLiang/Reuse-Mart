@@ -182,7 +182,7 @@
                 </div>
 
                 <!-- Form Tambah Diskusi -->
-                @if(session('user')['id'] && (session('user')['userType'] === 'pembeli' || (session('user')['userType'] === 'pegawai' && session('user')['role'] === 'customer service')))
+                @if(session('user_id') && (session('user_type') === 'pembeli' || (session('user_type') === 'pegawai' && session('user_role') === 'customer service')))
                     <div class="bg-white border border-gray-200 rounded-lg p-6">
                         <h3 class="text-lg font-semibold text-gray-800 mb-4">Kirim Pertanyaan</h3>
                         
@@ -340,9 +340,6 @@
             <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                 <a href="{{ url('/login') }}" class="bg-green-600 hover:bg-green-700 text-white text-center py-2 px-4 rounded-lg transition duration-300 flex-1">
                     Login
-                </a>
-                <a href="{{ url('/register/pembeli') }}" class="border-2 border-green-600 text-green-600 hover:bg-green-50 text-center py-2 px-4 rounded-lg transition duration-300 flex-1">
-                    Daftar
                 </a>
             </div>
         </div>

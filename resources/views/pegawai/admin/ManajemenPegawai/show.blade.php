@@ -40,23 +40,28 @@
                 </div>
                 
                 <div>
-                    <dt class="text-sm font-medium text-gray-500">Username</dt>
-                    <dd class="mt-1 text-gray-900">{{ $pegawai->username }}</dd>
+                    <dt class="text-sm font-medium text-gray-500">Email</dt>
+                    <dd class="mt-1 text-gray-900">{{ $pegawai->email }}</dd>
+                </div>
+
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Nomor Telepon</dt>
+                    <dd class="mt-1 text-gray-900">{{ $pegawai->noTelp }}</dd>
+                </div>
+
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Alamat</dt>
+                    <dd class="mt-1 text-gray-900">{{ $pegawai->alamat }}</dd>
+                </div>
+
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Tanggal Lahir</dt>
+                    <dd class="mt-1 text-gray-900">{{ $pegawai->tanggalLahir }}</dd>
                 </div>
                 
                 <div>
                     <dt class="text-sm font-medium text-gray-500">Jabatan</dt>
                     <dd class="mt-1 text-gray-900">{{ $pegawai->jabatan->nama }}</dd>
-                </div>
-                
-                <div>
-                    <dt class="text-sm font-medium text-gray-500">Tanggal Ditambahkan</dt>
-                    <dd class="mt-1 text-gray-900">{{ $pegawai->created_at->format('d F Y H:i') }}</dd>
-                </div>
-                
-                <div>
-                    <dt class="text-sm font-medium text-gray-500">Terakhir Diperbarui</dt>
-                    <dd class="mt-1 text-gray-900">{{ $pegawai->updated_at->format('d F Y H:i') }}</dd>
                 </div>
             </dl>
         </div>

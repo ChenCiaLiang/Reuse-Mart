@@ -40,7 +40,10 @@
                     <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
                         <th class="py-3 px-6 text-left">ID Pegawai</th>
                         <th class="py-3 px-6 text-left">Nama</th>
-                        <th class="py-3 px-6 text-left">Username</th>
+                        <th class="py-3 px-6 text-left">Email</th>
+                        <th class="py-3 px-6 text-left">Nomor Telepon</th>
+                        <th class="py-3 px-6 text-left">Alamat</th>
+                        <th class="py-3 px-6 text-left">Tanggal Lahir</th>
                         <th class="py-3 px-6 text-left">Jabatan</th>
                         <th class="py-3 px-6 text-center">Aksi</th>
                     </tr>
@@ -50,7 +53,10 @@
                     <tr class="border-b border-gray-200 hover:bg-gray-50">
                         <td class="py-3 px-6 text-left">{{ $p->idPegawai }}</td>
                         <td class="py-3 px-6 text-left">{{ $p->nama }}</td>
-                        <td class="py-3 px-6 text-left">{{ $p->username }}</td>
+                        <td class="py-3 px-6 text-left">{{ $p->email }}</td>
+                        <td class="py-3 px-6 text-left">{{ $p->noTelp }}</td>
+                        <td class="py-3 px-6 text-left">{{ $p->alamat }}</td>
+                        <td class="py-3 px-6 text-left">{{ $p->tanggalLahir }}</td>
                         <td class="py-3 px-6 text-left">{{ $p->jabatan->nama }}</td>
                         <td class="py-3 px-6 text-center">
                             <div class="flex item-center justify-center">
