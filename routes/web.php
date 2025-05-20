@@ -11,6 +11,10 @@ use App\Http\Controllers\ProdukController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
+    Route::get('/', function () {
+        return view('welcome');
+    })->name('dashboard');
+
     Route::get('/login', function () {
         return view('auth.login');
     })->name('loginPage');
