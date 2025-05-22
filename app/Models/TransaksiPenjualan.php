@@ -18,13 +18,15 @@ class TransaksiPenjualan extends Model
 
     protected $fillable = [
         'bonus',
+        'status',
         'tanggalLaku',
         'tanggalPesan',
         'tanggalBatasLunas',
         'tanggalLunas',
         'tanggalKirim',
         'tanggalAmbil',
-        'idPembeli'
+        'idPembeli',
+        'idPegawai', //KURIR
     ];
 
     public function pembeli(): BelongsTo

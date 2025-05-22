@@ -9,6 +9,7 @@ use App\Http\Controllers\PembeliController;
 use App\Http\Controllers\PenitipController;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\RequestDonasiController;
+use App\Http\Controllers\TransaksiPengirimanController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -89,8 +90,13 @@ Route::prefix('pegawai')->middleware('RolePegawai:pegawai')->group(function () {
     //untuk gudang bro
     Route::prefix('gudang')->name('gudang.')->group(function () {
         Route::get('/dashboard', function () {
-            return view('pegawai.cs.index');
+            return redirect()->route('gudang.pengiriman.index');
         })->name('dashboard');
+
+        Route::prefix('pengiriman')->name('pengiriman.')->group(function () {
+            Route::get('/', [TransaksiPengirimanController::class, 'index'])->name('index');
+            Route::get('/{id}', [TransaksiPengirimanController::class, 'show'])->name('show');
+        });
     });
 
     //owner
@@ -142,6 +148,7 @@ Route::prefix('customer')->group(function () {
     Route::prefix('organisasi')->middleware('auth:organisasi')->name('organisasi.')->group(function () {
         //CEKME
         Route::get('/profile', [PembeliController::class, 'profile'])->name('profile');
+
         //request donasi
         Route::prefix('requestDonasi')->name('requestDonasi.')->group(function () {
             Route::get('/', [RequestDonasiController::class, 'index'])->name('index');

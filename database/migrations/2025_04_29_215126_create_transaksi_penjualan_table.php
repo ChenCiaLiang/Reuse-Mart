@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('transaksi_penjualan', function (Blueprint $table) {
             $table->id('idTransaksiPenjualan');
             $table->float('bonus')->default(0);
+            $table->float('status')->nullable();
             $table->dateTime('tanggalLaku')->nullable();
             $table->dateTime('tanggalPesan');
             $table->dateTime('tanggalBatasLunas');
@@ -21,8 +22,13 @@ return new class extends Migration
             $table->dateTime('tanggalKirim')->nullable();
             $table->dateTime('tanggalAmbil')->nullable();
             $table->unsignedBigInteger('idPembeli');
+            $table->unsignedBigInteger('idPegawai')->nullable(); //KURIR
             $table->foreign('idPembeli')
                 ->references('idPembeli')->on('pembeli')
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
+            $table->foreign('idPegawai')
+                ->references('idPegawai')->on('pegawai')
                 ->onDelete('cascade')
                 ->onUpdate('cascade');
             $table->timestamps();

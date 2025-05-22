@@ -9,50 +9,45 @@ use App\Models\KategoriProduk;
 
 class ProdukController extends Controller
 {
-    /**
-     * Menampilkan daftar produk
-     *
-     *
-     */
     public function index(Request $request)
     {
         // Ambil parameter pencarian
         $search = $request->input('search');
         $kategori = $request->input('kategori');
-        
+
         // Query dasar
         $query = Produk::where('status', '!=', 'Terjual')
-                    ->where('status', '!=', 'Didonasikan');
-        
+            ->where('status', '!=', 'Didonasikan');
+
         // Filter berdasarkan pencarian teks
         if ($search) {
             $query->where('deskripsi', 'like', '%' . $search . '%');
         }
-        
+
         // Filter berdasarkan kategori
         if ($kategori) {
             $query->where('idKategori', $kategori);
         }
-        
+
         // Ambil produk dengan filter yang telah ditentukan
         $produk = $query->orderBy('created_at', 'desc')->get();
-        
+
         // Ambil kategori untuk filter dropdown
         $kategoriList = KategoriProduk::all();
-        
+
         return view('produk.index', compact('produk', 'kategoriList', 'search', 'kategori'));
     }
     public function indexPopup()
     {
         // Ambil produk yang tersedia (tidak terjual atau didonasikan)
         $produk = Produk::where('status', '!=', 'Terjual')
-                    ->where('status', '!=', 'Didonasikan')
-                    ->orderBy('created_at', 'desc')
-                    ->get();
-        
+            ->where('status', '!=', 'Didonasikan')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         // Ambil kategori untuk filter
         $kategori = KategoriProduk::all();
-        
+
         return view('produk.showPopup', compact('produk', 'kategori'));
     }
 
