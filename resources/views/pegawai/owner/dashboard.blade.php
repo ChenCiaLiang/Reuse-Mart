@@ -79,7 +79,7 @@
                             <td class="px-4 py-3 text-sm">{{ $barang->deskripsi }}</td>
                             <td class="px-4 py-3 text-sm">{{ $barang->kategori->nama }}</td>
                             <td class="px-4 py-3 text-sm">
-                                <a href="{{ route('owne.barang') }}" class="text-blue-600 hover:text-blue-900">Alokasikan</a>
+                                <a href="{{ route('owner.barang') }}" class="text-blue-600 hover:text-blue-900">Alokasikan</a>
                             </td>
                         </tr>
                         @empty

@@ -51,9 +51,12 @@
                 <button onclick="window.history.back()" class="bg-gray-800 hover:bg-gray-900 text-white font-medium py-3 px-6 rounded-lg transition duration-300 flex items-center justify-center">
                     <i class="fas fa-arrow-left mr-2"></i> Kembali
                 </button>
-                <a href="{{ url('/login') }}" class="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition duration-300 flex items-center justify-center">
-                    <i class="fas fa-home mr-2"></i> Login
-                </a>
+                <form action="{{ route('logout') }}" method="POST">
+                @csrf
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition duration-300 flex items-center justify-center">
+                        <i class="fas fa-home mr-2"></i> Login
+                    </button>
+                </form>
             </div>
         </div>
     </div>

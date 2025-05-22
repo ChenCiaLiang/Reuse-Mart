@@ -14,6 +14,15 @@
 
     <div class="bg-white shadow-md rounded-lg p-4 mb-8">
         <div class="overflow-x-auto">
+            <div>
+                <form action="{{ route('owner.donasi.request') }}" method="GET" class="flex">
+                    <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari request..." 
+                           class="border rounded-l-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-600 w-64">
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-r-md">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
             <table class="min-w-full bg-white">
                 <thead class="bg-gray-50 text-gray-600 uppercase text-sm leading-normal">
                     <tr>
@@ -26,7 +35,7 @@
                     </tr>
                 </thead>
                 <tbody class="text-gray-600 text-sm">
-                    @forelse($requests as $request)
+                    @forelse($requestDonasi as $request)
                     <tr class="border-b border-gray-200 hover:bg-gray-50">
                         <td class="py-3 px-6">{{ $request->idRequest }}</td>
                         <td class="py-3 px-6">{{ $request->organisasi->nama }}</td>

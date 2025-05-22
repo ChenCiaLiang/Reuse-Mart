@@ -20,12 +20,12 @@ class PenitipController extends Controller
         $search = $request->input('search');
 
         $penitip = Penitip::when($search, function ($query) use ($search) {
-            return $query->where('nama', 'like', '%' . $search . '%')
-                ->orWhere('idPenitip', 'like', '%' . $search . '%')
+            return $query->where('idPenitip', 'like', '%' . $search . '%')
+                ->orWhere('nama', 'like', '%' . $search . '%')
                 ->orWhere('email', 'like', '%' . $search . '%')
                 ->orWhere('alamat', 'like', '%' . $search . '%');
         })
-            ->orderBy('nama')
+            ->orderBy('idPenitip')
             ->paginate(10);
 
         return view('cs.penitip.index', compact('penitip', 'search'));
@@ -38,11 +38,9 @@ class PenitipController extends Controller
 
     public function store(Request $request)
     {
-        // Validasi input
         $validator = Validator::make($request->all(), [
-            'idPenitip' => 'required|string|max:10|unique:penitip,idPenitip',
             'nama' => 'required|string|max:50',
-            'email' => 'required|string|email|max:50|unique:pembeli,email|unique:penitip,email|unique:organisasi,email',
+            'email' => 'required|string|email|max:50|unique:pembeli,email|unique:penitip,email|unique:organisasi,email|unique:pegawai,email',
             'password' => 'required|string|min:6',
             'alamat' => 'required|string|max:200',
             'nik' => 'required|string|max:16|unique:penitip,nik',
@@ -50,9 +48,7 @@ class PenitipController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
+            return redirect()->back()->withErrors($validator)->withInput();
         }
 
         $fotoPath = null;
@@ -66,7 +62,6 @@ class PenitipController extends Controller
         }
 
         Penitip::create([
-            'idPenitip' => $request->idPenitip,
             'nama' => $request->nama,
             'email' => $request->email,
             'password' => Hash::make($request->password),
@@ -80,8 +75,7 @@ class PenitipController extends Controller
             'rating' => 0.0,
         ]);
 
-        return redirect()->route('cs.penitip.index')
-            ->with('success', 'Penitip berhasil ditambahkan!');
+        return redirect()->route('cs.penitip.index')->with('success', 'Penitip berhasil ditambahkan!');
     }
 
     public function show($id)
@@ -100,47 +94,36 @@ class PenitipController extends Controller
     {
         $penitip = Penitip::findOrFail($id);
 
-        // Validasi input
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:50|unique:penitip,nama,' . $id . ',idPenitip',
-            'email' => 'required|string|email|max:50|unique:penitip,email,' . $id . ',idPenitip|unique:pembeli,email|unique:organisasi,email',
+            'email' => 'required|string|email|max:50|unique:penitip,email,' . $id . ',idPenitip|unique:pembeli,email|unique:organisasi,email|unique:pegawai,email',
             'alamat' => 'required|string|max:200',
         ]);
 
         if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
+            return redirect()->back()->withErrors($validator)->withInput();
         }
 
-        // Update pegawai
         $penitip->nama = $request->nama;
         $penitip->email = $request->email;
+        $penitip->alamat = $request->alamat;
         $penitip->save();
 
-        return redirect()->route('cs.penitip.index')
-            ->with('success', 'Data penitip berhasil diperbarui!');
+        return redirect()->route('cs.penitip.index')->with('success', 'Data penitip berhasil diperbarui!');
     }
 
-    /**
-     * Hapus data pegawai
-     */
     public function destroy($id)
     {
         $penitip = Penitip::findOrFail($id);
         $penitip->delete();
 
-        return redirect()->route('cs.penitip.index')
-            ->with('success', 'Penitip berhasil dihapus!');
+        return redirect()->route('cs.penitip.index')->with('success', 'Penitip berhasil dihapus!');
     }
 
-    /**
-     * Menampilkan profil penitip
-     */
     public function profile()
     {
         // Ambil ID penitip dari session
-        $idPembeli = session('user')['idPenitip'];
+        $idPenitip = session('user')['idPenitip'];
 
         // Dapatkan data penitip
         $penitip = Penitip::findOrFail($idPenitip);
@@ -173,7 +156,7 @@ class PenitipController extends Controller
     public function historyTransaksi(Request $request)
     {
         // Ambil ID penitip dari session
-        $idPembeli = session('user')['idPenitip'];
+        $idPenitip = session('user')['idPenitip'];
 
         // Filter berdasarkan tanggal jika ada
         $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date'))->startOfDay() : Carbon::now()->subMonths(3)->startOfDay();
@@ -208,7 +191,7 @@ class PenitipController extends Controller
     {
         try {
             // Ambil ID penitip dari session
-            $idPembeli = session('user')['idPenitip'];
+            $idPenitip = session('user')['idPenitip'];
 
             // Dapatkan detail transaksi
             $transaksi = TransaksiPenjualan::findOrFail($idTransaksi);

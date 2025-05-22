@@ -9,9 +9,6 @@ use Illuminate\Support\Facades\Validator;
 
 class DiskusiProdukController extends Controller
 {
-    /**
-     * Menampilkan pesan diskusi produk
-     */
     public function index(Request $request, $idProduk)
     {
         $produk = Produk::findOrFail($idProduk);
@@ -31,9 +28,6 @@ class DiskusiProdukController extends Controller
         ]);
     }
 
-    /**
-     * Menambah pesan diskusi produk
-     */
     public function store(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
@@ -46,23 +40,19 @@ class DiskusiProdukController extends Controller
             }
             return back()->withErrors($validator)->withInput();
         }
-        //CEKME
-        // Cek login secara manual menggunakan session
-        if (!session('user')['id'] || (!in_array(session('user')['userType'], ['pembeli', 'pegawai']))) {
-            return redirect()->route('login')->with('error', 'Anda harus login terlebih dahulu untuk mengirim diskusi.');
+
+        if ((!in_array(session('role'), ['pembeli', 'cs']))) {
+            return redirect()->route('loginPage')->with('error', 'Anda harus login terlebih dahulu untuk mengirim diskusi.');
         }
 
-        // Cek apakah produk ada
         $produk = Produk::findOrFail($id);
 
-        // Inisialisasi data diskusi
         $diskusiData = [
             'pesan' => $request->pesan,
             'tanggalDiskusi' => now(),
             'idProduk' => $id,
         ];
 
-        // Cek tipe user (Pembeli atau CS)
         if (session('role') === 'pembeli') {
             $diskusiData['idPembeli'] = session('user')['idPembeli'];
             $diskusiData['idPegawai'] = null;
@@ -73,7 +63,6 @@ class DiskusiProdukController extends Controller
             return redirect()->back()->with('error', 'Anda tidak memiliki izin untuk mengirim diskusi.');
         }
 
-        // Simpan diskusi
         $diskusi = DiskusiProduk::create($diskusiData);
 
         return redirect()->route('produk.show', $id)->with('success', 'Pesan diskusi berhasil ditambahkan');

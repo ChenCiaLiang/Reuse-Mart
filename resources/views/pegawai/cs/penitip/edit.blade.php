@@ -13,7 +13,6 @@
             @method('PUT')
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Nama -->
                 <div>
                     <label for="nama" class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
                     <input type="text" name="nama" id="nama" 
@@ -25,7 +24,6 @@
                     @enderror
                 </div>
                 
-                <!-- Email -->
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
                     <input type="text" name="email" id="email" 
@@ -36,21 +34,7 @@
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>
-                
-                {{-- <!-- Password (Optional) -->
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
-                        Password <span class="text-gray-500 text-xs">(kosongkan jika tidak ingin mengubah)</span>
-                    </label>
-                    <input type="password" name="password" id="password" 
-                           class="w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
-                           placeholder="Password baru (opsional)">
-                    @error('password')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div> --}}
-                
-                <!-- Alamat -->
+
                 <div>
                     <label for="alamat" class="block text-sm font-medium text-gray-700 mb-1">Alamat</label>
                     <input type="text" name="alamat" id="alamat" 

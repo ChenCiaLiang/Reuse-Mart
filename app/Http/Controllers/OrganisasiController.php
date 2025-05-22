@@ -23,7 +23,7 @@ class OrganisasiController extends Controller
                 ->orWhere('idOrganisasi', 'like', '%' . $search . '%')
                 ->orWhere('email', 'like', '%' . $search . '%');
         })
-            ->orderBy('nama')
+            ->orderBy('idOrganisasi')
             ->paginate(10);
 
         return view('pegawai.admin.manajemenOrganisasi..index', compact('organisasi', 'search'));

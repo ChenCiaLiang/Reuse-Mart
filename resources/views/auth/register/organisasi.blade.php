@@ -81,14 +81,6 @@
                         rows="3">{{ old('alamat') }}</textarea>
                 </div>
 
-                <!-- Logo Field -->
-                <div class="mb-6">
-                    <label for="logo" class="block text-gray-800 font-medium mb-2">Logo Organisasi</label>
-                    <input type="file" id="logo" name="logo" required accept="image/*"
-                        class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500">
-                    <p class="text-xs text-gray-500 mt-1">Format: JPEG, PNG, JPG, GIF. Max: 2MB</p>
-                </div>
-
                 <!-- Register Button -->
                 <div class="flex justify-center">
                     <button type="submit"

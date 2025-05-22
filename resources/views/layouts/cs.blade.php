@@ -63,7 +63,7 @@
                     <button class="flex items-center text-gray-700 focus:outline-none">
                         <div class="text-right">
                             <p class="text-sm font-medium">{{ session('user')['nama'] ?? 'Nama' }}</p>
-                            <p class="text-xs text-gray-500">{{ session('role') ?? 'Jabatan' }}</p>
+                            <p class="text-xs text-gray-500">{{ ucfirst(session('role')) ?? 'Jabatan' }}</p>
                         </div>
                     </button>
                     </div>

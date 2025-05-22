@@ -19,45 +19,34 @@ use Illuminate\Support\Facades\Validator;
 
 class PegawaiController extends Controller
 {
-    /**
-     * Menampilkan daftar pegawai
-     */
     public function index(Request $request)
     {
-        // Pencarian pegawai
         $search = $request->input('search');
 
         $pegawai = Pegawai::when($search, function ($query) use ($search) {
-                return $query->where('nama', 'like', '%' . $search . '%')
-                    ->orWhere('email', 'like', '%' . $search . '%')
-                    ->orWhere('noTelp', 'like', '%' . $search . '%')
-                    ->orWhere('alamat', 'like', '%' . $search . '%')
-                    ->orWhere('tanggalLahir', 'like', '%' . $search . '%')
-                    ->orWhereHas('jabatan', function($jq) use ($search) {
-                        $jq->where('nama', 'like', '%' . $search . '%');
-                    });
-            })
-            ->orderBy('nama')
+            return $query->where('nama', 'like', '%' . $search . '%')
+                ->orWhere('email', 'like', '%' . $search . '%')
+                ->orWhere('noTelp', 'like', '%' . $search . '%')
+                ->orWhere('alamat', 'like', '%' . $search . '%')
+                ->orWhere('tanggalLahir', 'like', '%' . $search . '%')
+                ->orWhereHas('jabatan', function ($jq) use ($search) {
+                    $jq->where('nama', 'like', '%' . $search . '%');
+                });
+        })
+            ->orderBy('idPegawai')
             ->paginate(10);
 
         return view('pegawai.admin.manajemenPegawai.index', compact('pegawai', 'search'));
     }
 
-    /**
-     * Menampilkan form tambah pegawai
-     */
     public function create()
     {
         $jabatan = Jabatan::all();
         return view('pegawai.admin.manajemenPegawai.create', compact('jabatan'));
     }
 
-    /**
-     * Menyimpan data pegawai baru
-     */
     public function store(Request $request)
     {
-        // Validasi input
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:50',
             'email' => 'required|string|email|max:50|unique:pembeli,email|unique:penitip,email|unique:organisasi,email|unique:pegawai,email',
@@ -75,7 +64,6 @@ class PegawaiController extends Controller
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
-        // Buat pegawai baru
         $pegawai = Pegawai::create([
             'nama' => $request->nama,
             'email' => $request->email,
@@ -97,18 +85,12 @@ class PegawaiController extends Controller
             ->with('success', 'Pegawai berhasil ditambahkan');
     }
 
-    /**
-     * Menampilkan detail pegawai
-     */
     public function show($id)
     {
         $pegawai = Pegawai::findOrFail($id);
         return view('pegawai.admin.manajemenPegawai.show', compact('pegawai'));
     }
 
-    /**
-     * Menampilkan form edit pegawai
-     */
     public function edit($id)
     {
         $pegawai = Pegawai::findOrFail($id);
@@ -116,14 +98,10 @@ class PegawaiController extends Controller
         return view('pegawai.admin.manajemenPegawai.edit', compact('pegawai', 'jabatan'));
     }
 
-    /**
-     * Update data pegawai
-     */
     public function update(Request $request, $id)
     {
         $pegawai = Pegawai::findOrFail($id);
-        
-        // Validasi input
+
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:50',
             'email' => 'required|string|email|max:50|unique:pembeli,email|unique:penitip,email|unique:organisasi,email|unique:pegawai,email,' . $id . ',idPegawai',
@@ -141,7 +119,6 @@ class PegawaiController extends Controller
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
-        // Update pegawai
         $pegawai->nama = $request->nama;
         $pegawai->email = $request->email;
         if ($request->filled('password')) {
@@ -164,9 +141,6 @@ class PegawaiController extends Controller
             ->with('success', 'Data pegawai berhasil diperbarui');
     }
 
-    /**
-     * Hapus data pegawai
-     */
     public function destroy(Request $request, $id)
     {
         $pegawai = Pegawai::findOrFail($id);
@@ -181,15 +155,13 @@ class PegawaiController extends Controller
         return redirect()->route('admin.pegawai.index')
             ->with('success', 'Pegawai berhasil dihapus');
     }
-     public function adminDashboard()
+    public function adminDashboard()
     {
-        // Data jumlah pengguna
         $totalPegawai = Pegawai::count();
         $totalPenitip = Penitip::count();
         $totalPembeli = Pembeli::count();
         $totalOrganisasi = Organisasi::count();
 
-        // Data produk
         $totalProduk = Produk::count();
         $produkTersedia = Produk::where('status', '!=', 'Terjual')
             ->where('status', '!=', 'Didonasikan')
@@ -197,7 +169,6 @@ class PegawaiController extends Controller
         $produkTerjual = Produk::where('status', 'Terjual')->count();
         $produkDidonasikan = Produk::where('status', 'Didonasikan')->count();
 
-        // Data transaksi bulan ini
         $bulanIni = Carbon::now()->startOfMonth();
         $penjualanBulanIni = TransaksiPenjualan::whereMonth('tanggalLunas', $bulanIni->month)
             ->whereYear('tanggalLunas', $bulanIni->year)
@@ -209,7 +180,6 @@ class PegawaiController extends Controller
             ->whereYear('tanggalPemberian', $bulanIni->year)
             ->count();
 
-        // Data penjualan per bulan untuk grafik
         $penjualanPerBulan = TransaksiPenjualan::select(
             DB::raw('MONTH(tanggalLunas) as bulan'),
             DB::raw('YEAR(tanggalLunas) as tahun'),
@@ -222,7 +192,6 @@ class PegawaiController extends Controller
             ->orderBy('bulan')
             ->get();
 
-        // Format data penjualan untuk chart
         $chartData = [];
         $namaBulan = [
             1 => 'Januari',
@@ -239,7 +208,6 @@ class PegawaiController extends Controller
             12 => 'Desember'
         ];
 
-        // Inisialisasi data untuk semua bulan (1-12)
         for ($i = 1; $i <= 12; $i++) {
             $chartData[$i] = [
                 'bulan' => $namaBulan[$i],
@@ -247,15 +215,12 @@ class PegawaiController extends Controller
             ];
         }
 
-        // Isi data penjualan
         foreach ($penjualanPerBulan as $data) {
             $chartData[$data->bulan]['total_penjualan'] = $data->total_penjualan;
         }
 
-        // Konversi ke array untuk chart
         $chartData = array_values($chartData);
 
-        // Produk terlaris
         $produkTerlaris = DB::table('detail_transaksi_penjualan')
             ->join('produk', 'detail_transaksi_penjualan.idProduk', '=', 'produk.idProduk')
             ->join('transaksi_penjualan', 'detail_transaksi_penjualan.idTransaksiPenjualan', '=', 'transaksi_penjualan.idTransaksiPenjualan')
@@ -266,14 +231,12 @@ class PegawaiController extends Controller
             ->limit(5)
             ->get();
 
-        // Transaksi terakhir
         $transaksiTerakhir = TransaksiPenjualan::with(['pembeli', 'detailTransaksiPenjualan.produk'])
             ->whereNotNull('tanggalLunas')
             ->orderBy('tanggalLunas', 'desc')
             ->limit(5)
             ->get();
 
-        // Barang yang masa penitipannya hampir habis
         $barangHampirHabis = TransaksiPenitipan::with(['penitip', 'detailTransaksiPenitipan.produk'])
             ->where('tanggalAkhirPenitipan', '>=', Carbon::now())
             ->where('tanggalAkhirPenitipan', '<=', Carbon::now()->addDays(7))

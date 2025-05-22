@@ -23,7 +23,7 @@ class PenitipController extends Controller
                 ->orWhere('email', 'like', '%' . $search . '%')
                 ->orWhere('alamat', 'like', '%' . $search . '%');
         })
-            ->orderBy('nama')
+            ->orderBy('idPenitip')
             ->paginate(10);
 
         return view('pegawai.cs.penitip.index', compact('penitip', 'search'));
@@ -161,7 +161,7 @@ class PenitipController extends Controller
     public function profile()
     {
         // Ambil ID penitip dari session
-        $idPembeli = session('user')['idPenitip'];
+        $idPenitip = session('user')['idPenitip'];
 
         // Dapatkan data penitip
         $penitip = Penitip::findOrFail($idPenitip);
@@ -194,7 +194,7 @@ class PenitipController extends Controller
     public function historyTransaksi(Request $request)
     {
         // Ambil ID penitip dari session
-        $idPembeli = session('user')['idPenitip'];
+        $idPenitip = session('user')['idPenitip'];
 
         // Filter berdasarkan tanggal jika ada
         $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date'))->startOfDay() : Carbon::now()->subMonths(3)->startOfDay();
@@ -229,7 +229,7 @@ class PenitipController extends Controller
     {
         try {
             // Ambil ID penitip dari session
-            $idPembeli = session('user')['idPenitip'];
+            $idPenitip = session('user')['idPenitip'];
 
             // Dapatkan detail transaksi
             $transaksi = TransaksiPenjualan::findOrFail($idTransaksiPenjualan);

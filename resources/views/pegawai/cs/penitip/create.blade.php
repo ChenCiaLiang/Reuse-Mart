@@ -12,19 +12,6 @@
             @csrf
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- ID Penitip -->
-                <div>
-                    <label for="idPenitip" class="block text-sm font-medium text-gray-700 mb-1">ID Penitip</label>
-                    <input type="text" name="idPenitip" id="idPenitip" 
-                           value="{{ old('idPenitip') }}" 
-                           class="w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500" 
-                           placeholder="T01, T02, dll.">
-                    @error('idPenitip')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-                
-                <!-- Nama -->
                 <div>
                     <label for="nama" class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
                     <input type="text" name="nama" id="nama" 
@@ -36,7 +23,6 @@
                     @enderror
                 </div>
                 
-                <!-- Email -->
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
                     <input type="text" name="email" id="email" 
@@ -48,7 +34,6 @@
                     @enderror
                 </div>
                 
-                <!-- Password -->
                 <div>
                     <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
                     <input type="password" name="password" id="password" 
@@ -59,7 +44,6 @@
                     @enderror
                 </div>
                 
-                <!-- Alamat -->
                 <div>
                     <label for="alamat" class="block text-sm font-medium text-gray-700 mb-1">Alamat</label>
                     <input type="text" name="alamat" id="alamat" 
@@ -70,8 +54,7 @@
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>
-
-                <!-- nik -->
+                
                 <div>
                     <label for="nik" class="block text-sm font-medium text-gray-700 mb-1">NIK</label>
                     <input type="text" name="nik" id="nik" maxlength="16"
@@ -85,7 +68,6 @@
 
             </div>
             
-            <!-- Buttons -->
             <div class="flex justify-end mt-6 space-x-3">
                 <a href="{{ route('cs.dashboard') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md">
                     Batal

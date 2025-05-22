@@ -107,7 +107,7 @@ class AuthController extends Controller
                 ], 201);
             }
 
-            return redirect()->route('customer.homePage')->with('success', 'Registrasi berhasil!');
+            return redirect()->route('organisasi.requestDonasi.index')->with('success', 'Registrasi berhasil!');
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -220,7 +220,7 @@ class AuthController extends Controller
                     ],
                 ]);
             }
-            return redirect()->route('homePage')->with('success', 'Login successful');
+            return redirect()->route('organisasi.requestDonasi.index')->with('success', 'Login successful');
         }
 
         if ($request->expectsJson()) {

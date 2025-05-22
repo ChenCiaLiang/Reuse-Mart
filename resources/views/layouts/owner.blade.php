@@ -76,8 +76,8 @@
             
             <div class="flex items-center">
                 <div class="text-right">
-                    <p class="text-sm font-medium text-gray-800">{{ session('user_name') ?? 'Raka Pratama' }}</p>
-                    <p class="text-xs text-gray-500">Owner</p>
+                    <p class="text-sm font-medium text-gray-800">{{ session('user')['nama'] ?? 'GILROT' }}</p>
+                    <p class="text-xs text-gray-500">{{ ucfirst(session('role')) }}</p>
                 </div>
             </div>
         </header>

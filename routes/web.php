@@ -139,10 +139,20 @@ Route::prefix('customer')->group(function () {
         Route::get('/transaksi/{id}', [PenitipController::class, 'detailTransaksi'])->name('transaksi.detail');
     });
 
-    // Route::prefix('organisasi')->middleware('auth:organisasi')->group(function () {
-    //     Route::get('/profile', [AuthController::class, 'profile'])->name('customer.profile');
-    //     Route::get('/historyTransaksi', [AuthController::class, 'historyTransaksi'])->name('customer.historyTransaksi');
-    // });
+    Route::prefix('organisasi')->middleware('auth:organisasi')->name('organisasi.')->group(function () {
+        //CEKME
+        Route::get('/profile', [PembeliController::class, 'profile'])->name('profile');
+        //request donasi
+        Route::prefix('requestDonasi')->name('requestDonasi.')->group(function () {
+            Route::get('/', [RequestDonasiController::class, 'index'])->name('index');
+            Route::get('/create', [RequestDonasiController::class, 'create'])->name('create');
+            Route::post('/', [RequestDonasiController::class, 'store'])->name('store');
+            Route::get('/{id}', [RequestDonasiController::class, 'show'])->name('show');
+            Route::get('/{id}/edit', [RequestDonasiController::class, 'edit'])->name('edit');
+            Route::put('/{id}', [RequestDonasiController::class, 'update'])->name('update');
+            Route::delete('/{id}', [RequestDonasiController::class, 'destroy'])->name('destroy');
+        });
+    });
 
     //produk
     Route::prefix('produk')->name('produk.')->group(function () {
