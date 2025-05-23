@@ -20,24 +20,9 @@
         
         <nav class="mt-5">
             <a href="{{ route('gudang.pengiriman.index') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('gudang.pengiriman.index') ? 'bg-green-700' : '' }}">
-                <i class="fas fa-home mr-3"></i>
+                <i class="fa-solid fa-truck mr-3"></i>
                 <span>Daftar Pengiriman</span>
             </a>
-            
-            {{-- <a href="{{ route('admin.pegawai.index') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('admin.pegawai.*') ? 'bg-green-700' : '' }}">
-                <i class="fas fa-users mr-3"></i>
-                <span>Manajemen Pegawai</span>
-            </a>
-            
-            <a href="{{ route('admin.organisasi.index') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('admin.organisasi.*') ? 'bg-green-700' : '' }}">
-                <i class="fas fa-building mr-3"></i>
-                <span>Manajemen Organisasi</span>
-            </a>
-            
-            <a href="#" class="flex items-center px-6 py-3 hover:bg-green-700">
-                <i class="fas fa-gift mr-3"></i>
-                <span>Manajemen Merchandise</span>
-            </a> --}}
         </nav>
         
         <div class="absolute bottom-0 w-full p-4 border-t border-green-700">
