@@ -15,7 +15,7 @@
                 <!-- Tanggal Kirim -->
                 <div>
                     <label for="tanggalKirim" class="block text-sm font-medium text-gray-700 mb-1">Tanggal Kirim</label>
-                    <input type="date" name="tanggalKirim" id="tanggalKirim" 
+                    <input type="datetime-local" name="tanggalKirim" id="tanggalKirim" 
                            value="{{ old('tanggalKirim') }}"
                            class="w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
                     @error('tanggalKirim')
@@ -36,9 +36,6 @@
                         @endforeach
                     </select>
                     @error('kurir')
-                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                    @enderror
-                    @error('tanggalKirim')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
                 </div>

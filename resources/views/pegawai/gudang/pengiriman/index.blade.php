@@ -36,8 +36,6 @@
                         <th class="py-3 px-6 text-left">ID Penjualan</th>
                         <th class="py-3 px-6 text-left">Status</th>
                         <th class="py-3 px-6 text-left">Tanggal Laku</th>
-                        <th class="py-3 px-6 text-left">Tanggal Kirim</th>
-                        <th class="py-3 px-6 text-left">Tanggal Diambil</th>
                         <th class="py-3 px-6 text-left">ID Pembeli</th>
                         <th class="py-3 px-6 text-left">ID Pegawai</th>
                         <th class="py-3 px-6 text-center">Aksi</th>
@@ -49,8 +47,6 @@
                         <td class="py-3 px-6 text-left">{{ $p->idTransaksiPenjualan }}</td>
                         <td class="py-3 px-6 text-left">{{ $p->status }}</td>
                         <td class="py-3 px-6 text-left">{{ $p->tanggalLaku }}</td>
-                        <td class="py-3 px-6 text-left">{{ $p->tanggalKirim }}</td>
-                        <td class="py-3 px-6 text-left">{{ $p->tanggalAmbil }}</td>
                         <td class="py-3 px-6 text-left">{{ $p->idPembeli }}</td>
                         <td class="py-3 px-6 text-left">{{ $p->idPegawai }}</td>
                         <td class="py-3 px-6 text-center">

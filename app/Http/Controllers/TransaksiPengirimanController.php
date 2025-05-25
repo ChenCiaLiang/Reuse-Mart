@@ -59,7 +59,7 @@ class TransaksiPengirimanController extends Controller
 
     public function penjadwalan(Request $request, $id)
     {
-        $pengiriman = TransaksiPenjualan::findOrFail($id);
+        $pengiriman = TransaksiPenjualan::find($id);
 
         $validator = Validator::make($request->all(), [
             'kurir' => 'required',
@@ -85,14 +85,12 @@ class TransaksiPengirimanController extends Controller
             return redirect()->back()->withErrors(['tanggalKirim' => $errorMessage])->withInput();
         }
 
-        // Validasi 2: Cek apakah pembelian terjadi antara jam 16:00 - 23:59
+        // Pembelian di atas jam 16.00
         $jamPembelian = (int) $tanggalLaku->format('H.i');
         $hariPembelian = $tanggalLaku->format('Y-m-d');
         $hariPengiriman = $tanggalKirimRequest->format('Y-m-d');
 
-        // Jika pembelian di jam 16:00 - 23:59 (4 sore - 12 malam)
-        if ($jamPembelian >= 16.00 && $jamPembelian <= 23.59) {
-            // Tanggal kirim tidak boleh pada hari yang sama dengan pembelian
+        if ($jamPembelian >= 16.00 && $jamPembelian <= 08.00) {
             if ($hariPembelian === $hariPengiriman) {
                 $tanggalMinimal = $tanggalLaku->copy()->addDay()->format('d/m/Y');
                 $errorMessage = "Pembelian setelah jam 16:00 tidak bisa dikirim di hari yang sama. Minimal tanggal kirim: {$tanggalMinimal}";
@@ -104,29 +102,36 @@ class TransaksiPengirimanController extends Controller
             }
         }
 
-        // // Validasi 3: Jika pengiriman dijadwalkan hari ini, pastikan masih dalam jam operasional
-        // if ($tanggalKirimRequest->format('Y-m-d') === $sekarang->format('Y-m-d')) {
-        //     $jamSekarang = (int) $sekarang->format('H');
+        // saat penjadwalan di luar operasional
+        if ($tanggalKirimRequest->format('Y-m-d') === $sekarang->format('Y-m-d')) {
+            $jamSekarang = (int) $sekarang->format('H.i');
 
-        //     // Asumsi jam operasional pengiriman: 08:00 - 20:00
-        //     if ($jamSekarang >= 20) {
-        //         $besok = $sekarang->copy()->addDay()->format('d/m/Y');
-        //         $errorMessage = "Pengiriman hari ini sudah tutup (setelah jam 20:00). Minimal tanggal kirim: {$besok}";
+            if (!($jamSekarang >= 08.00 && $jamSekarang <= 20.00)) {
+                $besok = $sekarang->copy()->addDay()->format('d/m/Y');
+                $errorMessage = "Pengiriman hari ini sudah tutup (setelah jam 20:00). Minimal tanggal kirim: {$besok}";
 
-        //         if ($request->expectsJson()) {
-        //             return response()->json(['errors' => ['tanggalKirim' => $errorMessage]], 422);
-        //         }
-        //         return redirect()->back()->withErrors(['tanggalKirim' => $errorMessage])->withInput();
-        //     }
-        // }
+                if ($request->expectsJson()) {
+                    return response()->json(['errors' => ['tanggalKirim' => $errorMessage]], 422);
+                }
+                return redirect()->back()->withErrors(['tanggalKirim' => $errorMessage])->withInput();
+            }
+        }
 
-        $kurir = Pegawai::where('nama', $request->kurir);
+        $jamPengirimanRequest = (int) $tanggalKirimRequest->format('H.i');
+        //jam pengiriman di luar operasional
+        if (!($jamPengirimanRequest >= 08.00 && $jamPengirimanRequest <= 20.00)) {
+            $errorMessage = 'Pengiriman hanya bisa dijadwalkan antara jam 08:00 - 20:00';
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => ['tanggalKirim' => $errorMessage]], 422);
+            }
+            return redirect()->back()->withErrors(['tanggalKirim' => $errorMessage])->withInput();
+        }
 
         // Kirim notifikasi (jika diperlukan)
-        $this->kirimNotifikasiPengiriman($pengiriman, $kurir);
+        // $this->kirimNotifikasiPengiriman($pengiriman, $kurir);
 
         $pengiriman->update([
-            'idPegawai' => $kurir->idPegawai,
+            'idPegawai' => $request->kurir,
             'tanggalKirim' => $request->tanggalKirim,
             'status' => 'kirim',
         ]);
@@ -134,5 +139,15 @@ class TransaksiPengirimanController extends Controller
         return redirect()->route('gudang.pengiriman.index')->with('success', 'Pengiriman berhasil dijadwalkan.');
     }
 
-    public function konfirmasiAmbil($id) {}
+    public function konfirmasiAmbil($id)
+    {
+        $pengiriman = TransaksiPenjualan::findOrFail($id);
+
+        $pengiriman->update([
+            'status' => 'ambil',
+            'tanggalAmbil' => Carbon::now(),
+        ]);
+
+        return redirect()->route('gudang.pengiriman.index')->with('success', 'Produk telah diambil.');
+    }
 }
