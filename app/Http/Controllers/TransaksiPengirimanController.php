@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Produk;
 use App\Models\TransaksiPenjualan;
+use App\Models\DetailTransaksiPenjualan;
 use App\Models\KategoriProduk;
 use App\Models\Pegawai;
 use App\Models\Pembeli;
 use Carbon\Carbon;
+use Illuminate\Container\Attributes\DB;
 use Illuminate\Support\Facades\Validator;
 
 class TransaksiPengirimanController extends Controller
@@ -28,7 +30,7 @@ class TransaksiPengirimanController extends Controller
                 ->orWhere('idPembeli', 'like', '%' . $search . '%')
                 ->orWhere('idPegawai', 'like', '%' . $search . '%');
         })
-            ->where('status', 'terjual')
+            ->whereIn('status', ['terjual', 'pengambilan'])
             ->orderBy('idTransaksiPenjualan')
             ->paginate(10);
 
@@ -50,14 +52,20 @@ class TransaksiPengirimanController extends Controller
         return view('pegawai.gudang.pengiriman.show', compact('pengiriman', 'gambarArray'));
     }
 
-    public function penjadwalanPage($id)
+    public function penjadwalanKirimPage($id)
     {
         $pengiriman = TransaksiPenjualan::findOrFail($id);
         $kurir = Pegawai::where('idJabatan', 6)->get();
-        return view('pegawai.gudang.pengiriman.penjadwalan', compact('pengiriman', 'kurir'));
+        return view('pegawai.gudang.pengiriman.penjadwalanKirim', compact('pengiriman', 'kurir'));
     }
 
-    public function penjadwalan(Request $request, $id)
+    public function penjadwalanAmbilPage($id)
+    {
+        $pengiriman = TransaksiPenjualan::findOrFail($id);
+        return view('pegawai.gudang.pengiriman.penjadwalanAmbil', compact('pengiriman'));
+    }
+
+    public function penjadwalanKirim(Request $request, $id)
     {
         $pengiriman = TransaksiPenjualan::find($id);
 
@@ -102,20 +110,20 @@ class TransaksiPengirimanController extends Controller
             }
         }
 
-        // saat penjadwalan di luar operasional
-        if ($tanggalKirimRequest->format('Y-m-d') === $sekarang->format('Y-m-d')) {
-            $jamSekarang = (int) $sekarang->format('H.i');
+        // // saat penjadwalan di luar operasional
+        // if ($tanggalKirimRequest->format('Y-m-d') === $sekarang->format('Y-m-d')) {
+        //     $jamSekarang = (int) $sekarang->format('H.i');
 
-            if (!($jamSekarang >= 08.00 && $jamSekarang <= 20.00)) {
-                $besok = $sekarang->copy()->addDay()->format('d/m/Y');
-                $errorMessage = "Pengiriman hari ini sudah tutup (setelah jam 20:00). Minimal tanggal kirim: {$besok}";
+        //     if (!($jamSekarang >= 08.00 && $jamSekarang <= 20.00)) {
+        //         $besok = $sekarang->copy()->addDay()->format('d/m/Y');
+        //         $errorMessage = "Pengiriman hari ini sudah tutup (setelah jam 20:00). Minimal tanggal kirim: {$besok}";
 
-                if ($request->expectsJson()) {
-                    return response()->json(['errors' => ['tanggalKirim' => $errorMessage]], 422);
-                }
-                return redirect()->back()->withErrors(['tanggalKirim' => $errorMessage])->withInput();
-            }
-        }
+        //         if ($request->expectsJson()) {
+        //             return response()->json(['errors' => ['tanggalKirim' => $errorMessage]], 422);
+        //         }
+        //         return redirect()->back()->withErrors(['tanggalKirim' => $errorMessage])->withInput();
+        //     }
+        // }
 
         $jamPengirimanRequest = (int) $tanggalKirimRequest->format('H.i');
         //jam pengiriman di luar operasional
@@ -139,6 +147,53 @@ class TransaksiPengirimanController extends Controller
         return redirect()->route('gudang.pengiriman.index')->with('success', 'Pengiriman berhasil dijadwalkan.');
     }
 
+    public function penjadwalanAmbil(Request $request, $id)
+    {
+        $pengiriman = TransaksiPenjualan::find($id);
+
+        $validator = Validator::make($request->all(), [
+            'tanggalAmbil' => 'required|date',
+        ]);
+
+        if ($validator->fails()) {
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        $tanggalAmbilRequest = Carbon::parse($request->tanggalAmbil);
+        $sekarang = Carbon::now();
+
+        if ($tanggalAmbilRequest->lt($sekarang->startOfDay())) {
+            $errorMessage = 'Tanggal ambil tidak boleh sebelum hari ini';
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => ['tanggalAmbil' => $errorMessage]], 422);
+            }
+            return redirect()->back()->withErrors(['tanggalAmbil' => $errorMessage])->withInput();
+        }
+
+        $jamPengambilanRequest = (int) $tanggalAmbilRequest->format('H.i');
+        //jam pengambilan di luar operasional
+        if (!($jamPengambilanRequest >= 08.00 && $jamPengambilanRequest <= 20.00)) {
+            $errorMessage = 'Pengambilan hanya bisa dijadwalkan antara jam 08:00 - 20:00';
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => ['tanggalAmbil' => $errorMessage]], 422);
+            }
+            return redirect()->back()->withErrors(['tanggalAmbil' => $errorMessage])->withInput();
+        }
+
+        $tanggalAmbil = Carbon::parse($request->tanggalAmbil);
+        $tanggalBatasAmbil = $tanggalAmbil->copy()->addDays(2);
+
+        $pengiriman->update([
+            'tanggalBatasAmbil' => $tanggalBatasAmbil,
+            'status' => 'pengambilan',
+        ]);
+
+        return redirect()->route('gudang.pengiriman.index')->with('success', 'Pengambilan berhasil dijadwalkan.');
+    }
+
     public function konfirmasiAmbil($id)
     {
         $pengiriman = TransaksiPenjualan::findOrFail($id);
@@ -149,5 +204,33 @@ class TransaksiPengirimanController extends Controller
         ]);
 
         return redirect()->route('gudang.pengiriman.index')->with('success', 'Produk telah diambil.');
+    }
+
+    public function updateStatusExpired()
+    {
+        $sekarang = Carbon::now();
+        $pengiriman = TransaksiPenjualan::where('status', 'pengambilan')
+            ->where('tanggalBatasAmbil', '<', $sekarang)
+            ->get();
+        $detailPengiriman = DetailTransaksiPenjualan::whereIn('idTransaksiPenjualan', $pengiriman->pluck('idTransaksiPenjualan'))->get();
+        $produk = Produk::whereIn('idProduk', $detailPengiriman->pluck('idProduk'))->get();
+
+        foreach ($pengiriman as $item) {
+            $item->update([
+                'status' => 'hangus',
+            ]);
+        }
+
+        foreach ($produk as $item) {
+            $item->update([
+                'status' => 'barang untuk donasi',
+            ]);
+        }
+
+        return response()->json([
+            'message' => 'Status transaksi dan produk telah diperbarui.',
+            'pengiriman_count' => $pengiriman->count(),
+            'produk_count' => $produk->count(),
+        ]);
     }
 }

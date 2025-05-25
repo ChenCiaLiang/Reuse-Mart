@@ -8,7 +8,7 @@
 
     <!-- Card -->
     <div class="bg-white shadow-md rounded-lg p-4 mb-8">
-        <form action="{{ route('gudang.pengiriman.penjadwalan', $pengiriman->idTransaksiPenjualan) }}" method="POST">
+        <form action="{{ route('gudang.pengiriman.penjadwalanKirim', $pengiriman->idTransaksiPenjualan) }}" method="POST">
             @csrf
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

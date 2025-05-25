@@ -23,6 +23,7 @@ class TransaksiPenjualan extends Model
         'tanggalPesan',
         'tanggalBatasLunas',
         'tanggalLunas',
+        'tanggalBatasAmbil',
         'tanggalKirim',
         'tanggalAmbil',
         'idPembeli',

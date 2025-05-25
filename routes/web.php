@@ -96,8 +96,10 @@ Route::prefix('pegawai')->middleware('RolePegawai:pegawai')->group(function () {
         Route::prefix('pengiriman')->name('pengiriman.')->group(function () {
             Route::get('/', [TransaksiPengirimanController::class, 'index'])->name('index');
             Route::get('/{id}', [TransaksiPengirimanController::class, 'show'])->name('show');
-            Route::get('penjadwalanPage/{id}', [TransaksiPengirimanController::class, 'penjadwalanPage'])->name('penjadwalanPage');
-            Route::post('penjadwalan/{id}', [TransaksiPengirimanController::class, 'penjadwalan'])->name('penjadwalan');
+            Route::get('penjadwalanKirimPage/{id}', [TransaksiPengirimanController::class, 'penjadwalanKirimPage'])->name('penjadwalanKirimPage');
+            Route::post('penjadwalanKirim/{id}', [TransaksiPengirimanController::class, 'penjadwalanKirim'])->name('penjadwalanKirim');
+            Route::get('penjadwalanAmbilPage/{id}', [TransaksiPengirimanController::class, 'penjadwalanAmbilPage'])->name('penjadwalanAmbilPage');
+            Route::post('penjadwalanAmbil/{id}', [TransaksiPengirimanController::class, 'penjadwalanAmbil'])->name('penjadwalanAmbil');
             Route::get('konfirmasiAmbil/{id}', [TransaksiPengirimanController::class, 'konfirmasiAmbil'])->name('konfirmasiAmbil');
         });
     });

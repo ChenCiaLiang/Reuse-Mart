@@ -19,6 +19,7 @@ return new class extends Migration
             $table->dateTime('tanggalPesan');
             $table->dateTime('tanggalBatasLunas');
             $table->dateTime('tanggalLunas')->nullable();
+            $table->dateTime('tanggalBatasAmbil')->nullable();
             $table->dateTime('tanggalKirim')->nullable();
             $table->dateTime('tanggalAmbil')->nullable();
             $table->unsignedBigInteger('idPembeli');

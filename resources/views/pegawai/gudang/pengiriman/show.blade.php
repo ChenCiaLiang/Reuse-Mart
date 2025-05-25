@@ -69,9 +69,13 @@
                 </div>
             </div>
             <div class="flex item-center mt-6">
-                <a href="{{ route('gudang.pengiriman.penjadwalanPage', $pengiriman->idTransaksiPenjualan) }}" 
+                <a href="{{ route('gudang.pengiriman.penjadwalanKirimPage', $pengiriman->idTransaksiPenjualan) }}" 
                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
-                    <i class="fa fa-calendar" aria-hidden="true"></i> Penjadwalan
+                    <i class="fa-solid fa-truck"></i> Penjadwalan Kirim
+                </a>
+                <a href="{{ route('gudang.pengiriman.penjadwalanAmbilPage', $pengiriman->idTransaksiPenjualan) }}" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md ml-4">
+                    <i class="fa-solid fa-warehouse"></i> Penjadwalan Ambil
                 </a>
                 <a href="{{ route('gudang.pengiriman.konfirmasiAmbil', $pengiriman->idTransaksiPenjualan) }}" 
                     class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md ml-4">
