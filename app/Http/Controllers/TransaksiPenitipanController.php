@@ -85,7 +85,7 @@ class TransaksiPenitipanController extends Controller
                 'tp.created_at',
                 'tp.updated_at',
                 'p.nama as namaPenitip',
-                'p.email as emailPenitip', // Menggunakan email sebagai kontak
+                'p.email as emailPenitip',
                 'pg.nama as namaPegawai'
             );
 
@@ -97,16 +97,14 @@ class TransaksiPenitipanController extends Controller
         return view('pegawai.gudang.penitipan.index', compact('transaksi'));
     }
 
-    // //Menampilkan daftar transaksi (dikirim/diambil)
+    // Index method untuk penitip
     public function indexPenitip(Request $request)
     {
-        // Ambil parameter pencarian
         $search = $request->input('search');
         $idPenitip = session('user')['idPenitip'];
 
         $penitipan = TransaksiPenitipan::where('idPenitip', $idPenitip)
             ->when($search, function ($query) use ($search) {
-                // Menggunakan closure untuk grouping yang benar
                 return $query->where(function ($q) use ($search) {
                     $q->where('idTransaksiPenitipan', 'like', '%' . $search . '%')
                         ->orWhere('tanggalMasukPenitipan', 'like', '%' . $search . '%')
@@ -166,12 +164,10 @@ class TransaksiPenitipanController extends Controller
 
     public function showPenitip($id)
     {
-        // Ambil data produk berdasarkan ID
         $penitipan = TransaksiPenitipan::findOrFail($id);
         $produk = Produk::find($penitipan->detailTransaksiPenitipan[0]->idProduk);
         $penitipan->produk = $produk->deskripsi;
         $penitipan->namaPegawai = Pegawai::find($penitipan->idPegawai)->nama ?? '-';
-        // Ambil gambar-gambar produk dari field gambar
         $gambarArray = $produk->gambar ? explode(',', $produk->gambar) : ['default.jpg'];
 
         return view('customer.penitip.penitipan.show', compact('penitipan', 'gambarArray'));
@@ -193,150 +189,9 @@ class TransaksiPenitipanController extends Controller
         return redirect()->route('penitip.penitipan.index')->with('success', 'Perpanjangan berhasil dilakukan');
     }
 
-    public function penjadwalanKirimPage($id)
-    {
-        dd(Carbon::now()->format('d/m/Y H:i:s'));
-        $pengiriman = TransaksiPenitipan::findOrFail($id);
-        $kurir = Pegawai::where('idJabatan', 6)->get();
-        return view('pegawai.gudang.pengiriman.penjadwalanKirim', compact('pengiriman', 'kurir'));
-    }
-
-    public function penjadwalanAmbilPage($id)
-    {
-        $pengiriman = TransaksiPenitipan::findOrFail($id);
-        return view('pegawai.gudang.pengiriman.penjadwalanAmbil', compact('pengiriman'));
-    }
-
-    public function penjadwalanKirim(Request $request, $id)
-    {
-        $pengiriman = TransaksiPenitipan::find($id);
-
-        $validator = Validator::make($request->all(), [
-            'kurir' => 'required',
-            'tanggalKirim' => 'required|date',
-        ]);
-
-        if ($validator->fails()) {
-            if ($request->expectsJson()) {
-                return response()->json(['errors' => $validator->errors()], 422);
-            }
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
-
-        $tanggalKirimRequest = Carbon::parse($request->tanggalKirim);
-        $tanggalLaku = Carbon::parse($pengiriman->tanggalLaku);
-        $sekarang = Carbon::now();
-
-        if ($tanggalKirimRequest->lt($sekarang->startOfDay())) {
-            $errorMessage = 'Tanggal kirim tidak boleh sebelum hari ini';
-            if ($request->expectsJson()) {
-                return response()->json(['errors' => ['tanggalKirim' => $errorMessage]], 422);
-            }
-            return redirect()->back()->withErrors(['tanggalKirim' => $errorMessage])->withInput();
-        }
-
-        // Pembelian di atas jam 16.00
-        $jamPembelian = (int) $tanggalLaku->format('H.i');
-        $hariPembelian = $tanggalLaku->format('Y-m-d');
-        $hariPengiriman = $tanggalKirimRequest->format('Y-m-d');
-
-        if ($jamPembelian >= 16.00 && $jamPembelian <= 08.00) {
-            if ($hariPembelian === $hariPengiriman) {
-                $tanggalMinimal = $tanggalLaku->copy()->addDay()->format('d/m/Y');
-                $errorMessage = "Pembelian setelah jam 16:00 tidak bisa dikirim di hari yang sama. Minimal tanggal kirim: {$tanggalMinimal}";
-
-                if ($request->expectsJson()) {
-                    return response()->json(['errors' => ['tanggalKirim' => $errorMessage]], 422);
-                }
-                return redirect()->back()->withErrors(['tanggalKirim' => $errorMessage])->withInput();
-            }
-        }
-
-        $jamPengirimanRequest = (int) $tanggalKirimRequest->format('H.i');
-        //jam pengiriman di luar operasional
-        if (!($jamPengirimanRequest >= 08.00 && $jamPengirimanRequest <= 20.00)) {
-            $errorMessage = 'Pengiriman hanya bisa dijadwalkan antara jam 08:00 - 20:00';
-            if ($request->expectsJson()) {
-                return response()->json(['errors' => ['tanggalKirim' => $errorMessage]], 422);
-            }
-            return redirect()->back()->withErrors(['tanggalKirim' => $errorMessage])->withInput();
-        }
-
-        // Kirim notifikasi (jika diperlukan)
-        // $this->kirimNotifikasiPengiriman($pengiriman, $kurir);
-
-        $pengiriman->update([
-            'idPegawai' => $request->kurir,
-            'tanggalKirim' => $request->tanggalKirim,
-            'status' => 'kirim',
-        ]);
-
-        return redirect()->route('gudang.pengiriman.index')->with('success', 'Pengiriman berhasil dijadwalkan.');
-    }
-
-    public function penjadwalanAmbil(Request $request, $id)
-    {
-        $pengiriman = TransaksiPenitipan::find($id);
-
-        $validator = Validator::make($request->all(), [
-            'tanggalAmbil' => 'required|date',
-        ]);
-
-        if ($validator->fails()) {
-            if ($request->expectsJson()) {
-                return response()->json(['errors' => $validator->errors()], 422);
-            }
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
-
-        $tanggalAmbilRequest = Carbon::parse($request->tanggalAmbil);
-        $sekarang = Carbon::now();
-
-        if ($tanggalAmbilRequest->lt($sekarang->startOfDay())) {
-            $errorMessage = 'Tanggal ambil tidak boleh sebelum hari ini';
-            if ($request->expectsJson()) {
-                return response()->json(['errors' => ['tanggalAmbil' => $errorMessage]], 422);
-            }
-            return redirect()->back()->withErrors(['tanggalAmbil' => $errorMessage])->withInput();
-        }
-
-        $jamPengambilanRequest = (int) $tanggalAmbilRequest->format('H.i');
-        //jam pengambilan di luar operasional
-        if (!($jamPengambilanRequest >= 08.00 && $jamPengambilanRequest <= 20.00)) {
-            $errorMessage = 'Pengambilan hanya bisa dijadwalkan antara jam 08:00 - 20:00';
-            if ($request->expectsJson()) {
-                return response()->json(['errors' => ['tanggalAmbil' => $errorMessage]], 422);
-            }
-            return redirect()->back()->withErrors(['tanggalAmbil' => $errorMessage])->withInput();
-        }
-
-        $tanggalAmbil = Carbon::parse($request->tanggalAmbil);
-        $tanggalBatasAmbil = $tanggalAmbil->copy()->addDays(2);
-
-        $pengiriman->update([
-            'tanggalBatasAmbil' => $tanggalBatasAmbil,
-            'status' => 'pengambilan',
-        ]);
-
-        return redirect()->route('gudang.pengiriman.index')->with('success', 'Pengambilan berhasil dijadwalkan.');
-    }
-
-    public function konfirmasiAmbil($id)
-    {
-        $pengiriman = TransaksiPenitipan::findOrFail($id);
-
-        $pengiriman->update([
-            'status' => 'ambil',
-            'tanggalAmbil' => Carbon::now(),
-        ]);
-
-        return redirect()->route('gudang.pengiriman.index')->with('success', 'Produk telah diambil.');
-    }
-
-    // Create method - FIXED (Menghapus referensi telepon)
+    // Create method
     public function create()
     {
-        // PERBAIKAN: Tidak mengambil kolom telepon yang tidak ada
         $penitip = DB::table('penitip')
             ->select('idPenitip', 'nama', 'email', 'alamat')
             ->orderBy('nama')
@@ -356,7 +211,7 @@ class TransaksiPenitipanController extends Controller
         return view('pegawai.gudang.penitipan.create', compact('penitip', 'pegawai', 'kategori'));
     }
 
-    // Store method - UPDATED untuk menyimpan gambar ke tabel produk
+    // Store method - UPDATED untuk foto per produk
     public function store(Request $request)
     {
         $request->validate([
@@ -373,30 +228,42 @@ class TransaksiPenitipanController extends Controller
             'produk_baru.*.hargaJual' => 'required|numeric|min:0',
             'produk_baru.*.idKategori' => 'required|exists:kategori_produk,idKategori',
             'produk_baru.*.tanggalGaransi' => 'nullable|date',
-            'foto_barang' => 'required|array|min:2|max:3',
-            'foto_barang.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
         ], [
             'produk_baru.required' => 'Minimal satu produk harus diinput',
             'produk_baru.*.deskripsi.required' => 'Deskripsi produk harus diisi',
             'produk_baru.*.harga.required' => 'Harga produk harus diisi',
-            'foto_barang.required' => 'Minimal 2 foto barang harus diupload',
-            'foto_barang.min' => 'Minimal 2 foto barang harus diupload',
-            'foto_barang.max' => 'Maksimal 3 foto barang yang dapat diupload'
         ]);
+
+        // Validasi foto per produk
+        foreach ($request->produk_baru as $index => $produk) {
+            $fotoKey = "foto_produk_{$index}";
+            if (!$request->hasFile($fotoKey)) {
+                return back()->withErrors([$fotoKey => "Foto untuk produk #" . ($index + 1) . " harus diupload (minimal 2 foto)"])->withInput();
+            }
+            
+            $files = $request->file($fotoKey);
+            if (count($files) < 2) {
+                return back()->withErrors([$fotoKey => "Minimal 2 foto untuk produk #" . ($index + 1)])->withInput();
+            }
+            
+            if (count($files) > 3) {
+                return back()->withErrors([$fotoKey => "Maksimal 3 foto untuk produk #" . ($index + 1)])->withInput();
+            }
+        }
 
         DB::beginTransaction();
 
         try {
-            // 1. Upload foto terlebih dahulu
-            $uploadedPhotos = [];
-            if ($request->hasFile('foto_barang')) {
-                $uploadedPhotos = $this->uploadPhotos($request->file('foto_barang'));
-            }
-
-            // 2. Insert produk-produk baru dengan gambar
+            // 1. Insert produk-produk baru dengan foto masing-masing
             $produkIds = [];
             foreach ($request->produk_baru as $index => $produkData) {
-                // Gunakan gambar yang sama untuk semua produk dalam satu transaksi
+                // Upload foto untuk produk ini
+                $uploadedPhotos = [];
+                $fotoKey = "foto_produk_{$index}";
+                if ($request->hasFile($fotoKey)) {
+                    $uploadedPhotos = $this->uploadPhotosPerProduk($request->file($fotoKey), $index);
+                }
+
                 $gambarString = implode(',', $uploadedPhotos);
 
                 $idProduk = DB::table('produk')->insertGetId([
@@ -416,7 +283,7 @@ class TransaksiPenitipanController extends Controller
                 $produkIds[] = $idProduk;
             }
 
-            // 3. Insert transaksi penitipan
+            // 2. Insert transaksi penitipan
             $idTransaksi = DB::table('transaksi_penitipan')->insertGetId([
                 'tanggalMasukPenitipan' => $request->tanggalMasukPenitipan,
                 'tanggalAkhirPenitipan' => $request->tanggalAkhirPenitipan,
@@ -430,7 +297,7 @@ class TransaksiPenitipanController extends Controller
                 'updated_at' => now()
             ]);
 
-            // 4. Insert detail transaksi untuk setiap produk
+            // 3. Insert detail transaksi untuk setiap produk
             foreach ($produkIds as $idProduk) {
                 DB::table('detail_transaksi_penitipan')->insert([
                     'idTransaksiPenitipan' => $idTransaksi,
@@ -441,25 +308,18 @@ class TransaksiPenitipanController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('gudang.penitipan.index')->with('success', 'Transaksi penitipan berhasil dibuat dengan ' . count($uploadedPhotos) . ' foto barang!');
+            return redirect()->route('gudang.penitipan.index')->with('success', 'Transaksi penitipan berhasil dibuat dengan ' . count($produkIds) . ' produk!');
         } catch (\Exception $e) {
             DB::rollback();
-            // Hapus foto yang sudah diupload jika terjadi error
-            foreach ($uploadedPhotos ?? [] as $photo) {
-                if (file_exists(public_path('uploads/produk/' . $photo))) {
-                    unlink(public_path('uploads/produk/' . $photo));
-                }
-            }
             return back()->with('error', 'Gagal membuat transaksi: ' . $e->getMessage());
         }
     }
 
-    // Method untuk upload foto - BARU
-    private function uploadPhotos($files)
+    // Method untuk upload foto per produk - BARU
+    private function uploadPhotosPerProduk($files, $produkIndex)
     {
         $uploadPath = 'uploads/produk';
 
-        // Buat direktori jika belum ada
         if (!file_exists(public_path($uploadPath))) {
             mkdir(public_path($uploadPath), 0755, true);
         }
@@ -467,9 +327,8 @@ class TransaksiPenitipanController extends Controller
         $uploadedFiles = [];
         foreach ($files as $index => $file) {
             $extension = $file->getClientOriginalExtension();
-            $fileName = 'produk_' . time() . '_' . ($index + 1) . '_' . uniqid() . '.' . $extension;
+            $fileName = 'produk_' . time() . '_' . $produkIndex . '_' . ($index + 1) . '_' . uniqid() . '.' . $extension;
 
-            // Pindahkan file ke direktori tujuan
             $file->move(public_path($uploadPath), $fileName);
             $uploadedFiles[] = $fileName;
         }
@@ -477,7 +336,7 @@ class TransaksiPenitipanController extends Controller
         return $uploadedFiles;
     }
 
-    // Edit method - FIXED
+    // Edit method
     public function edit($id)
     {
         $transaksi = DB::table('transaksi_penitipan')->where('idTransaksiPenitipan', $id)->first();
@@ -501,14 +360,12 @@ class TransaksiPenitipanController extends Controller
             ->orderBy('nama')
             ->get();
 
-        // Get produk yang sudah ada di transaksi ini
         $produkTransaksi = DB::table('detail_transaksi_penitipan as dtp')
             ->join('produk as pr', 'dtp.idProduk', '=', 'pr.idProduk')
             ->select('pr.*')
             ->where('dtp.idTransaksiPenitipan', $id)
             ->get();
 
-        // TAMBAHAN: Get semua produk yang tersedia untuk dipilih
         $produk = DB::table('produk as pr')
             ->join('kategori_produk as kp', 'pr.idKategori', '=', 'kp.idKategori')
             ->select(
@@ -519,11 +376,10 @@ class TransaksiPenitipanController extends Controller
                 'pr.status',
                 'kp.nama as kategori'
             )
-            ->where('pr.status', 'Tersedia') // Hanya produk yang tersedia
+            ->where('pr.status', 'Tersedia')
             ->orderBy('pr.deskripsi')
             ->get();
 
-        // Get ID produk yang sudah dipilih untuk transaksi ini
         $selectedProduk = DB::table('detail_transaksi_penitipan')
             ->where('idTransaksiPenitipan', $id)
             ->pluck('idProduk')
@@ -539,6 +395,8 @@ class TransaksiPenitipanController extends Controller
             'selectedProduk'
         ));
     }
+
+    // Update method - UPDATED untuk foto per produk  
     public function update(Request $request, $id)
     {
         $request->validate([
@@ -550,7 +408,6 @@ class TransaksiPenitipanController extends Controller
             'pendapatan' => 'required|numeric|min:0',
             'idPenitip' => 'required|exists:penitip,idPenitip',
             'idPegawai' => 'required|exists:pegawai,idPegawai',
-            // Validation for existing products
             'produk_existing' => 'sometimes|array',
             'produk_existing.*.deskripsi' => 'required_with:produk_existing|string|max:100',
             'produk_existing.*.harga' => 'required_with:produk_existing|numeric|min:0',
@@ -558,7 +415,6 @@ class TransaksiPenitipanController extends Controller
             'produk_existing.*.hargaJual' => 'required_with:produk_existing|numeric|min:0',
             'produk_existing.*.idKategori' => 'required_with:produk_existing|exists:kategori_produk,idKategori',
             'produk_existing.*.tanggalGaransi' => 'nullable|date',
-            // Validation for new products
             'produk_baru' => 'sometimes|array',
             'produk_baru.*.deskripsi' => 'required_with:produk_baru|string|max:100',
             'produk_baru.*.harga' => 'required_with:produk_baru|numeric|min:0',
@@ -566,9 +422,26 @@ class TransaksiPenitipanController extends Controller
             'produk_baru.*.hargaJual' => 'required_with:produk_baru|numeric|min:0',
             'produk_baru.*.idKategori' => 'required_with:produk_baru|exists:kategori_produk,idKategori',
             'produk_baru.*.tanggalGaransi' => 'nullable|date',
-            'foto_barang_baru' => 'required_with:produk_baru|array|min:2|max:3',
-            'foto_barang_baru.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
+
+        // Validasi foto untuk produk baru jika ada
+        if ($request->has('produk_baru') && count($request->produk_baru) > 0) {
+            foreach ($request->produk_baru as $index => $produk) {
+                $fotoKey = "foto_produk_baru_{$index}";
+                if (!$request->hasFile($fotoKey)) {
+                    return back()->withErrors([$fotoKey => "Foto untuk produk baru #" . ($index + 1) . " harus diupload (minimal 2 foto)"])->withInput();
+                }
+                
+                $files = $request->file($fotoKey);
+                if (count($files) < 2) {
+                    return back()->withErrors([$fotoKey => "Minimal 2 foto untuk produk baru #" . ($index + 1)])->withInput();
+                }
+                
+                if (count($files) > 3) {
+                    return back()->withErrors([$fotoKey => "Maksimal 3 foto untuk produk baru #" . ($index + 1)])->withInput();
+                }
+            }
+        }
 
         DB::beginTransaction();
 
@@ -591,31 +464,55 @@ class TransaksiPenitipanController extends Controller
             // 2. Update existing products if provided
             if ($request->has('produk_existing')) {
                 foreach ($request->produk_existing as $produkId => $produkData) {
-                    DB::table('produk')
-                        ->where('idProduk', $produkId)
-                        ->update([
-                            'deskripsi' => $produkData['deskripsi'],
-                            'harga' => $produkData['harga'],
-                            'berat' => $produkData['berat'],
-                            'hargaJual' => $produkData['hargaJual'],
-                            'idKategori' => $produkData['idKategori'],
-                            'tanggalGaransi' => $produkData['tanggalGaransi'] ?? null,
-                            'updated_at' => now()
-                        ]);
+                    $updateData = [
+                        'deskripsi' => $produkData['deskripsi'],
+                        'harga' => $produkData['harga'],
+                        'berat' => $produkData['berat'],
+                        'hargaJual' => $produkData['hargaJual'],
+                        'idKategori' => $produkData['idKategori'],
+                        'tanggalGaransi' => $produkData['tanggalGaransi'] ?? null,
+                        'updated_at' => now()
+                    ];
+                    
+                    // Check if there are new photos for this existing product
+                    $fotoKey = "foto_produk_existing_{$produkId}";
+                    if ($request->hasFile($fotoKey)) {
+                        $files = $request->file($fotoKey);
+                        if (count($files) >= 2 && count($files) <= 3) {
+                            // Delete old photos
+                            $oldProduct = DB::table('produk')->where('idProduk', $produkId)->first();
+                            if ($oldProduct && $oldProduct->gambar) {
+                                $oldImages = explode(',', $oldProduct->gambar);
+                                foreach ($oldImages as $image) {
+                                    $imagePath = public_path('uploads/produk/' . trim($image));
+                                    if (file_exists($imagePath)) {
+                                        unlink($imagePath);
+                                    }
+                                }
+                            }
+                            
+                            // Upload new photos
+                            $uploadedPhotos = $this->uploadPhotosPerProduk($files, 'existing_' . $produkId);
+                            $updateData['gambar'] = implode(',', $uploadedPhotos);
+                        }
+                    }
+                    
+                    DB::table('produk')->where('idProduk', $produkId)->update($updateData);
                 }
             }
 
             // 3. Add new products if provided
             if ($request->has('produk_baru') && count($request->produk_baru) > 0) {
-                // Upload foto baru
-                $uploadedPhotos = [];
-                if ($request->hasFile('foto_barang_baru')) {
-                    $uploadedPhotos = $this->uploadPhotos($request->file('foto_barang_baru'));
-                }
+                foreach ($request->produk_baru as $index => $produkData) {
+                    // Upload foto untuk produk baru ini
+                    $uploadedPhotos = [];
+                    $fotoKey = "foto_produk_baru_{$index}";
+                    if ($request->hasFile($fotoKey)) {
+                        $uploadedPhotos = $this->uploadPhotosPerProduk($request->file($fotoKey), 'new_' . $index);
+                    }
 
-                $gambarString = implode(',', $uploadedPhotos);
+                    $gambarString = implode(',', $uploadedPhotos);
 
-                foreach ($request->produk_baru as $produkData) {
                     $idProduk = DB::table('produk')->insertGetId([
                         'gambar' => $gambarString,
                         'tanggalGaransi' => $produkData['tanggalGaransi'] ?? null,
@@ -645,14 +542,6 @@ class TransaksiPenitipanController extends Controller
             return redirect()->route('gudang.penitipan.index')->with('success', 'Transaksi penitipan berhasil diupdate!');
         } catch (\Exception $e) {
             DB::rollback();
-            // Hapus foto baru yang sudah diupload jika terjadi error
-            if (isset($uploadedPhotos)) {
-                foreach ($uploadedPhotos as $photo) {
-                    if (file_exists(public_path('uploads/produk/' . $photo))) {
-                        unlink(public_path('uploads/produk/' . $photo));
-                    }
-                }
-            }
             return back()->with('error', 'Gagal mengupdate transaksi: ' . $e->getMessage());
         }
     }
@@ -663,7 +552,6 @@ class TransaksiPenitipanController extends Controller
         DB::beginTransaction();
 
         try {
-            // Get produk yang akan dihapus untuk menghapus foto-fotonya
             $produkList = DB::table('detail_transaksi_penitipan as dtp')
                 ->join('produk as pr', 'dtp.idProduk', '=', 'pr.idProduk')
                 ->select('pr.idProduk', 'pr.gambar')
@@ -705,14 +593,13 @@ class TransaksiPenitipanController extends Controller
     // Apply filters method
     private function applyFilters($query, $request)
     {
-        // Quick search
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('p.nama', 'LIKE', "%{$search}%")
                     ->orWhere('tp.idTransaksiPenitipan', 'LIKE', "%{$search}%")
                     ->orWhere('pg.nama', 'LIKE', "%{$search}%")
-                    ->orWhere('p.email', 'LIKE', "%{$search}%"); // Tambah pencarian email
+                    ->orWhere('p.email', 'LIKE', "%{$search}%");
             });
         }
 
@@ -720,7 +607,6 @@ class TransaksiPenitipanController extends Controller
             $query->where('tp.statusPenitipan', $request->status);
         }
 
-        // Advanced search filters
         if ($request->filled('advanced_search')) {
             if ($request->filled('adv_id')) {
                 $query->where('tp.idTransaksiPenitipan', 'LIKE', '%' . $request->adv_id . '%');
@@ -796,16 +682,15 @@ class TransaksiPenitipanController extends Controller
             return redirect()->route('gudang.penitipan.index')->with('error', 'Transaksi tidak ditemukan!');
         }
 
-        // PERBAIKAN: Query detail harus konsisten dengan template HTML
         $detail = DB::table('detail_transaksi_penitipan as dtp')
             ->join('produk as pr', 'dtp.idProduk', '=', 'pr.idProduk')
             ->join('kategori_produk as kp', 'pr.idKategori', '=', 'kp.idKategori')
             ->select(
                 'pr.idProduk',
                 'pr.deskripsi as namaProduk',
-                'pr.harga',           // Tidak di-alias, sesuai template
-                'pr.hargaJual',       // Tidak di-alias, sesuai template
-                'pr.berat',           // Tidak di-alias, sesuai template
+                'pr.harga',
+                'pr.hargaJual',
+                'pr.berat',
                 'pr.gambar',
                 'pr.tanggalGaransi',
                 'pr.status',
@@ -815,7 +700,6 @@ class TransaksiPenitipanController extends Controller
             ->where('dtp.idTransaksiPenitipan', $id)
             ->get();
 
-        // Data untuk PDF
         $data = [
             'transaksi' => $transaksi,
             'detail' => $detail,

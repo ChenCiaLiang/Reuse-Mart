@@ -47,7 +47,7 @@
                     Informasi Dasar
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Penitip - FIXED: Menampilkan email sebagai kontak -->
+                    <!-- Penitip -->
                     <div>
                         <label for="idPenitip" class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fa-solid fa-user mr-1"></i>
@@ -175,14 +175,16 @@
                 <div class="border border-gray-200 rounded-lg p-4">
                     <div id="produk-container">
                         <!-- Produk pertama (default) -->
-                        <div class="produk-item border border-gray-100 p-4 rounded-lg mb-4">
-                            <div class="flex justify-between items-center mb-3">
-                                <h4 class="text-md font-medium text-gray-800">Produk #1</h4>
+                        <div class="produk-item border border-gray-100 p-6 rounded-lg mb-6 bg-gray-50">
+                            <div class="flex justify-between items-center mb-4">
+                                <h4 class="text-lg font-medium text-gray-800">Produk #1</h4>
                                 <button type="button" class="text-red-600 hover:text-red-800 hidden remove-produk-btn">
-                                    <i class="fa-solid fa-trash"></i>
+                                    <i class="fa-solid fa-trash text-lg"></i>
                                 </button>
                             </div>
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            
+                            <!-- Product Details -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Deskripsi Produk *</label>
                                     <input type="text" name="produk_baru[0][deskripsi]" required
@@ -223,6 +225,34 @@
                                            class="w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
                                 </div>
                             </div>
+
+                            <!-- Photo Upload untuk Produk Ini -->
+                            <div class="border-2 border-dashed border-green-300 rounded-lg p-4 bg-white">
+                                <h5 class="text-md font-medium text-green-800 mb-3 flex items-center">
+                                    <i class="fa-solid fa-camera mr-2"></i>
+                                    Foto untuk Produk #1 (Minimal 2 - Maksimal 3 Foto) *
+                                </h5>
+                                <div class="text-center">
+                                    <i class="fa-solid fa-cloud-upload-alt text-3xl text-green-400 mb-3"></i>
+                                    <p class="text-sm text-gray-600 mb-3">Upload foto khusus untuk produk ini (JPG, PNG, JPEG)</p>
+                                    
+                                    <!-- File Input -->
+                                    <input type="file" id="foto-produk-0" name="foto_produk_0[]" multiple accept="image/*" 
+                                           class="hidden" onchange="previewPhotosPerProduk(this, 0)" required>
+                                    <label for="foto-produk-0" 
+                                           class="cursor-pointer bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg inline-flex items-center space-x-2">
+                                        <i class="fa-solid fa-plus"></i>
+                                        <span>Pilih Foto Produk</span>
+                                    </label>
+                                    
+                                    <p class="text-xs text-gray-500 mt-2">Minimal 2 foto, maksimal 3 foto untuk produk ini</p>
+                                </div>
+                                
+                                <!-- Photo Preview -->
+                                <div id="photo-preview-0" class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3 hidden">
+                                    <!-- Preview akan ditampilkan di sini via JavaScript -->
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -236,36 +266,6 @@
                             <i class="fa-solid fa-info-circle mr-1"></i>
                             Minimal 1 produk harus diinput
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Photo Upload Section -->
-            <div>
-                <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                    <i class="fa-solid fa-camera mr-2 text-green-600"></i>
-                    Foto Barang Titipan (Minimal 2 Foto) *
-                </h3>
-                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                    <div class="text-center">
-                        <i class="fa-solid fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
-                        <p class="text-sm text-gray-600 mb-4">Upload foto barang yang akan dititipkan (JPG, PNG, JPEG)</p>
-                        
-                        <!-- File Input -->
-                        <input type="file" id="foto-barang" name="foto_barang[]" multiple accept="image/*" 
-                               class="hidden" onchange="previewPhotos(this)">
-                        <label for="foto-barang" 
-                               class="cursor-pointer bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg inline-flex items-center space-x-2">
-                            <i class="fa-solid fa-plus"></i>
-                            <span>Pilih Foto</span>
-                        </label>
-                        
-                        <p class="text-xs text-gray-500 mt-2">Minimal 2 foto, maksimal 3 foto per transaksi</p>
-                    </div>
-                    
-                    <!-- Photo Preview -->
-                    <div id="photo-preview" class="mt-6 grid grid-cols-2 md:grid-cols-3 gap-4 hidden">
-                        <!-- Preview akan ditampilkan di sini via JavaScript -->
                     </div>
                 </div>
             </div>
@@ -339,15 +339,17 @@
     document.getElementById('tambah-produk-btn').addEventListener('click', function() {
         const container = document.getElementById('produk-container');
         const newProduk = document.createElement('div');
-        newProduk.className = 'produk-item border border-gray-100 p-4 rounded-lg mb-4';
+        newProduk.className = 'produk-item border border-gray-100 p-6 rounded-lg mb-6 bg-gray-50';
         newProduk.innerHTML = `
-            <div class="flex justify-between items-center mb-3">
-                <h4 class="text-md font-medium text-gray-800">Produk #${produkCounter + 1}</h4>
+            <div class="flex justify-between items-center mb-4">
+                <h4 class="text-lg font-medium text-gray-800">Produk #${produkCounter + 1}</h4>
                 <button type="button" class="text-red-600 hover:text-red-800 remove-produk-btn">
-                    <i class="fa-solid fa-trash"></i>
+                    <i class="fa-solid fa-trash text-lg"></i>
                 </button>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            
+            <!-- Product Details -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Deskripsi Produk *</label>
                     <input type="text" name="produk_baru[${produkCounter}][deskripsi]" required
@@ -388,6 +390,34 @@
                            class="w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
                 </div>
             </div>
+
+            <!-- Photo Upload untuk Produk Ini -->
+            <div class="border-2 border-dashed border-green-300 rounded-lg p-4 bg-white">
+                <h5 class="text-md font-medium text-green-800 mb-3 flex items-center">
+                    <i class="fa-solid fa-camera mr-2"></i>
+                    Foto untuk Produk #${produkCounter + 1} (Minimal 2 - Maksimal 3 Foto) *
+                </h5>
+                <div class="text-center">
+                    <i class="fa-solid fa-cloud-upload-alt text-3xl text-green-400 mb-3"></i>
+                    <p class="text-sm text-gray-600 mb-3">Upload foto khusus untuk produk ini (JPG, PNG, JPEG)</p>
+                    
+                    <!-- File Input -->
+                    <input type="file" id="foto-produk-${produkCounter}" name="foto_produk_${produkCounter}[]" multiple accept="image/*" 
+                           class="hidden" onchange="previewPhotosPerProduk(this, ${produkCounter})" required>
+                    <label for="foto-produk-${produkCounter}" 
+                           class="cursor-pointer bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg inline-flex items-center space-x-2">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Pilih Foto Produk</span>
+                    </label>
+                    
+                    <p class="text-xs text-gray-500 mt-2">Minimal 2 foto, maksimal 3 foto untuk produk ini</p>
+                </div>
+                
+                <!-- Photo Preview -->
+                <div id="photo-preview-${produkCounter}" class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3 hidden">
+                    <!-- Preview akan ditampilkan di sini via JavaScript -->
+                </div>
+            </div>
         `;
         
         container.appendChild(newProduk);
@@ -425,6 +455,11 @@
             const title = item.querySelector('h4');
             title.textContent = `Produk #${index + 1}`;
             
+            const photoTitle = item.querySelector('h5');
+            if (photoTitle) {
+                photoTitle.innerHTML = `<i class="fa-solid fa-camera mr-2"></i>Foto untuk Produk #${index + 1} (Minimal 2 - Maksimal 3 Foto) *`;
+            }
+            
             // Update input names
             const inputs = item.querySelectorAll('input, select');
             inputs.forEach(input => {
@@ -433,25 +468,45 @@
                     const newName = name.replace(/produk_baru\[\d+\]/, `produk_baru[${index}]`);
                     input.setAttribute('name', newName);
                 }
+                
+                // Update foto input names and IDs
+                if (name && name.includes('foto_produk_')) {
+                    const newName = name.replace(/foto_produk_\d+/, `foto_produk_${index}`);
+                    input.setAttribute('name', newName);
+                    input.setAttribute('id', `foto-produk-${index}`);
+                    input.setAttribute('onchange', `previewPhotosPerProduk(this, ${index})`);
+                    
+                    // Update label
+                    const label = item.querySelector(`label[for="${input.id}"]`);
+                    if (label) {
+                        label.setAttribute('for', `foto-produk-${index}`);
+                    }
+                }
             });
+            
+            // Update preview container ID
+            const previewContainer = item.querySelector('[id^="photo-preview-"]');
+            if (previewContainer) {
+                previewContainer.setAttribute('id', `photo-preview-${index}`);
+            }
         });
     }
 
-    // Photo preview functionality
-    function previewPhotos(input) {
-        const previewContainer = document.getElementById('photo-preview');
+    // Photo preview functionality per produk
+    function previewPhotosPerProduk(input, produkIndex) {
+        const previewContainer = document.getElementById(`photo-preview-${produkIndex}`);
         previewContainer.innerHTML = '';
         
         if (input.files && input.files.length > 0) {
             if (input.files.length < 2) {
-                alert('Minimal 2 foto harus diupload!');
+                alert('Minimal 2 foto harus diupload untuk setiap produk!');
                 input.value = '';
                 previewContainer.classList.add('hidden');
                 return;
             }
             
             if (input.files.length > 3) {
-                alert('Maksimal 3 foto yang dapat diupload!');
+                alert('Maksimal 3 foto yang dapat diupload untuk setiap produk!');
                 input.value = '';
                 previewContainer.classList.add('hidden');
                 return;
@@ -467,12 +522,12 @@
                         photoDiv.className = 'relative group';
                         photoDiv.innerHTML = `
                             <img src="${e.target.result}" alt="Preview ${index + 1}" 
-                                 class="w-full h-32 object-cover rounded-lg border border-gray-200">
+                                 class="w-full h-24 object-cover rounded-lg border border-gray-200">
                             <div class="absolute inset-0 bg-black bg-opacity-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                                <span class="text-white text-sm">Foto ${index + 1}</span>
+                                <span class="text-white text-xs">Foto ${index + 1}</span>
                             </div>
-                            <button type="button" onclick="removePhoto(${index})" 
-                                    class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600">
+                            <button type="button" onclick="removePhotoPerProduk(${produkIndex}, ${index})" 
+                                    class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600">
                                 <i class="fa-solid fa-times"></i>
                             </button>
                         `;
@@ -486,24 +541,23 @@
         }
     }
 
-    function removePhoto(index) {
-        const input = document.getElementById('foto-barang');
+    function removePhotoPerProduk(produkIndex, photoIndex) {
+        const input = document.getElementById(`foto-produk-${produkIndex}`);
         const dt = new DataTransfer();
         
         Array.from(input.files).forEach((file, i) => {
-            if (i !== index) {
+            if (i !== photoIndex) {
                 dt.items.add(file);
             }
         });
         
         input.files = dt.files;
-        previewPhotos(input);
+        previewPhotosPerProduk(input, produkIndex);
     }
 
     // Validate form before submit
     document.querySelector('form').addEventListener('submit', function(e) {
         const produkItems = document.querySelectorAll('.produk-item');
-        const photoInput = document.getElementById('foto-barang');
         
         if (produkItems.length === 0) {
             e.preventDefault();
@@ -511,7 +565,7 @@
             return false;
         }
         
-        // Validate each product has required fields
+        // Validate each product has required fields and photos
         let valid = true;
         produkItems.forEach((item, index) => {
             const deskripsi = item.querySelector('input[name*="[deskripsi]"]').value.trim();
@@ -519,22 +573,23 @@
             const hargaJual = item.querySelector('input[name*="[hargaJual]"]').value;
             const berat = item.querySelector('input[name*="[berat]"]').value;
             const kategori = item.querySelector('select[name*="[idKategori]"]').value;
+            const photoInput = item.querySelector(`input[name^="foto_produk_${index}"]`);
             
             if (!deskripsi || !harga || harga <= 0 || !hargaJual || hargaJual <= 0 || !berat || berat <= 0 || !kategori) {
                 valid = false;
                 alert(`Produk #${index + 1}: Semua field wajib harus diisi dengan benar!`);
                 return;
             }
+            
+            if (!photoInput || !photoInput.files || photoInput.files.length < 2) {
+                valid = false;
+                alert(`Produk #${index + 1}: Silakan upload minimal 2 foto!`);
+                return;
+            }
         });
         
         if (!valid) {
             e.preventDefault();
-            return false;
-        }
-        
-        if (!photoInput.files || photoInput.files.length < 2) {
-            e.preventDefault();
-            alert('Silakan upload minimal 2 foto barang!');
             return false;
         }
 

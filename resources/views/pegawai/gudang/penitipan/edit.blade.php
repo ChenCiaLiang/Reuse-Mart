@@ -58,7 +58,7 @@
                     Informasi Dasar
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Penitip - FIXED: Menampilkan email sebagai kontak -->
+                    <!-- Penitip -->
                     <div>
                         <label for="idPenitip" class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fa-solid fa-user mr-1"></i>
@@ -213,59 +213,48 @@
                 </div>
             </div>
 
-            <!-- Current Products -->
-            <div>
-                <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                    <i class="fa-solid fa-box mr-2 text-green-600"></i>
-                    Produk yang Sudah Ada di Transaksi Ini
-                </h3>
-                <div class="border border-gray-200 rounded-lg p-4 bg-blue-50">
-                    @if($produkTransaksi->count() > 0)
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            @foreach($produkTransaksi as $produk)
-                                <div class="bg-white p-4 rounded-lg border border-blue-200">
-                                    <div class="flex items-start space-x-3">
-                                        <div class="flex-1">
-                                            <h4 class="text-sm font-medium text-gray-900">{{ $produk->deskripsi }}</h4>
-                                            <p class="text-xs text-gray-600 mt-1">Status: {{ $produk->status }}</p>
-                                            <div class="mt-2 flex justify-between text-xs">
-                                                <span class="text-green-600 font-medium">Harga: Rp {{ number_format($produk->harga, 0, ',', '.') }}</span>
-                                                <span class="text-blue-600 font-medium">Jual: Rp {{ number_format($produk->hargaJual, 0, ',', '.') }}</span>
-                                            </div>
-                                            @if($produk->gambar)
-                                                <div class="mt-2">
-                                                    @php
-                                                        $gambarArray = explode(',', $produk->gambar);
-                                                        $firstImage = trim($gambarArray[0]);
-                                                    @endphp
-                                                    <img src="{{ asset('uploads/produk/' . $firstImage) }}" 
-                                                         alt="Foto Produk" 
-                                                         class="w-full h-20 object-cover rounded border">
-                                                </div>
-                                            @endif
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <p class="text-gray-500 text-center py-4">Belum ada produk di transaksi ini</p>
-                    @endif
-                </div>
-            </div>
-
-            <!-- Update Existing Products (Simplified) -->
+            <!-- Update Existing Products -->
             @if($produkTransaksi->count() > 0)
                 <div>
                     <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
                         <i class="fa-solid fa-edit mr-2 text-blue-600"></i>
-                        Update Informasi Produk Existing
+                        Update Produk yang Sudah Ada
                     </h3>
-                    <div class="space-y-4">
+                    <div class="space-y-6">
                         @foreach($produkTransaksi as $index => $produk)
-                            <div class="border border-gray-200 rounded-lg p-4">
-                                <h4 class="text-md font-medium text-gray-800 mb-3">Produk: {{ $produk->deskripsi }}</h4>
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div class="border border-gray-200 rounded-lg p-6 bg-blue-50">
+                                <h4 class="text-lg font-medium text-gray-800 mb-4 flex items-center">
+                                    <i class="fa-solid fa-box mr-2 text-blue-600"></i>
+                                    Produk: {{ $produk->deskripsi }}
+                                </h4>
+                                
+                                <!-- Current Product Info -->
+                                <div class="mb-4 p-3 bg-white rounded border">
+                                    <div class="flex items-start space-x-4">
+                                        @if($produk->gambar)
+                                            <div class="flex-shrink-0">
+                                                @php
+                                                    $gambarArray = explode(',', $produk->gambar);
+                                                    $firstImage = trim($gambarArray[0]);
+                                                @endphp
+                                                <img src="{{ asset('uploads/produk/' . $firstImage) }}" 
+                                                     alt="Foto Produk" 
+                                                     class="w-20 h-20 object-cover rounded border">
+                                                <p class="text-xs text-gray-500 mt-1 text-center">{{ count($gambarArray) }} foto</p>
+                                            </div>
+                                        @endif
+                                        <div class="flex-1">
+                                            <p class="text-sm text-gray-600">Status: <span class="font-medium">{{ $produk->status }}</span></p>
+                                            <div class="mt-1 flex justify-between text-sm">
+                                                <span class="text-green-600">Harga: Rp {{ number_format($produk->harga, 0, ',', '.') }}</span>
+                                                <span class="text-blue-600">Jual: Rp {{ number_format($produk->hargaJual, 0, ',', '.') }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Update Product Details -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Deskripsi Produk *</label>
                                         <input type="text" name="produk_existing[{{ $produk->idProduk }}][deskripsi]" 
@@ -313,6 +302,35 @@
                                                class="w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
                                     </div>
                                 </div>
+
+                                <!-- Update Photos for Existing Product (Optional) -->
+                                <div class="border-2 border-dashed border-blue-300 rounded-lg p-4 bg-white">
+                                    <h5 class="text-md font-medium text-blue-800 mb-3 flex items-center">
+                                        <i class="fa-solid fa-camera mr-2"></i>
+                                        Update Foto Produk (Opsional - Minimal 2 - Maksimal 3 Foto)
+                                    </h5>
+                                    <div class="text-center">
+                                        <i class="fa-solid fa-cloud-upload-alt text-3xl text-blue-400 mb-3"></i>
+                                        <p class="text-sm text-gray-600 mb-3">Upload foto baru untuk mengganti foto lama (JPG, PNG, JPEG)</p>
+                                        
+                                        <!-- File Input -->
+                                        <input type="file" id="foto-produk-existing-{{ $produk->idProduk }}" 
+                                               name="foto_produk_existing_{{ $produk->idProduk }}[]" multiple accept="image/*" 
+                                               class="hidden" onchange="previewPhotosExisting(this, {{ $produk->idProduk }})">
+                                        <label for="foto-produk-existing-{{ $produk->idProduk }}" 
+                                               class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center space-x-2">
+                                            <i class="fa-solid fa-plus"></i>
+                                            <span>Update Foto</span>
+                                        </label>
+                                        
+                                        <p class="text-xs text-gray-500 mt-2">Kosongkan jika tidak ingin mengubah foto</p>
+                                    </div>
+                                    
+                                    <!-- Photo Preview -->
+                                    <div id="photo-preview-existing-{{ $produk->idProduk }}" class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3 hidden">
+                                        <!-- Preview akan ditampilkan di sini via JavaScript -->
+                                    </div>
+                                </div>
                             </div>
                         @endforeach
                     </div>
@@ -340,36 +358,6 @@
                             <i class="fa-solid fa-info-circle mr-1"></i>
                             Opsional: Tambah produk baru ke transaksi ini
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Upload Foto Baru (jika ada produk baru) -->
-            <div id="foto-section" class="hidden">
-                <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
-                    <i class="fa-solid fa-camera mr-2 text-green-600"></i>
-                    Foto untuk Produk Baru (Minimal 2 Foto)
-                </h3>
-                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                    <div class="text-center">
-                        <i class="fa-solid fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
-                        <p class="text-sm text-gray-600 mb-4">Upload foto untuk produk baru (JPG, PNG, JPEG)</p>
-                        
-                        <!-- File Input -->
-                        <input type="file" id="foto-barang-baru" name="foto_barang_baru[]" multiple accept="image/*" 
-                               class="hidden" onchange="previewPhotos(this)">
-                        <label for="foto-barang-baru" 
-                               class="cursor-pointer bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg inline-flex items-center space-x-2">
-                            <i class="fa-solid fa-plus"></i>
-                            <span>Pilih Foto</span>
-                        </label>
-                        
-                        <p class="text-xs text-gray-500 mt-2">Minimal 2 foto, maksimal 3 foto untuk produk baru</p>
-                    </div>
-                    
-                    <!-- Photo Preview -->
-                    <div id="photo-preview" class="mt-6 grid grid-cols-2 md:grid-cols-3 gap-4 hidden">
-                        <!-- Preview akan ditampilkan di sini via JavaScript -->
                     </div>
                 </div>
             </div>
@@ -424,18 +412,19 @@
     // Product management for new products
     document.getElementById('tambah-produk-btn').addEventListener('click', function() {
         const container = document.getElementById('produk-container');
-        const fotoSection = document.getElementById('foto-section');
         
         const newProduk = document.createElement('div');
-        newProduk.className = 'produk-item border border-gray-100 p-4 rounded-lg mb-4';
+        newProduk.className = 'produk-item border border-gray-100 p-6 rounded-lg mb-6 bg-green-50';
         newProduk.innerHTML = `
-            <div class="flex justify-between items-center mb-3">
-                <h4 class="text-md font-medium text-gray-800">Produk Baru #${produkCounter + 1}</h4>
+            <div class="flex justify-between items-center mb-4">
+                <h4 class="text-lg font-medium text-gray-800">Produk Baru #${produkCounter + 1}</h4>
                 <button type="button" class="text-red-600 hover:text-red-800 remove-produk-btn">
-                    <i class="fa-solid fa-trash"></i>
+                    <i class="fa-solid fa-trash text-lg"></i>
                 </button>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            
+            <!-- Product Details -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Deskripsi Produk *</label>
                     <input type="text" name="produk_baru[${produkCounter}][deskripsi]" required
@@ -476,27 +465,44 @@
                            class="w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
                 </div>
             </div>
+
+            <!-- Photo Upload untuk Produk Baru -->
+            <div class="border-2 border-dashed border-green-300 rounded-lg p-4 bg-white">
+                <h5 class="text-md font-medium text-green-800 mb-3 flex items-center">
+                    <i class="fa-solid fa-camera mr-2"></i>
+                    Foto untuk Produk Baru #${produkCounter + 1} (Minimal 2 - Maksimal 3 Foto) *
+                </h5>
+                <div class="text-center">
+                    <i class="fa-solid fa-cloud-upload-alt text-3xl text-green-400 mb-3"></i>
+                    <p class="text-sm text-gray-600 mb-3">Upload foto khusus untuk produk baru ini (JPG, PNG, JPEG)</p>
+                    
+                    <!-- File Input -->
+                    <input type="file" id="foto-produk-baru-${produkCounter}" name="foto_produk_baru_${produkCounter}[]" multiple accept="image/*" 
+                           class="hidden" onchange="previewPhotosPerProdukBaru(this, ${produkCounter})" required>
+                    <label for="foto-produk-baru-${produkCounter}" 
+                           class="cursor-pointer bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg inline-flex items-center space-x-2">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Pilih Foto Produk</span>
+                    </label>
+                    
+                    <p class="text-xs text-gray-500 mt-2">Minimal 2 foto, maksimal 3 foto untuk produk baru ini</p>
+                </div>
+                
+                <!-- Photo Preview -->
+                <div id="photo-preview-baru-${produkCounter}" class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3 hidden">
+                    <!-- Preview akan ditampilkan di sini via JavaScript -->
+                </div>
+            </div>
         `;
         
         container.appendChild(newProduk);
         produkCounter++;
-        
-        // Show foto section when adding products
-        fotoSection.classList.remove('hidden');
     });
 
     // Remove product handler
     document.addEventListener('click', function(e) {
         if (e.target.closest('.remove-produk-btn')) {
             e.target.closest('.produk-item').remove();
-            
-            // Hide foto section if no products
-            const produkItems = document.querySelectorAll('.produk-item');
-            const fotoSection = document.getElementById('foto-section');
-            if (produkItems.length === 0) {
-                fotoSection.classList.add('hidden');
-            }
-            
             renumberProducts();
         }
     });
@@ -507,6 +513,11 @@
             const title = item.querySelector('h4');
             title.textContent = `Produk Baru #${index + 1}`;
             
+            const photoTitle = item.querySelector('h5');
+            if (photoTitle) {
+                photoTitle.innerHTML = `<i class="fa-solid fa-camera mr-2"></i>Foto untuk Produk Baru #${index + 1} (Minimal 2 - Maksimal 3 Foto) *`;
+            }
+            
             // Update input names
             const inputs = item.querySelectorAll('input, select');
             inputs.forEach(input => {
@@ -515,13 +526,33 @@
                     const newName = name.replace(/produk_baru\[\d+\]/, `produk_baru[${index}]`);
                     input.setAttribute('name', newName);
                 }
+                
+                // Update foto input names and IDs
+                if (name && name.includes('foto_produk_baru_')) {
+                    const newName = name.replace(/foto_produk_baru_\d+/, `foto_produk_baru_${index}`);
+                    input.setAttribute('name', newName);
+                    input.setAttribute('id', `foto-produk-baru-${index}`);
+                    input.setAttribute('onchange', `previewPhotosPerProdukBaru(this, ${index})`);
+                    
+                    // Update label
+                    const label = item.querySelector(`label[for="${input.id}"]`);
+                    if (label) {
+                        label.setAttribute('for', `foto-produk-baru-${index}`);
+                    }
+                }
             });
+            
+            // Update preview container ID
+            const previewContainer = item.querySelector('[id^="photo-preview-baru-"]');
+            if (previewContainer) {
+                previewContainer.setAttribute('id', `photo-preview-baru-${index}`);
+            }
         });
     }
 
-    // Photo preview functionality
-    function previewPhotos(input) {
-        const previewContainer = document.getElementById('photo-preview');
+    // Photo preview functionality for existing products
+    function previewPhotosExisting(input, produkId) {
+        const previewContainer = document.getElementById(`photo-preview-existing-${produkId}`);
         previewContainer.innerHTML = '';
         
         if (input.files && input.files.length > 0) {
@@ -549,12 +580,12 @@
                         photoDiv.className = 'relative group';
                         photoDiv.innerHTML = `
                             <img src="${e.target.result}" alt="Preview ${index + 1}" 
-                                 class="w-full h-32 object-cover rounded-lg border border-gray-200">
+                                 class="w-full h-24 object-cover rounded-lg border border-gray-200">
                             <div class="absolute inset-0 bg-black bg-opacity-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                                <span class="text-white text-sm">Foto ${index + 1}</span>
+                                <span class="text-white text-xs">Foto ${index + 1}</span>
                             </div>
-                            <button type="button" onclick="removePhoto(${index})" 
-                                    class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600">
+                            <button type="button" onclick="removePhotoExisting(${produkId}, ${index})" 
+                                    class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600">
                                 <i class="fa-solid fa-times"></i>
                             </button>
                         `;
@@ -568,33 +599,87 @@
         }
     }
 
-    function removePhoto(index) {
-        const input = document.getElementById('foto-barang-baru');
+    // Photo preview functionality for new products
+    function previewPhotosPerProdukBaru(input, produkIndex) {
+        const previewContainer = document.getElementById(`photo-preview-baru-${produkIndex}`);
+        previewContainer.innerHTML = '';
+        
+        if (input.files && input.files.length > 0) {
+            if (input.files.length < 2) {
+                alert('Minimal 2 foto harus diupload untuk setiap produk baru!');
+                input.value = '';
+                previewContainer.classList.add('hidden');
+                return;
+            }
+            
+            if (input.files.length > 3) {
+                alert('Maksimal 3 foto yang dapat diupload untuk setiap produk baru!');
+                input.value = '';
+                previewContainer.classList.add('hidden');
+                return;
+            }
+            
+            previewContainer.classList.remove('hidden');
+            
+            Array.from(input.files).forEach((file, index) => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const photoDiv = document.createElement('div');
+                        photoDiv.className = 'relative group';
+                        photoDiv.innerHTML = `
+                            <img src="${e.target.result}" alt="Preview ${index + 1}" 
+                                 class="w-full h-24 object-cover rounded-lg border border-gray-200">
+                            <div class="absolute inset-0 bg-black bg-opacity-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                                <span class="text-white text-xs">Foto ${index + 1}</span>
+                            </div>
+                            <button type="button" onclick="removePhotoPerProdukBaru(${produkIndex}, ${index})" 
+                                    class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600">
+                                <i class="fa-solid fa-times"></i>
+                            </button>
+                        `;
+                        previewContainer.appendChild(photoDiv);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        } else {
+            previewContainer.classList.add('hidden');
+        }
+    }
+
+    function removePhotoExisting(produkId, photoIndex) {
+        const input = document.getElementById(`foto-produk-existing-${produkId}`);
         const dt = new DataTransfer();
         
         Array.from(input.files).forEach((file, i) => {
-            if (i !== index) {
+            if (i !== photoIndex) {
                 dt.items.add(file);
             }
         });
         
         input.files = dt.files;
-        previewPhotos(input);
+        previewPhotosExisting(input, produkId);
     }
 
-    // Format number input for pendapatan
-    document.getElementById('pendapatan').addEventListener('input', function() {
-        let value = this.value;
-        // Remove non-numeric characters except decimal point
-        value = value.replace(/[^0-9.]/g, '');
-        this.value = value;
-    });
+    function removePhotoPerProdukBaru(produkIndex, photoIndex) {
+        const input = document.getElementById(`foto-produk-baru-${produkIndex}`);
+        const dt = new DataTransfer();
+        
+        Array.from(input.files).forEach((file, i) => {
+            if (i !== photoIndex) {
+                dt.items.add(file);
+            }
+        });
+        
+        input.files = dt.files;
+        previewPhotosPerProdukBaru(input, produkIndex);
+    }
 
     // Validate form before submit
     document.querySelector('form').addEventListener('submit', function(e) {
-        // Check if adding new products
+        // Check new products if any
         const produkItems = document.querySelectorAll('.produk-item');
-        const photoInput = document.getElementById('foto-barang-baru');
         
         if (produkItems.length > 0) {
             // Validate new products
@@ -605,10 +690,17 @@
                 const hargaJual = item.querySelector('input[name*="[hargaJual]"]').value;
                 const berat = item.querySelector('input[name*="[berat]"]').value;
                 const kategori = item.querySelector('select[name*="[idKategori]"]').value;
+                const photoInput = item.querySelector(`input[name^="foto_produk_baru_${index}"]`);
                 
                 if (!deskripsi || !harga || harga <= 0 || !hargaJual || hargaJual <= 0 || !berat || berat <= 0 || !kategori) {
                     valid = false;
                     alert(`Produk Baru #${index + 1}: Semua field wajib harus diisi dengan benar!`);
+                    return;
+                }
+                
+                if (!photoInput || !photoInput.files || photoInput.files.length < 2) {
+                    valid = false;
+                    alert(`Produk Baru #${index + 1}: Silakan upload minimal 2 foto!`);
                     return;
                 }
             });
@@ -617,14 +709,19 @@
                 e.preventDefault();
                 return false;
             }
-            
-            // Check photos for new products
-            if (!photoInput.files || photoInput.files.length < 2) {
-                e.preventDefault();
-                alert('Silakan upload minimal 2 foto untuk produk baru!');
-                return false;
-            }
         }
+
+        // Check existing products photo updates
+        const existingPhotoInputs = document.querySelectorAll('input[name^="foto_produk_existing_"]');
+        existingPhotoInputs.forEach((input, index) => {
+            if (input.files && input.files.length > 0) {
+                if (input.files.length < 2 || input.files.length > 3) {
+                    e.preventDefault();
+                    alert('Foto untuk produk existing harus 2-3 foto jika ingin diupdate!');
+                    return false;
+                }
+            }
+        });
 
         // Validate dates
         const tanggalMasuk = new Date(document.getElementById('tanggalMasukPenitipan').value);

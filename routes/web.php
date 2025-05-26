@@ -148,15 +148,16 @@ Route::prefix('customer')->group(function () {
         Route::get('/transaksi/{idTransaksi}', [PembeliController::class, 'detailTransaksi'])->name('transaksi.detail');
 
         //alamat
-        Route::prefix('alamat')->name('alamat.')->group(function () {});
-        Route::get('/', [AlamatController::class, 'index'])->name('index');
-        Route::get('/create', [AlamatController::class, 'create'])->name('create');
-        Route::post('/', [AlamatController::class, 'store'])->name('store');
-        Route::get('/search', [AlamatController::class, 'search'])->name('search');
-        Route::get('/{id}', [AlamatController::class, 'show'])->name('show');
-        Route::get('/{id}/edit', [AlamatController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [AlamatController::class, 'update'])->name('update');
-        Route::delete('/{id}', [AlamatController::class, 'destroy'])->name('destroy');
+        Route::prefix('alamat')->name('alamat.')->group(function () {
+            Route::get('/', [AlamatController::class, 'index'])->name('index');
+            Route::get('/create', [AlamatController::class, 'create'])->name('create');
+            Route::post('/', [AlamatController::class, 'store'])->name('store');
+            Route::get('/search', [AlamatController::class, 'search'])->name('search');
+            Route::get('/{id}', [AlamatController::class, 'show'])->name('show');
+            Route::get('/{id}/edit', [AlamatController::class, 'edit'])->name('edit');
+            Route::put('/{id}', [AlamatController::class, 'update'])->name('update');
+            Route::delete('/{id}', [AlamatController::class, 'destroy'])->name('destroy');
+        });
     });
 
     //penitip
