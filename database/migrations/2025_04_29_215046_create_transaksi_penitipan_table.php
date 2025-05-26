@@ -24,6 +24,11 @@ return new class extends Migration
                 ->references('idPenitip')->on('penitip')
                 ->onDelete('cascade')
                 ->onUpdate('cascade');
+            $table->unsignedBigInteger('idPegawai');
+            $table->foreign('idPegawai')
+                ->references('idPegawai')->on('pegawai')
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
             $table->timestamps();
         });
     }

@@ -90,10 +90,9 @@ Route::prefix('pegawai')->middleware('RolePegawai:pegawai')->group(function () {
 
     //untuk gudang bro
     Route::prefix('gudang')->name('gudang.')->group(function () {
-        Route::get('/dashboard', function () {
-            return redirect()->route('gudang.pengiriman.index');
-        })->name('dashboard');
+        Route::get('/dashboard', [TransaksiPenitipanController::class, 'dashboard'])->name('dashboard');
 
+        // Pengiriman Routes
         Route::prefix('pengiriman')->name('pengiriman.')->group(function () {
             Route::get('/', [TransaksiPengirimanController::class, 'index'])->name('index');
             Route::get('/{id}', [TransaksiPengirimanController::class, 'show'])->name('show');
@@ -102,6 +101,25 @@ Route::prefix('pegawai')->middleware('RolePegawai:pegawai')->group(function () {
             Route::get('penjadwalanAmbilPage/{id}', [TransaksiPengirimanController::class, 'penjadwalanAmbilPage'])->name('penjadwalanAmbilPage');
             Route::post('penjadwalanAmbil/{id}', [TransaksiPengirimanController::class, 'penjadwalanAmbil'])->name('penjadwalanAmbil');
             Route::get('konfirmasiAmbil/{id}', [TransaksiPengirimanController::class, 'konfirmasiAmbil'])->name('konfirmasiAmbil');
+        });
+
+        Route::prefix('penitipan')->name('penitipan.')->group(function () {
+            Route::get('/', function () {
+                return redirect()->route('gudang.transaksi.index');
+            })->name('index');
+        });
+
+        // Transaksi Penitipan Routes - NEW
+        Route::prefix('transaksi')->name('transaksi.')->group(function () {
+            Route::get('/', [TransaksiPenitipanController::class, 'index'])->name('index');
+            Route::get('/create', [TransaksiPenitipanController::class, 'create'])->name('create');
+            Route::post('/', [TransaksiPenitipanController::class, 'store'])->name('store');
+            Route::get('/{id}', [TransaksiPenitipanController::class, 'show'])->name('show');
+            Route::get('/{id}/edit', [TransaksiPenitipanController::class, 'edit'])->name('edit');
+            Route::put('/{id}', [TransaksiPenitipanController::class, 'update'])->name('update');
+            Route::delete('/{id}', [TransaksiPenitipanController::class, 'destroy'])->name('destroy');
+
+            Route::get('/{id}/print-nota', [TransaksiPenitipanController::class, 'printNota'])->name('print-nota');
         });
     });
 
