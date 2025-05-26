@@ -1,54 +1,6 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ReUseMart - Produk</title>
-    @vite('resources/css/app.css')
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-</head>
-<body class="bg-gray-100 font-sans">
-    <!-- Header/Navbar -->
-    <header class="bg-green-700 text-white shadow-md">
-        <div class="container mx-auto px-4 py-3">
-            <div class="flex justify-between items-center">
-                <div class="flex items-center">
-                    <img src="{{ asset('images/Logo/Logo.jpg') }}" alt="ReUseMart Logo" class="h-10 rounded">
-                    <span class="text-xl font-bold ml-2">ReUseMart</span>
-                </div>
-                <nav class="hidden md:block">
-                    <ul class="flex space-x-6">
-                        <li><a href="{{ url('/') }}" class="hover:text-green-200">Beranda</a></li>
-                        <li><a href="{{ url('/#about') }}" class="hover:text-green-200">Tentang Kami</a></li>
-                        <li><a href="{{ url('/#how-it-works') }}" class="hover:text-green-200">Cara Kerja</a></li>
-                        <li><a href="{{ url('/#categories') }}" class="hover:text-green-200">Kategori</a></li>
-                        <li><a href="{{ url('/#benefits') }}" class="hover:text-green-200">Keuntungan</a></li>
-                        <li><a href="{{ url('/#location') }}" class="hover:text-green-200">Lokasi</a></li>
-                    </ul>
-                </nav>
-                <div class="flex items-center space-x-4">
-                    <a href="#" class="hover:text-green-200"><i class="fas fa-search"></i></a>
-                    <a href="#" class="hover:text-green-200"><i class="fas fa-shopping-cart"></i></a>
-                    <a href="{{ url('/login') }}" class="bg-white text-green-700 hover:bg-gray-100 px-3 py-1 rounded text-sm font-medium transition duration-300">Masuk</a>
-                    <a href="{{ url('/register/pembeli') }}" class="bg-white text-green-700 hover:bg-gray-100 px-3 py-1 rounded text-sm font-medium transition duration-300">Daftar</a>
-                    <button class="md:hidden hover:text-green-200"><i class="fas fa-bars"></i></button>
-                </div>
-            </div>
-        </div>
-    </header>
+@extends('layouts.customer')
 
-    <!-- Page Title -->
-    <div class="bg-green-600 text-white py-4">
-        <div class="container mx-auto px-4">
-            <h1 class="text-2xl font-bold">Produk Kami</h1>
-            <div class="flex items-center text-sm">
-                <a href="{{ url('/') }}" class="hover:underline">Beranda</a>
-                <span class="mx-2">></span>
-                <span>Produk</span>
-            </div>
-        </div>
-    </div>
-
+@section('content')
     <!-- Main Content -->
     <main class="container mx-auto px-4 py-8">
         <!-- Product Grid -->
@@ -224,7 +176,7 @@
                     <!-- Gambar Produk -->
                     <div class="w-full md:w-1/2">
                         <div class="bg-gray-100 rounded-lg p-2 mb-4">
-                            <img id="modalMainImage" src="" alt="Gambar Produk" class="w-full rounded-lg">
+                            <img id="modalMainImage" src="" alt="Gambar Produk" class="w-full h-64 md:h-80 lg:h-96 object-contain rounded-lg">
                         </div>
                         
                         <!-- Thumbnail Images -->
@@ -380,5 +332,4 @@
             });
         });
     </script>
-</body>
-</html>
+@endsection

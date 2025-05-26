@@ -1,36 +1,6 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $produk->deskripsi }} - ReUseMart</title>
-    @vite('resources/css/app.css')
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <style>
-        .thumbnail.active {
-            border: 2px solid #16a34a;
-        }
-    </style>
-</head>
-<body class="bg-gray-100 font-sans">
-    <!-- Header/Navbar (sama seperti halaman index) -->
-    <header class="bg-green-700 text-white shadow-md">
-        <!-- Isi header (sama seperti halaman index) -->
-    </header>
+@extends('layouts.customer')
 
-    <!-- Page Title -->
-    <div class="bg-green-600 text-white py-4">
-        <div class="container mx-auto px-4">
-            <div class="flex items-center text-sm">
-                <a href="{{ url('/') }}" class="hover:underline">Beranda</a>
-                <span class="mx-2">></span>
-                <a href="{{ route('produk.index') }}" class="hover:underline">Produk</a>
-                <span class="mx-2">></span>
-                <span>{{ $produk->deskripsi }}</span>
-            </div>
-        </div>
-    </div>
-
+@section('content')
     <!-- Main Content -->
     <main class="container mx-auto px-4 py-8">
         <div class="bg-white rounded-lg shadow-md p-6">
@@ -40,7 +10,7 @@
                     <!-- Main Image -->
                     <div class="bg-gray-100 rounded-lg p-2 mb-4">
                         <img id="mainImage" src="{{ asset('images/produk/' . $gambarArray[0]) }}" 
-                            alt="{{ $produk->deskripsi }}" class="w-full rounded-lg"
+                            alt="{{ $produk->deskripsi }}" class="w-full h-64 md:h-80 lg:h-96 object-contain rounded-lg"
                             onerror="this.src='{{ asset('images/produk/default.jpg') }}'">
                     </div>
                     
@@ -388,5 +358,4 @@
             }
         });
     </script>
-</body>
-</html>
+@endsection

@@ -7,6 +7,7 @@ use App\Models\Produk;
 use App\Models\KategoriProduk;
 use App\Models\Pegawai;
 use App\Models\Pembeli;
+use App\Models\Penitip;
 use App\Models\TransaksiPenitipan;
 use Illuminate\Container\Attributes\Auth;
 use Illuminate\Support\Facades\DB;
@@ -101,19 +102,22 @@ class TransaksiPenitipanController extends Controller
     {
         // Ambil parameter pencarian
         $search = $request->input('search');
+        $idPenitip = session('user')['idPenitip'];
 
-        $penitipan = TransaksiPenitipan::when($search, function ($query) use ($search) {
-            return $query->where('idTransaksiPenitipan', 'like', '%' . $search . '%')
-                ->orWhere('tanggalMasukPenitipan', 'like', '%' . $search . '%')
-                ->orWhere('tanggalAkhirPenitipan', 'like', '%' . $search . '%')
-                ->orWhere('statusPenitipan', 'like', '%' . $search . '%')
-                ->orWhere('statusPerpanjangan', 'like', '%' . $search . '%')
-                ->orWhere('pendapatan', 'like', '%' . $search . '%');
-        })
-            ->where('idPenitip', session('user')['idPenitip'])
+        $penitipan = TransaksiPenitipan::where('idPenitip', $idPenitip)
+            ->when($search, function ($query) use ($search) {
+                // Menggunakan closure untuk grouping yang benar
+                return $query->where(function ($q) use ($search) {
+                    $q->where('idTransaksiPenitipan', 'like', '%' . $search . '%')
+                        ->orWhere('tanggalMasukPenitipan', 'like', '%' . $search . '%')
+                        ->orWhere('tanggalAkhirPenitipan', 'like', '%' . $search . '%')
+                        ->orWhere('statusPenitipan', 'like', '%' . $search . '%')
+                        ->orWhere('statusPerpanjangan', 'like', '%' . $search . '%')
+                        ->orWhere('pendapatan', 'like', '%' . $search . '%');
+                });
+            })
             ->orderBy('idTransaksiPenitipan')
             ->paginate(10);
-
 
         return view('customer.penitip.penitipan.index', compact('penitipan', 'search'));
     }
@@ -164,14 +168,29 @@ class TransaksiPenitipanController extends Controller
     {
         // Ambil data produk berdasarkan ID
         $penitipan = TransaksiPenitipan::findOrFail($id);
-        $produk = Produk::findOrFail($penitipan->detailTransaksiPenjualan[0]->idProduk);
+        $produk = Produk::find($penitipan->detailTransaksiPenitipan[0]->idProduk);
         $penitipan->produk = $produk->deskripsi;
-        $penitipan->namaPembeli = Pembeli::findOrFail($penitipan->idPembeli)->nama;
         $penitipan->namaPegawai = Pegawai::find($penitipan->idPegawai)->nama ?? '-';
         // Ambil gambar-gambar produk dari field gambar
         $gambarArray = $produk->gambar ? explode(',', $produk->gambar) : ['default.jpg'];
 
-        return view('pegawai.gudang.pengiriman.show', compact('pengiriman', 'gambarArray'));
+        return view('customer.penitip.penitipan.show', compact('penitipan', 'gambarArray'));
+    }
+
+    public function perpanjangan($id)
+    {
+        $penitipan = TransaksiPenitipan::findOrFail($id);
+        $tanggalAkhirPenitipan = Carbon::parse($penitipan->tanggalAkhirPenitipan);
+
+        if ($penitipan->statusPerpanjangan == 1) {
+            return redirect()->route('penitip.penitipan.index')->with('error', 'Penitipan sudah diperpanjang sebelumnya');
+        }
+        $penitipan->update([
+            'tanggalAkhirPenitipan' => $tanggalAkhirPenitipan->addDays(30),
+            'statusPerpanjangan' => 1,
+        ]);
+
+        return redirect()->route('penitip.penitipan.index')->with('success', 'Perpanjangan berhasil dilakukan');
     }
 
     public function penjadwalanKirimPage($id)

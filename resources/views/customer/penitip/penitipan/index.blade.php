@@ -13,6 +13,13 @@
     </div>
     @endif
 
+    <!-- Alert Error -->
+    @if(session('error'))
+    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+        <p>{{ session('error') }}</p>
+    </div>
+    @endif
+
     <!-- Card -->
     <div class="bg-white shadow-md rounded-lg p-4 mb-8">
         <div class="flex justify-between items-center mb-4">

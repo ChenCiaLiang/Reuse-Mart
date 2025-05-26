@@ -168,6 +168,7 @@ Route::prefix('customer')->group(function () {
         Route::prefix('penitipan')->name('penitipan.')->group(function () {
             Route::get('/', [TransaksiPenitipanController::class, 'indexPenitip'])->name('index');
             Route::get('/{id}', [TransaksiPenitipanController::class, 'showPenitip'])->name('show');
+            Route::get('perpanjangan/{id}', [TransaksiPenitipanController::class, 'perpanjangan'])->name('perpanjangan');
         });
     });
 

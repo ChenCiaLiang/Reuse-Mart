@@ -21,16 +21,18 @@ class TransaksiPengirimanController extends Controller
         // Ambil parameter pencarian
         $search = $request->input('search');
 
-        $pengiriman = TransaksiPenjualan::when($search, function ($query) use ($search) {
-            return $query->where('idTransaksiPenjualan', 'like', '%' . $search . '%')
-                ->orWhere('status', 'like', '%' . $search . '%')
-                ->orWhere('tanggalLaku', 'like', '%' . $search . '%')
-                ->orWhere('tanggalKirim', 'like', '%' . $search . '%')
-                ->orWhere('tanggalAmbil', 'like', '%' . $search . '%')
-                ->orWhere('idPembeli', 'like', '%' . $search . '%')
-                ->orWhere('idPegawai', 'like', '%' . $search . '%');
-        })
-            ->whereIn('status', ['terjual', 'pengambilan'])
+        $pengiriman = TransaksiPenjualan::whereIn('status', ['terjual', 'pengambilan'])
+            ->when($search, function ($query) use ($search) {
+                return $query->where(function ($q) use ($search) {
+                    $q->where('idTransaksiPenjualan', 'like', '%' . $search . '%')
+                        ->orWhere('status', 'like', '%' . $search . '%')
+                        ->orWhere('tanggalLaku', 'like', '%' . $search . '%')
+                        ->orWhere('tanggalKirim', 'like', '%' . $search . '%')
+                        ->orWhere('tanggalAmbil', 'like', '%' . $search . '%')
+                        ->orWhere('idPembeli', 'like', '%' . $search . '%')
+                        ->orWhere('idPegawai', 'like', '%' . $search . '%');
+                });
+            })
             ->orderBy('idTransaksiPenjualan')
             ->paginate(10);
 

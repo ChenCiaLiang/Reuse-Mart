@@ -36,7 +36,7 @@
                 </div>
                 <nav class="hidden md:block">
                     <ul class="flex space-x-6">
-                        <li><a href="#home" class="hover:text-green-200">Beranda</a></li>
+                        <li><a href="{{ route('homePage') }}" class="hover:text-green-200">Beranda</a></li>
                         <li><a href="#about" class="hover:text-green-200">Tentang Kami</a></li>
                         <li><a href="#how-it-works" class="hover:text-green-200">Cara Kerja</a></li>
                         <li><a href="#categories" class="hover:text-green-200">Kategori</a></li>
@@ -45,13 +45,17 @@
                     </ul>
                 </nav>
                 <div class="flex items-center space-x-4">
-                    <a href="#" class="hover:text-green-200"><i class="fas fa-search"></i></a>
-                    <a href="#" class="hover:text-green-200"><i class="fas fa-shopping-cart"></i></a>
+                    <form action="{{ route('logout') }}" method="POST">
+                        @csrf
+                        <button type="submit" class="flex items-center text-white hover:text-gray-400 w-full">
+                            <i class="fas fa-sign-out-alt mr-3"></i>
+                        </button>
+                    </form>
                     @php
                         $userType = session('role') ?? null;
                     @endphp
-                    <a class="nav-link" style="color: white;" href="{{ route($userType . '.profile') }}"><i
-                                    class="fa-solid fa-user" style="border-bottom:1px;"></i></a>
+                    <a class="nav-link text-white hover:text-gray-400" href="{{ route($userType . '.profile') }}"><i
+                                    class="fa-solid fa-user"></i></a>
                     <button class="md:hidden hover:text-green-200"><i class="fas fa-bars"></i></button>
                 </div>
             </div>

@@ -10,7 +10,7 @@
                     <!-- Main Image -->
                     <div class="bg-gray-100 rounded-lg p-2 mb-4">
                         <img id="mainImage" src="{{ asset('images/produk/' . $gambarArray[0]) }}" 
-                            alt="Foto Produk" class="w-full rounded-lg"
+                            alt="Foto Produk" class="w-full h-64 md:h-80 lg:h-96 object-contain rounded-lg"
                             onerror="this.src='{{ asset('images/produk/default.jpg') }}'">
                     </div>
                     
@@ -64,7 +64,7 @@
                 </div>
             </div>
             <div class="flex item-center mt-6">
-                <a href="{{ route('gudang.pengiriman.penjadwalanKirimPage', $penitipan->idTransaksiPenitipan) }}" 
+                <a href="{{ route('penitip.penitipan.perpanjangan', $penitipan->idTransaksiPenitipan) }}" 
                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
                     <i class="fa-solid fa-clock"></i> Perpanjangan
                 </a>

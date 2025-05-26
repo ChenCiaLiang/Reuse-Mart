@@ -10,7 +10,7 @@
                     <!-- Main Image -->
                     <div class="bg-gray-100 rounded-lg p-2 mb-4">
                         <img id="mainImage" src="{{ asset('images/produk/' . $gambarArray[0]) }}" 
-                            alt="Foto Produk" class="w-full rounded-lg"
+                            alt="Foto Produk" class="w-full h-64 md:h-80 lg:h-96 object-contain rounded-lg"
                             onerror="this.src='{{ asset('images/produk/default.jpg') }}'">
                     </div>
                     
