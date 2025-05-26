@@ -10,7 +10,7 @@
             <i class="fa-solid fa-chevron-right mx-2 text-xs"></i>
         </li>
         <li class="flex items-center">
-            <a href="{{ route('gudang.transaksi.index') }}" class="hover:text-green-600">Transaksi Penitipan</a>
+            <a href="{{ route('gudang.penitipan.index') }}" class="hover:text-green-600">Transaksi Penitipan</a>
             <i class="fa-solid fa-chevron-right mx-2 text-xs"></i>
         </li>
         <li class="text-gray-600">Tambah Transaksi</li>
@@ -27,7 +27,7 @@
                 <h2 class="text-xl font-semibold text-gray-800">Tambah Transaksi Penitipan</h2>
                 <p class="text-gray-600 mt-1">Buat transaksi penitipan barang baru</p>
             </div>
-            <a href="{{ route('gudang.transaksi.index') }}" 
+            <a href="{{ route('gudang.penitipan.index') }}" 
                class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
                 <i class="fa-solid fa-arrow-left"></i>
                 <span>Kembali</span>
@@ -37,7 +37,7 @@
 
     <!-- Form -->
     <div class="bg-white rounded-lg shadow-sm p-6">
-        <form action="{{ route('gudang.transaksi.store') }}" method="POST" enctype="multipart/form-data" class="space-y-8">
+        <form action="{{ route('gudang.penitipan.store') }}" method="POST" enctype="multipart/form-data" class="space-y-8">
             @csrf
             
             <!-- Basic Information -->
@@ -272,7 +272,7 @@
 
             <!-- Form Actions -->
             <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-                <a href="{{ route('gudang.transaksi.index') }}" 
+                <a href="{{ route('gudang.penitipan.index') }}" 
                    class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg flex items-center space-x-2">
                     <i class="fa-solid fa-times"></i>
                     <span>Batal</span>

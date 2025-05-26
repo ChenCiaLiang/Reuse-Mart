@@ -10,7 +10,7 @@
             <i class="fa-solid fa-chevron-right mx-2 text-xs"></i>
         </li>
         <li class="flex items-center">
-            <a href="{{ route('gudang.transaksi.index') }}" class="hover:text-green-600">Transaksi Penitipan</a>
+            <a href="{{ route('gudang.penitipan.index') }}" class="hover:text-green-600">Transaksi Penitipan</a>
             <i class="fa-solid fa-chevron-right mx-2 text-xs"></i>
         </li>
         <li class="text-gray-600">Edit #{{ $transaksi->idTransaksiPenitipan }}</li>
@@ -31,12 +31,12 @@
                 <p class="text-gray-600 mt-1">Ubah informasi transaksi penitipan</p>
             </div>
             <div class="flex space-x-3">
-                <a href="{{ route('gudang.transaksi.show', $transaksi->idTransaksiPenitipan) }}" 
+                <a href="{{ route('gudang.penitipan.show', $transaksi->idTransaksiPenitipan) }}" 
                    class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
                     <i class="fa-solid fa-eye"></i>
                     <span>Lihat Detail</span>
                 </a>
-                <a href="{{ route('gudang.transaksi.index') }}" 
+                <a href="{{ route('gudang.penitipan.index') }}" 
                    class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
                     <i class="fa-solid fa-arrow-left"></i>
                     <span>Kembali</span>
@@ -47,7 +47,7 @@
 
     <!-- Form -->
     <div class="bg-white rounded-lg shadow-sm p-6">
-        <form action="{{ route('gudang.transaksi.update', $transaksi->idTransaksiPenitipan) }}" method="POST" enctype="multipart/form-data" class="space-y-8">
+        <form action="{{ route('gudang.penitipan.update', $transaksi->idTransaksiPenitipan) }}" method="POST" enctype="multipart/form-data" class="space-y-8">
             @csrf
             @method('PUT')
             
@@ -376,7 +376,7 @@
 
             <!-- Form Actions -->
             <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-                <a href="{{ route('gudang.transaksi.show', $transaksi->idTransaksiPenitipan) }}" 
+                <a href="{{ route('gudang.penitipan.show', $transaksi->idTransaksiPenitipan) }}" 
                    class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg flex items-center space-x-2">
                     <i class="fa-solid fa-times"></i>
                     <span>Batal</span>

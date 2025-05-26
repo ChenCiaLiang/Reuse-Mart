@@ -90,7 +90,9 @@ Route::prefix('pegawai')->middleware('RolePegawai:pegawai')->group(function () {
 
     //untuk gudang bro
     Route::prefix('gudang')->name('gudang.')->group(function () {
-        Route::get('/dashboard', [TransaksiPenitipanController::class, 'dashboard'])->name('dashboard');
+        Route::get('/dashboard', function () {
+            return redirect()->route('gudang.penitipan.dashboard');
+        })->name('dashboard');
 
         // Pengiriman Routes
         Route::prefix('pengiriman')->name('pengiriman.')->group(function () {
@@ -104,17 +106,12 @@ Route::prefix('pegawai')->middleware('RolePegawai:pegawai')->group(function () {
         });
 
         Route::prefix('penitipan')->name('penitipan.')->group(function () {
-            Route::get('/', function () {
-                return redirect()->route('gudang.transaksi.index');
-            })->name('index');
-        });
+            Route::get('/dashboard', [TransaksiPenitipanController::class, 'dashboard'])->name('dashboard');
 
-        // Transaksi Penitipan Routes - NEW
-        Route::prefix('transaksi')->name('transaksi.')->group(function () {
-            Route::get('/', [TransaksiPenitipanController::class, 'index'])->name('index');
+            Route::get('/', [TransaksiPenitipanController::class, 'indexGudang'])->name('index');
             Route::get('/create', [TransaksiPenitipanController::class, 'create'])->name('create');
             Route::post('/', [TransaksiPenitipanController::class, 'store'])->name('store');
-            Route::get('/{id}', [TransaksiPenitipanController::class, 'show'])->name('show');
+            Route::get('/{id}', [TransaksiPenitipanController::class, 'showGudang'])->name('show');
             Route::get('/{id}/edit', [TransaksiPenitipanController::class, 'edit'])->name('edit');
             Route::put('/{id}', [TransaksiPenitipanController::class, 'update'])->name('update');
             Route::delete('/{id}', [TransaksiPenitipanController::class, 'destroy'])->name('destroy');
@@ -169,8 +166,8 @@ Route::prefix('customer')->group(function () {
         Route::get('/transaksi/{id}', [PenitipController::class, 'detailTransaksi'])->name('transaksi.detail');
 
         Route::prefix('penitipan')->name('penitipan.')->group(function () {
-            Route::get('/', [TransaksiPenitipanController::class, 'index'])->name('index');
-            Route::get('/{id}', [TransaksiPenitipanController::class, 'show'])->name('show');
+            Route::get('/', [TransaksiPenitipanController::class, 'indexPenitip'])->name('index');
+            Route::get('/{id}', [TransaksiPenitipanController::class, 'showPenitip'])->name('show');
         });
     });
 

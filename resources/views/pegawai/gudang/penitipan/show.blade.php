@@ -10,7 +10,7 @@
             <i class="fa-solid fa-chevron-right mx-2 text-xs"></i>
         </li>
         <li class="flex items-center">
-            <a href="{{ route('gudang.transaksi.index') }}" class="hover:text-green-600">Transaksi Penitipan</a>
+            <a href="{{ route('gudang.penitipan.index') }}" class="hover:text-green-600">Transaksi Penitipan</a>
             <i class="fa-solid fa-chevron-right mx-2 text-xs"></i>
         </li>
         <li class="text-gray-600">Detail #{{ $transaksi->idTransaksiPenitipan }}</li>
@@ -52,12 +52,12 @@
                 </div>
             </div>
             <div class="flex space-x-3 no-print">
-                <a href="{{ route('gudang.transaksi.edit', $transaksi->idTransaksiPenitipan) }}" 
+                <a href="{{ route('gudang.penitipan.edit', $transaksi->idTransaksiPenitipan) }}" 
                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
                     <i class="fa-solid fa-edit"></i>
                     <span>Edit</span>
                 </a>
-                <a href="{{ route('gudang.transaksi.print-nota', $transaksi->idTransaksiPenitipan) }}" 
+                <a href="{{ route('gudang.penitipan.print-nota', $transaksi->idTransaksiPenitipan) }}" 
                    target="_blank"
                    class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
                     <i class="fa-solid fa-file-pdf"></i>
@@ -416,12 +416,12 @@
                     </h3>
                 </div>
                 <div class="p-6 space-y-3">
-                    <a href="{{ route('gudang.transaksi.edit', $transaksi->idTransaksiPenitipan) }}" 
+                    <a href="{{ route('gudang.penitipan.edit', $transaksi->idTransaksiPenitipan) }}" 
                        class="w-full flex items-center justify-center px-4 py-2 border border-blue-300 rounded-md shadow-sm text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100">
                         <i class="fa-solid fa-edit mr-2"></i>
                         Edit Transaksi
                     </a>
-                    <a href="{{ route('gudang.transaksi.print-nota', $transaksi->idTransaksiPenitipan) }}" 
+                    <a href="{{ route('gudang.penitipan.print-nota', $transaksi->idTransaksiPenitipan) }}" 
                        target="_blank"
                        class="w-full flex items-center justify-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100">
                         <i class="fa-solid fa-file-pdf mr-2"></i>
@@ -432,7 +432,7 @@
                         <i class="fa-solid fa-print mr-2"></i>
                         Cetak Detail
                     </button>
-                    <a href="{{ route('gudang.transaksi.index') }}" 
+                    <a href="{{ route('gudang.penitipan.index') }}" 
                        class="w-full flex items-center justify-center px-4 py-2 border border-green-300 rounded-md shadow-sm text-sm font-medium text-green-700 bg-green-50 hover:bg-green-100">
                         <i class="fa-solid fa-list mr-2"></i>
                         Daftar Transaksi

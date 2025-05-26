@@ -42,7 +42,7 @@ class TransaksiPengirimanController extends Controller
     {
         // Ambil data produk berdasarkan ID
         $pengiriman = TransaksiPenjualan::findOrFail($id);
-        $produk = Produk::findOrFail($pengiriman->detailTransaksiPenjualan[0]->idProduk);
+        $produk = Produk::find($pengiriman->detailTransaksiPenjualan[0]->idProduk);
         $pengiriman->produk = $produk->deskripsi;
         $pengiriman->namaPembeli = Pembeli::findOrFail($pengiriman->idPembeli)->nama;
         $pengiriman->namaPegawai = Pegawai::find($pengiriman->idPegawai)->nama ?? '-';
@@ -54,7 +54,6 @@ class TransaksiPengirimanController extends Controller
 
     public function penjadwalanKirimPage($id)
     {
-        dd(Carbon::now()->format('d/m/Y H:i:s'));
         $pengiriman = TransaksiPenjualan::findOrFail($id);
         $kurir = Pegawai::where('idJabatan', 6)->get();
         return view('pegawai.gudang.pengiriman.penjadwalanKirim', compact('pengiriman', 'kurir'));
@@ -111,21 +110,6 @@ class TransaksiPengirimanController extends Controller
             }
         }
 
-        // // saat penjadwalan di luar operasional
-        // if ($tanggalKirimRequest->format('Y-m-d') === $sekarang->format('Y-m-d')) {
-        //     $jamSekarang = (int) $sekarang->format('H.i');
-
-        //     if (!($jamSekarang >= 08.00 && $jamSekarang <= 20.00)) {
-        //         $besok = $sekarang->copy()->addDay()->format('d/m/Y');
-        //         $errorMessage = "Pengiriman hari ini sudah tutup (setelah jam 20:00). Minimal tanggal kirim: {$besok}";
-
-        //         if ($request->expectsJson()) {
-        //             return response()->json(['errors' => ['tanggalKirim' => $errorMessage]], 422);
-        //         }
-        //         return redirect()->back()->withErrors(['tanggalKirim' => $errorMessage])->withInput();
-        //     }
-        // }
-
         $jamPengirimanRequest = (int) $tanggalKirimRequest->format('H.i');
         //jam pengiriman di luar operasional
         if (!($jamPengirimanRequest >= 08.00 && $jamPengirimanRequest <= 20.00)) {
@@ -142,7 +126,7 @@ class TransaksiPengirimanController extends Controller
         $pengiriman->update([
             'idPegawai' => $request->kurir,
             'tanggalKirim' => $request->tanggalKirim,
-            'status' => 'kirim',
+            'status' => 'pengiriman',
         ]);
 
         return redirect()->route('gudang.pengiriman.index')->with('success', 'Pengiriman berhasil dijadwalkan.');

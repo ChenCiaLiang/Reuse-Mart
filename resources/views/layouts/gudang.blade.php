@@ -32,7 +32,7 @@
             </a>
             
             <!-- Transaksi Penitipan - New -->
-            <a href="{{ route('gudang.transaksi.index') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('gudang.transaksi.*') ? 'bg-green-700' : '' }}">
+            <a href="{{ route('gudang.penitipan.index') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('gudang.penitipan.*') ? 'bg-green-700' : '' }}">
                 <i class="fa-solid fa-file-invoice mr-3"></i>
                 <span>Transaksi Penitipan</span>
             </a>
@@ -69,13 +69,13 @@
                         Detail Pengiriman
                     @elseif(request()->routeIs('gudang.penitipan.*'))
                         Manajemen Penitipan
-                    @elseif(request()->routeIs('gudang.transaksi.index'))
+                    @elseif(request()->routeIs('gudang.penitipan.index'))
                         Daftar Transaksi Penitipan
-                    @elseif(request()->routeIs('gudang.transaksi.create'))
+                    @elseif(request()->routeIs('gudang.penitipan.create'))
                         Tambah Transaksi Penitipan
-                    @elseif(request()->routeIs('gudang.transaksi.show'))
+                    @elseif(request()->routeIs('gudang.penitipan.show'))
                         Detail Transaksi Penitipan
-                    @elseif(request()->routeIs('gudang.transaksi.edit'))
+                    @elseif(request()->routeIs('gudang.penitipan.edit'))
                         Edit Transaksi Penitipan
                     @else
                         @yield('page-title', 'ReUseMart Pegawai Gudang Panel')

@@ -119,7 +119,7 @@
                                             @endif
                                         </span>
                                         <div class="mt-2">
-                                            <a href="{{ route('gudang.transaksi.show', $expired->idTransaksiPenitipan) }}" 
+                                            <a href="{{ route('gudang.penitipan.show', $expired->idTransaksiPenitipan) }}" 
                                                class="text-red-600 hover:text-red-800 text-xs">
                                                 <i class="fa-solid fa-eye mr-1"></i>Lihat
                                             </a>
@@ -130,7 +130,7 @@
                         @endforeach
                     </div>
                     <div class="mt-4 text-center">
-                        <a href="{{ route('gudang.transaksi.index', ['status' => 'Aktif']) }}" 
+                        <a href="{{ route('gudang.penitipan.index', ['status' => 'Aktif']) }}" 
                            class="text-red-600 hover:text-red-800 text-sm font-medium">
                             Lihat semua transaksi aktif →
                         </a>
@@ -154,7 +154,7 @@
                         <i class="fa-solid fa-clock text-blue-500 mr-2"></i>
                         Transaksi Terbaru
                     </h3>
-                    <a href="{{ route('gudang.transaksi.index') }}" 
+                    <a href="{{ route('gudang.penitipan.index') }}" 
                        class="text-blue-600 hover:text-blue-800 text-sm font-medium">
                         Lihat Semua
                     </a>
@@ -191,7 +191,7 @@
                                         {{ $transaksi->statusPenitipan }}
                                     </span>
                                     <div class="mt-1">
-                                        <a href="{{ route('gudang.transaksi.show', $transaksi->idTransaksiPenitipan) }}" 
+                                        <a href="{{ route('gudang.penitipan.show', $transaksi->idTransaksiPenitipan) }}" 
                                            class="text-blue-600 hover:text-blue-800 text-xs">
                                             <i class="fa-solid fa-eye mr-1"></i>Detail
                                         </a>
@@ -207,7 +207,7 @@
                         </div>
                         <p class="text-gray-500 text-sm">Belum ada transaksi.</p>
                         <div class="mt-4">
-                            <a href="{{ route('gudang.transaksi.create') }}" 
+                            <a href="{{ route('gudang.penitipan.create') }}" 
                                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
                                 <i class="fa-solid fa-plus mr-2"></i>
                                 Buat Transaksi Pertama
@@ -226,7 +226,7 @@
             Aksi Cepat
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <a href="{{ route('gudang.transaksi.create') }}" 
+            <a href="{{ route('gudang.penitipan.create') }}" 
                class="flex items-center p-4 border-2 border-dashed border-green-300 rounded-lg hover:border-green-400 hover:bg-green-50 transition duration-200">
                 <div class="p-3 bg-green-100 rounded-full mr-4">
                     <i class="fa-solid fa-plus text-green-600"></i>
@@ -237,7 +237,7 @@
                 </div>
             </a>
             
-            <a href="{{ route('gudang.transaksi.index', ['status' => 'Aktif']) }}" 
+            <a href="{{ route('gudang.penitipan.index', ['status' => 'Aktif']) }}" 
                class="flex items-center p-4 border-2 border-dashed border-blue-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition duration-200">
                 <div class="p-3 bg-blue-100 rounded-full mr-4">
                     <i class="fa-solid fa-list text-blue-600"></i>
@@ -248,7 +248,7 @@
                 </div>
             </a>
             
-            <a href="{{ route('gudang.transaksi.index') }}" 
+            <a href="{{ route('gudang.penitipan.index') }}" 
                class="flex items-center p-4 border-2 border-dashed border-purple-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition duration-200">
                 <div class="p-3 bg-purple-100 rounded-full mr-4">
                     <i class="fa-solid fa-chart-bar text-purple-600"></i>

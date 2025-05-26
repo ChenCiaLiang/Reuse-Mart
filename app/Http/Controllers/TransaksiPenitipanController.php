@@ -67,8 +67,37 @@ class TransaksiPenitipanController extends Controller
         ));
     }
 
-    //Menampilkan daftar transaksi (dikirim/diambil)
-    public function index(Request $request)
+    // Index method - FIXED
+    public function indexGudang(Request $request)
+    {
+        $query = DB::table('transaksi_penitipan as tp')
+            ->join('penitip as p', 'tp.idPenitip', '=', 'p.idPenitip')
+            ->join('pegawai as pg', 'tp.idPegawai', '=', 'pg.idPegawai')
+            ->select(
+                'tp.idTransaksiPenitipan',
+                'tp.tanggalMasukPenitipan',
+                'tp.tanggalAkhirPenitipan',
+                'tp.batasAmbil',
+                'tp.statusPenitipan',
+                'tp.statusPerpanjangan',
+                'tp.pendapatan',
+                'tp.created_at',
+                'tp.updated_at',
+                'p.nama as namaPenitip',
+                'p.email as emailPenitip', // Menggunakan email sebagai kontak
+                'pg.nama as namaPegawai'
+            );
+
+        // Apply filters
+        $this->applyFilters($query, $request);
+
+        $transaksi = $query->orderBy('tp.created_at', 'desc')->paginate(10);
+
+        return view('pegawai.gudang.penitipan.index', compact('transaksi'));
+    }
+
+    // //Menampilkan daftar transaksi (dikirim/diambil)
+    public function indexPenitip(Request $request)
     {
         // Ambil parameter pencarian
         $search = $request->input('search');
@@ -89,7 +118,49 @@ class TransaksiPenitipanController extends Controller
         return view('customer.penitip.penitipan.index', compact('penitipan', 'search'));
     }
 
-    public function show($id)
+    // Show method - FIXED
+    public function showGudang($id)
+    {
+        $transaksi = DB::table('transaksi_penitipan as tp')
+            ->join('penitip as p', 'tp.idPenitip', '=', 'p.idPenitip')
+            ->join('pegawai as pg', 'tp.idPegawai', '=', 'pg.idPegawai')
+            ->select(
+                'tp.*',
+                'p.nama as namaPenitip',
+                'p.email as emailPenitip',
+                'p.alamat as alamatPenitip',
+                'p.nik as nikPenitip',
+                'pg.nama as namaPegawai'
+            )
+            ->where('tp.idTransaksiPenitipan', $id)
+            ->first();
+
+        if (!$transaksi) {
+            return redirect()->route('gudang.penitipan.index')->with('error', 'Transaksi tidak ditemukan!');
+        }
+
+        $detail = DB::table('detail_transaksi_penitipan as dtp')
+            ->join('produk as pr', 'dtp.idProduk', '=', 'pr.idProduk')
+            ->join('kategori_produk as kp', 'pr.idKategori', '=', 'kp.idKategori')
+            ->select(
+                'pr.idProduk',
+                'pr.deskripsi as namaProduk',
+                'pr.harga',
+                'pr.hargaJual',
+                'pr.berat',
+                'pr.gambar',
+                'pr.tanggalGaransi',
+                'pr.status',
+                'pr.ratingProduk',
+                'kp.nama as kategori'
+            )
+            ->where('dtp.idTransaksiPenitipan', $id)
+            ->get();
+
+        return view('pegawai.gudang.penitipan.show', compact('transaksi', 'detail'));
+    }
+
+    public function showPenitip($id)
     {
         // Ambil data produk berdasarkan ID
         $penitipan = TransaksiPenitipan::findOrFail($id);
@@ -161,21 +232,6 @@ class TransaksiPenitipanController extends Controller
                 return redirect()->back()->withErrors(['tanggalKirim' => $errorMessage])->withInput();
             }
         }
-
-        // // saat penjadwalan di luar operasional
-        // if ($tanggalKirimRequest->format('Y-m-d') === $sekarang->format('Y-m-d')) {
-        //     $jamSekarang = (int) $sekarang->format('H.i');
-
-        //     if (!($jamSekarang >= 08.00 && $jamSekarang <= 20.00)) {
-        //         $besok = $sekarang->copy()->addDay()->format('d/m/Y');
-        //         $errorMessage = "Pengiriman hari ini sudah tutup (setelah jam 20:00). Minimal tanggal kirim: {$besok}";
-
-        //         if ($request->expectsJson()) {
-        //             return response()->json(['errors' => ['tanggalKirim' => $errorMessage]], 422);
-        //         }
-        //         return redirect()->back()->withErrors(['tanggalKirim' => $errorMessage])->withInput();
-        //     }
-        // }
 
         $jamPengirimanRequest = (int) $tanggalKirimRequest->format('H.i');
         //jam pengiriman di luar operasional
@@ -258,35 +314,6 @@ class TransaksiPenitipanController extends Controller
         return redirect()->route('gudang.pengiriman.index')->with('success', 'Produk telah diambil.');
     }
 
-    // Index method - FIXED
-    public function index(Request $request)
-    {
-        $query = DB::table('transaksi_penitipan as tp')
-            ->join('penitip as p', 'tp.idPenitip', '=', 'p.idPenitip')
-            ->join('pegawai as pg', 'tp.idPegawai', '=', 'pg.idPegawai')
-            ->select(
-                'tp.idTransaksiPenitipan',
-                'tp.tanggalMasukPenitipan',
-                'tp.tanggalAkhirPenitipan',
-                'tp.batasAmbil',
-                'tp.statusPenitipan',
-                'tp.statusPerpanjangan',
-                'tp.pendapatan',
-                'tp.created_at',
-                'tp.updated_at',
-                'p.nama as namaPenitip',
-                'p.email as emailPenitip', // Menggunakan email sebagai kontak
-                'pg.nama as namaPegawai'
-            );
-
-        // Apply filters
-        $this->applyFilters($query, $request);
-
-        $transaksi = $query->orderBy('tp.created_at', 'desc')->paginate(10);
-
-        return view('pegawai.gudang.transaksi.index', compact('transaksi'));
-    }
-
     // Create method - FIXED (Menghapus referensi telepon)
     public function create()
     {
@@ -307,7 +334,7 @@ class TransaksiPenitipanController extends Controller
             ->orderBy('nama')
             ->get();
 
-        return view('pegawai.gudang.transaksi.create', compact('penitip', 'pegawai', 'kategori'));
+        return view('pegawai.gudang.penitipan.create', compact('penitip', 'pegawai', 'kategori'));
     }
 
     // Store method - UPDATED untuk menyimpan gambar ke tabel produk
@@ -395,7 +422,7 @@ class TransaksiPenitipanController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('gudang.transaksi.index')->with('success', 'Transaksi penitipan berhasil dibuat dengan ' . count($uploadedPhotos) . ' foto barang!');
+            return redirect()->route('gudang.penitipan.index')->with('success', 'Transaksi penitipan berhasil dibuat dengan ' . count($uploadedPhotos) . ' foto barang!');
         } catch (\Exception $e) {
             DB::rollback();
             // Hapus foto yang sudah diupload jika terjadi error
@@ -431,55 +458,13 @@ class TransaksiPenitipanController extends Controller
         return $uploadedFiles;
     }
 
-    // Show method - FIXED
-    public function show($id)
-    {
-        $transaksi = DB::table('transaksi_penitipan as tp')
-            ->join('penitip as p', 'tp.idPenitip', '=', 'p.idPenitip')
-            ->join('pegawai as pg', 'tp.idPegawai', '=', 'pg.idPegawai')
-            ->select(
-                'tp.*',
-                'p.nama as namaPenitip',
-                'p.email as emailPenitip',
-                'p.alamat as alamatPenitip',
-                'p.nik as nikPenitip',
-                'pg.nama as namaPegawai'
-            )
-            ->where('tp.idTransaksiPenitipan', $id)
-            ->first();
-
-        if (!$transaksi) {
-            return redirect()->route('gudang.transaksi.index')->with('error', 'Transaksi tidak ditemukan!');
-        }
-
-        $detail = DB::table('detail_transaksi_penitipan as dtp')
-            ->join('produk as pr', 'dtp.idProduk', '=', 'pr.idProduk')
-            ->join('kategori_produk as kp', 'pr.idKategori', '=', 'kp.idKategori')
-            ->select(
-                'pr.idProduk',
-                'pr.deskripsi as namaProduk',
-                'pr.harga',
-                'pr.hargaJual',
-                'pr.berat',
-                'pr.gambar',
-                'pr.tanggalGaransi',
-                'pr.status',
-                'pr.ratingProduk',
-                'kp.nama as kategori'
-            )
-            ->where('dtp.idTransaksiPenitipan', $id)
-            ->get();
-
-        return view('pegawai.gudang.transaksi.show', compact('transaksi', 'detail'));
-    }
-
     // Edit method - FIXED
     public function edit($id)
     {
         $transaksi = DB::table('transaksi_penitipan')->where('idTransaksiPenitipan', $id)->first();
 
         if (!$transaksi) {
-            return redirect()->route('gudang.transaksi.index')->with('error', 'Transaksi tidak ditemukan!');
+            return redirect()->route('gudang.penitipan.index')->with('error', 'Transaksi tidak ditemukan!');
         }
 
         $penitip = DB::table('penitip')
@@ -525,7 +510,7 @@ class TransaksiPenitipanController extends Controller
             ->pluck('idProduk')
             ->toArray();
 
-        return view('pegawai.gudang.transaksi.edit', compact(
+        return view('pegawai.gudang.penitipan.edit', compact(
             'transaksi',
             'penitip',
             'pegawai',
@@ -638,7 +623,7 @@ class TransaksiPenitipanController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('gudang.transaksi.index')->with('success', 'Transaksi penitipan berhasil diupdate!');
+            return redirect()->route('gudang.penitipan.index')->with('success', 'Transaksi penitipan berhasil diupdate!');
         } catch (\Exception $e) {
             DB::rollback();
             // Hapus foto baru yang sudah diupload jika terjadi error
@@ -691,7 +676,7 @@ class TransaksiPenitipanController extends Controller
             DB::table('transaksi_penitipan')->where('idTransaksiPenitipan', $id)->delete();
 
             DB::commit();
-            return redirect()->route('gudang.transaksi.index')->with('success', 'Transaksi berhasil dihapus beserta semua produk dan foto!');
+            return redirect()->route('gudang.penitipan.index')->with('success', 'Transaksi berhasil dihapus beserta semua produk dan foto!');
         } catch (\Exception $e) {
             DB::rollback();
             return back()->with('error', 'Gagal menghapus transaksi: ' . $e->getMessage());
@@ -789,7 +774,7 @@ class TransaksiPenitipanController extends Controller
             ->first();
 
         if (!$transaksi) {
-            return redirect()->route('gudang.transaksi.index')->with('error', 'Transaksi tidak ditemukan!');
+            return redirect()->route('gudang.penitipan.index')->with('error', 'Transaksi tidak ditemukan!');
         }
 
         // PERBAIKAN: Query detail harus konsisten dengan template HTML
@@ -819,7 +804,7 @@ class TransaksiPenitipanController extends Controller
             'nomor_nota' => 'NOTA-' . str_pad($id, 6, '0', STR_PAD_LEFT) . '-' . date('Ymd')
         ];
 
-        $pdf = Pdf::loadView('pegawai.gudang.transaksi.print-nota', $data);
+        $pdf = Pdf::loadView('pegawai.gudang.penitipan.print-nota', $data);
         $pdf->setPaper('A4', 'portrait');
 
         $filename = 'Nota_Penitipan_' . $transaksi->idTransaksiPenitipan . '_' . date('Ymd_His') . '.pdf';

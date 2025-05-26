@@ -29,7 +29,7 @@
                     <i class="fa-solid fa-search-plus"></i>
                     <span>Pencarian Advanced</span>
                 </button>
-                <a href="{{ route('gudang.transaksi.create') }}" 
+                <a href="{{ route('gudang.penitipan.create') }}" 
                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
                     <i class="fa-solid fa-plus"></i>
                     <span>Tambah Transaksi</span>
@@ -95,7 +95,7 @@
 
     <!-- Quick Filters -->
     <div class="bg-white rounded-lg shadow-sm p-6">
-        <form method="GET" action="{{ route('gudang.transaksi.index') }}" class="flex flex-wrap gap-4 items-end">
+        <form method="GET" action="{{ route('gudang.penitipan.index') }}" class="flex flex-wrap gap-4 items-end">
             <div class="flex-1 min-w-64">
                 <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
                     <i class="fa-solid fa-search mr-1"></i>
@@ -119,7 +119,7 @@
                     <i class="fa-solid fa-search"></i>
                     <span>Cari</span>
                 </button>
-                <a href="{{ route('gudang.transaksi.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md flex items-center space-x-2">
+                <a href="{{ route('gudang.penitipan.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md flex items-center space-x-2">
                     <i class="fa-solid fa-refresh"></i>
                     <span>Reset</span>
                 </a>
@@ -137,7 +137,7 @@
             <p class="text-sm text-gray-600 mt-1">Cari berdasarkan semua field yang tersedia</p>
         </div>
         
-        <form method="GET" action="{{ route('gudang.transaksi.index') }}" class="space-y-6">
+        <form method="GET" action="{{ route('gudang.penitipan.index') }}" class="space-y-6">
             <input type="hidden" name="advanced_search" value="1">
             
             <!-- Row 1: Basic Info -->
@@ -250,7 +250,7 @@
                         Hasil pencarian: {{ $transaksi->total() }} transaksi ditemukan
                     </span>
                 </div>
-                <a href="{{ route('gudang.transaksi.index') }}" 
+                <a href="{{ route('gudang.penitipan.index') }}" 
                    class="text-blue-600 hover:text-blue-800 text-sm font-medium">
                     <i class="fa-solid fa-times mr-1"></i>
                     Hapus Filter
@@ -354,15 +354,15 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                     <div class="flex items-center space-x-2">
-                                        <a href="{{ route('gudang.transaksi.show', $item->idTransaksiPenitipan) }}" 
+                                        <a href="{{ route('gudang.penitipan.show', $item->idTransaksiPenitipan) }}" 
                                            class="text-green-600 hover:text-green-900" title="Lihat Detail">
                                             <i class="fa-solid fa-eye"></i>
                                         </a>
-                                        <a href="{{ route('gudang.transaksi.edit', $item->idTransaksiPenitipan) }}" 
+                                        <a href="{{ route('gudang.penitipan.edit', $item->idTransaksiPenitipan) }}" 
                                            class="text-blue-600 hover:text-blue-900" title="Edit">
                                             <i class="fa-solid fa-edit"></i>
                                         </a>
-                                        <form action="{{ route('gudang.transaksi.destroy', $item->idTransaksiPenitipan) }}" 
+                                        <form action="{{ route('gudang.penitipan.destroy', $item->idTransaksiPenitipan) }}" 
                                               method="POST" class="inline">
                                             @csrf
                                             @method('DELETE')
@@ -406,13 +406,13 @@
                 </p>
                 <div class="mt-6">
                     @if(request()->hasAny(['search', 'status', 'advanced_search']))
-                        <a href="{{ route('gudang.transaksi.index') }}" 
+                        <a href="{{ route('gudang.penitipan.index') }}" 
                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
                             <i class="fa-solid fa-refresh mr-2"></i>
                             Reset Filter
                         </a>
                     @else
-                        <a href="{{ route('gudang.transaksi.create') }}" 
+                        <a href="{{ route('gudang.penitipan.create') }}" 
                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
                             <i class="fa-solid fa-plus mr-2"></i>
                             Tambah Transaksi Baru
