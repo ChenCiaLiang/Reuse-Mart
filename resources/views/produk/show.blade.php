@@ -85,14 +85,14 @@
                     
                     <!-- Add to Cart Button -->
                     <div class="mb-4">
-                        <button class="w-full bg-green-600 hover:bg-green-700 text-white text-center py-3 rounded-lg transition duration-300">
+                        <button id="addToCartBtn" class="w-full bg-green-600 hover:bg-green-700 text-white text-center py-3 rounded-lg transition duration-300">
                             <i class="fas fa-shopping-cart mr-2"></i> Tambahkan ke Keranjang
                         </button>
                     </div>
                     
                     <!-- Buy Now Button -->
                     <div>
-                        <button class="w-full border-2 border-green-600 text-green-600 hover:bg-green-50 text-center py-3 rounded-lg transition duration-300">
+                        <button id="buyNowBtn" class="w-full border-2 border-green-600 text-green-600 hover:bg-green-50 text-center py-3 rounded-lg transition duration-300">
                             Beli Sekarang
                         </button>
                     </div>
@@ -152,7 +152,7 @@
                 </div>
 
                 <!-- Form Tambah Diskusi -->
-                @if(session('user_id') && (session('user_type') === 'pembeli' || (session('user_type') === 'pegawai' && session('user_role') === 'customer service')))
+                @if(session('user') && in_array(session('role'), ['pembeli', 'cs']))
                     <div class="bg-white border border-gray-200 rounded-lg p-6">
                         <h3 class="text-lg font-semibold text-gray-800 mb-4">Kirim Pertanyaan</h3>
                         
@@ -178,7 +178,7 @@
                     </div>
                 @else
                     <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4">
-                        <p>Silakan <a href="{{ route('login') }}" class="font-medium underline">login</a> sebagai pembeli atau customer service untuk bertanya tentang produk ini.</p>
+                        <p>Silakan <a href="{{ route('loginPage') }}" class="font-medium underline">login</a> sebagai pembeli atau customer service untuk bertanya tentang produk ini.</p>
                     </div>
                 @endif
             </div>
@@ -292,6 +292,8 @@
         </div>
     </footer>
 
+    <!-- Modal Login (hanya tampil jika belum login atau bukan pembeli) -->
+    @if(!session('user') || session('role') !== 'pembeli')
     <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
         <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
             <div class="flex justify-between items-center mb-4">
@@ -314,8 +316,15 @@
             </div>
         </div>
     </div>
+    @endif
 
     <script>
+        // Data user dari server
+        const userData = {
+            isLoggedIn: {{ session('user') ? 'true' : 'false' }},
+            role: '{{ session('role') ?? '' }}'
+        };
+
         function changeImage(src, element) {
             // Ubah gambar utama
             document.getElementById('mainImage').src = src;
@@ -333,28 +342,66 @@
 
         // Fungsi untuk menampilkan modal
         function showModal() {
-            document.getElementById('loginModal').classList.remove('hidden');
-            document.body.style.overflow = 'hidden'; // Mencegah scrolling di belakang modal
+            const modal = document.getElementById('loginModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
         }
 
         // Fungsi untuk menutup modal
         function closeModal() {
-            document.getElementById('loginModal').classList.add('hidden');
-            document.body.style.overflow = 'auto'; // Mengembalikan scrolling
+            const modal = document.getElementById('loginModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }
         }
 
-        // Menambahkan event listener ke tombol keranjang dan beli sekarang
+        // Fungsi untuk handle aksi beli
+        function handleBuyAction(actionType) {
+            if (userData.isLoggedIn && userData.role === 'pembeli') {
+                // User sudah login sebagai pembeli
+                if (actionType === 'cart') {
+                    alert('Produk berhasil ditambahkan ke keranjang!');
+                    // Nanti bisa diganti dengan fungsi add to cart yang sesungguhnya
+                } else if (actionType === 'buy') {
+                    alert('Mengarahkan ke halaman checkout...');
+                    // Nanti bisa diganti dengan redirect ke checkout
+                    // window.location.href = `/checkout/{{ $produk->idProduk }}`;
+                }
+            } else {
+                // Belum login atau bukan pembeli - tampilkan modal
+                showModal();
+            }
+        }
+
+        // Event listener untuk tombol-tombol
         document.addEventListener('DOMContentLoaded', function() {
             // Tombol tambah ke keranjang
-            const addToCartBtn = document.querySelector('.bg-green-600.w-full');
+            const addToCartBtn = document.getElementById('addToCartBtn');
             if (addToCartBtn) {
-                addToCartBtn.addEventListener('click', showModal);
+                addToCartBtn.addEventListener('click', function() {
+                    handleBuyAction('cart');
+                });
             }
             
             // Tombol beli sekarang
-            const buyNowBtn = document.querySelector('.border-2.border-green-600.w-full');
+            const buyNowBtn = document.getElementById('buyNowBtn');
             if (buyNowBtn) {
-                buyNowBtn.addEventListener('click', showModal);
+                buyNowBtn.addEventListener('click', function() {
+                    handleBuyAction('buy');
+                });
+            }
+
+            // Close modal when clicking outside
+            const modal = document.getElementById('loginModal');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        closeModal();
+                    }
+                });
             }
         });
     </script>

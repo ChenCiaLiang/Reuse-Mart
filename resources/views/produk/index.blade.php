@@ -98,7 +98,7 @@
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-green-700 font-bold">Rp {{ number_format($p->hargaJual, 0, ',', '.') }}</span>
-                        <button class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-full">
+                        <button class="buy-button bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-full" data-product-id="{{ $p->idProduk }}">
                             <i class="fas fa-shopping-cart mr-1"></i> Beli
                         </button>
                     </div>
@@ -114,6 +114,8 @@
         </div>
     </main>
 
+    <!-- Modal Login (hanya tampil jika belum login atau bukan pembeli) -->
+    @if(!session('user') || session('role') !== 'pembeli')
     <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
         <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
             <div class="flex justify-between items-center mb-4">
@@ -136,29 +138,68 @@
             </div>
         </div>
     </div>
+    @endif
 
     <script>
+        // Data user dari server
+        const userData = {
+            isLoggedIn: {{ session('user') ? 'true' : 'false' }},
+            role: '{{ session('role') ?? '' }}'
+        };
+
         // Fungsi untuk menampilkan modal
         function showModal() {
-            document.getElementById('loginModal').classList.remove('hidden');
-            document.body.style.overflow = 'hidden'; // Mencegah scrolling di belakang modal
+            const modal = document.getElementById('loginModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
         }
 
         // Fungsi untuk menutup modal
         function closeModal() {
-            document.getElementById('loginModal').classList.add('hidden');
-            document.body.style.overflow = 'auto'; // Mengembalikan scrolling
+            const modal = document.getElementById('loginModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }
         }
 
-        // Menambahkan event listener ke tombol beli di setiap produk
+        // Handle buy button clicks
         document.addEventListener('DOMContentLoaded', function() {
-            const buyButtons = document.querySelectorAll('.bg-green-600.hover\\:bg-green-700.text-white.px-3.py-1.rounded-full');
+            const buyButtons = document.querySelectorAll('.buy-button');
+            
             buyButtons.forEach(button => {
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
-                    showModal();
+                    e.stopPropagation();
+                    
+                    const productId = this.getAttribute('data-product-id');
+                    
+                    // Jika user sudah login sebagai pembeli
+                    if (userData.isLoggedIn && userData.role === 'pembeli') {
+                        // Redirect ke halaman detail produk atau halaman pembelian
+                        // Untuk sementara redirect ke detail produk
+                        window.location.href = `{{ url('/customer/produk/show') }}/${productId}`;
+                        
+                        // Atau jika ingin langsung ke proses pembelian, bisa ditambahkan logic di sini
+                        // misalnya: window.location.href = `/checkout/${productId}`;
+                    } else {
+                        // Jika belum login atau bukan pembeli, tampilkan modal
+                        showModal();
+                    }
                 });
             });
+
+            // Close modal when clicking outside
+            const modal = document.getElementById('loginModal');
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        closeModal();
+                    }
+                });
+            }
         });
     </script>
 @endsection
