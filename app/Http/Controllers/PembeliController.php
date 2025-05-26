@@ -83,28 +83,28 @@ class PembeliController extends Controller
             // Dapatkan pembeli
             $pembeli = $transaksi->pembeli;
 
-            return view('customer.pembeli.modal', compact('transaksi', 'detailTransaksi', 'pembeli'));
+            return view('customer.pembeli.transaksi.detail', compact('transaksi', 'detailTransaksi', 'pembeli'));
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error("Error in detailTransaksi: " . $e->getMessage());
             return redirect()->route('pembeli.profile')->with('error', 'Terjadi kesalahan saat mengakses detail transaksi');
         }
     }
 
-    public function list(Request $request)
-    {
-        // Ambil ID penitip dari session
-        $idPembeli = session('user')['idPembeli'];
-        $pembeli = Pembeli::findOrFail($idPembeli);
+    // public function list(Request $request)
+    // {
+    //     // Ambil ID penitip dari session
+    //     $idPembeli = session('user')['idPembeli'];
+    //     $pembeli = Pembeli::findOrFail($idPembeli);
 
-        // Query yang diperbaiki menggunakan relasi komisi
-        $transaksiPenjualan = TransaksiPenjualan::join('detail_transaksi_penjualan', 'transaksi_penjualan.idTransaksiPenjualan', '=', 'detail_transaksi_penjualan.idTransaksiPenjualan')
-            ->join('produk', 'detail_transaksi_penjualan.idProduk', '=', 'produk.idProduk')
-            ->orderBy('transaksi_penjualan.idTransaksiPenjualan', 'desc')
-            ->select('transaksi_penjualan.*', 'produk.deskripsi', 'produk.hargaJual')
-            ->distinct()
-            ->paginate(5);
+    //     // Query yang diperbaiki menggunakan relasi komisi
+    //     $transaksiPenjualan = TransaksiPenjualan::join('detail_transaksi_penjualan', 'transaksi_penjualan.idTransaksiPenjualan', '=', 'detail_transaksi_penjualan.idTransaksiPenjualan')
+    //         ->join('produk', 'detail_transaksi_penjualan.idProduk', '=', 'produk.idProduk')
+    //         ->orderBy('transaksi_penjualan.idTransaksiPenjualan', 'desc')
+    //         ->select('transaksi_penjualan.*', 'produk.deskripsi', 'produk.hargaJual')
+    //         ->distinct()
+    //         ->paginate(5);
 
 
-        return view('customer.pembeli.list', compact('transaksiPenjualan', 'pembeli'));
-    }
+    //     return view('customer.pembeli.list', compact('transaksiPenjualan', 'pembeli'));
+    // }
 }

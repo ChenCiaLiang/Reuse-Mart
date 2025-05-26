@@ -10,6 +10,7 @@ use App\Http\Controllers\PenitipController;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\RequestDonasiController;
 use App\Http\Controllers\TransaksiPengirimanController;
+use App\Http\Controllers\TransaksiPenitipanController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -148,6 +149,11 @@ Route::prefix('customer')->group(function () {
         Route::get('/profile', [PenitipController::class, 'profile'])->name('profile');
         Route::get('/history', [PenitipController::class, 'historyTransaksi'])->name('history');
         Route::get('/transaksi/{id}', [PenitipController::class, 'detailTransaksi'])->name('transaksi.detail');
+
+        Route::prefix('penitipan')->name('penitipan.')->group(function () {
+            Route::get('/', [TransaksiPenitipanController::class, 'index'])->name('index');
+            Route::get('/{id}', [TransaksiPenitipanController::class, 'show'])->name('show');
+        });
     });
 
     Route::prefix('organisasi')->middleware('auth:organisasi')->name('organisasi.')->group(function () {

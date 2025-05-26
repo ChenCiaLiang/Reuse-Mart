@@ -24,9 +24,6 @@ class Role
             // API route dengan token
             $tokenAbilities = $user->currentAccessToken()->abilities;
             $roles = $tokenAbilities[0] ?? '';
-        } else {
-            // Web route dengan session
-            $roles = session('user_role', '');
         }
 
         foreach ($role as $allowedRole) {

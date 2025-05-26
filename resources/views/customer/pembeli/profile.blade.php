@@ -103,7 +103,7 @@
                                     @foreach($transaksiPenjualan as $transaksi)
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {{ $transaksi->idTransaksi }}
+                                            {{ $transaksi->idTransaksiPenjualan }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {{ \Carbon\Carbon::parse($transaksi->tanggalLunas)->format('d/m/Y') }}
@@ -115,7 +115,7 @@
                                             Rp {{ number_format($transaksi->hargaJual, 0, ',', '.') }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <a href="{{ route('pembeli.transaksi.detail', $transaksi->idTransaksi) }}" class="text-green-600 hover:text-green-900">
+                                            <a href="{{ route('pembeli.transaksi.detail', $transaksi->idTransaksiPenjualan) }}" class="text-green-600 hover:text-green-900">
                                                 Detail
                                             </a>
                                         </td>

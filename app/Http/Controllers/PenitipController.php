@@ -185,7 +185,7 @@ class PenitipController extends Controller
             ->limit(5)
             ->get();
 
-        return view('penitip.profile', compact('penitip', 'transaksiPenitipan', 'transaksiPenjualan'));
+        return view('customer.penitip.profile', compact('penitip', 'transaksiPenitipan', 'transaksiPenjualan'));
     }
 
     /**
@@ -220,7 +220,7 @@ class PenitipController extends Controller
             'total' => $transaksiPenjualan->total()
         ];
 
-        return view('penitip.history', compact('transaksiPenjualan', 'startDate', 'endDate', 'debug'));
+        return view('customer.penitip.history', compact('transaksiPenjualan', 'startDate', 'endDate', 'debug'));
     }
     /**
      * Menampilkan detail transaksi
@@ -254,7 +254,7 @@ class PenitipController extends Controller
             // Dapatkan komisi
             $komisi = $transaksi->komisi;
 
-            return view('penitip.detail-transaksi', compact('transaksi', 'detailTransaksi', 'pembeli', 'komisi'));
+            return view('customer.penitip.detail-transaksi', compact('transaksi', 'detailTransaksi', 'pembeli', 'komisi'));
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error("Error in detailTransaksi: " . $e->getMessage());
             return redirect()->route('penitip.profile')->with('error', 'Terjadi kesalahan saat mengakses detail transaksi');

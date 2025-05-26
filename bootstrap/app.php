@@ -6,9 +6,11 @@ use App\Http\Middleware\RolePegawai;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\RedirectIfAuthenticated;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Container\Attributes\Log;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Support\Facades\Log as FacadesLog;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -27,17 +29,10 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withSchedule(function (Schedule $schedule) {
         // Schedule command untuk update expired transactions
-        $schedule->call(function () {
-            $controller = new TransaksiPengirimanController();
-            $controller->updateStatusExpired();
-        })
+        $schedule->command('transaksi:update-status-expired')
             ->everyMinute()
-            ->name('updateExpiredTransactions')
-            ->withoutOverlapping();
-
-        // Optional: Tambahkan schedule lain jika diperlukan
-        // $schedule->command('transactions:send-reminder')
-        //          ->everyFiveMinutes();
+            ->withoutOverlapping()
+            ->sendOutputTo(storage_path('logs/expired-transactions.log'));
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

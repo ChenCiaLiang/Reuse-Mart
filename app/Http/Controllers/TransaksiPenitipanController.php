@@ -4,16 +4,16 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Produk;
-use App\Models\TransaksiPenjualan;
-use App\Models\DetailTransaksiPenjualan;
 use App\Models\KategoriProduk;
 use App\Models\Pegawai;
 use App\Models\Pembeli;
+use App\Models\TransaksiPenitipan;
 use Carbon\Carbon;
+use Illuminate\Container\Attributes\Auth;
 use Illuminate\Container\Attributes\DB;
 use Illuminate\Support\Facades\Validator;
 
-class TransaksiPengirimanController extends Controller
+class TransaksiPenitipanController extends Controller
 {
     //Menampilkan daftar transaksi (dikirim/diambil)
     public function index(Request $request)
@@ -21,31 +21,30 @@ class TransaksiPengirimanController extends Controller
         // Ambil parameter pencarian
         $search = $request->input('search');
 
-        $pengiriman = TransaksiPenjualan::when($search, function ($query) use ($search) {
-            return $query->where('idTransaksiPenjualan', 'like', '%' . $search . '%')
-                ->orWhere('status', 'like', '%' . $search . '%')
-                ->orWhere('tanggalLaku', 'like', '%' . $search . '%')
-                ->orWhere('tanggalKirim', 'like', '%' . $search . '%')
-                ->orWhere('tanggalAmbil', 'like', '%' . $search . '%')
-                ->orWhere('idPembeli', 'like', '%' . $search . '%')
-                ->orWhere('idPegawai', 'like', '%' . $search . '%');
+        $penitipan = TransaksiPenitipan::when($search, function ($query) use ($search) {
+            return $query->where('idTransaksiPenitipan', 'like', '%' . $search . '%')
+                ->orWhere('tanggalMasukPenitipan', 'like', '%' . $search . '%')
+                ->orWhere('tanggalAkhirPenitipan', 'like', '%' . $search . '%')
+                ->orWhere('statusPenitipan', 'like', '%' . $search . '%')
+                ->orWhere('statusPerpanjangan', 'like', '%' . $search . '%')
+                ->orWhere('pendapatan', 'like', '%' . $search . '%');
         })
-            ->whereIn('status', ['terjual', 'pengambilan'])
-            ->orderBy('idTransaksiPenjualan')
+            ->where('idPenitip', session('user')['idPenitip'])
+            ->orderBy('idTransaksiPenitipan')
             ->paginate(10);
 
 
-        return view('pegawai.gudang.pengiriman.index', compact('pengiriman', 'search'));
+        return view('customer.penitip.penitipan.index', compact('penitipan', 'search'));
     }
 
     public function show($id)
     {
         // Ambil data produk berdasarkan ID
-        $pengiriman = TransaksiPenjualan::findOrFail($id);
-        $produk = Produk::findOrFail($pengiriman->detailTransaksiPenjualan[0]->idProduk);
-        $pengiriman->produk = $produk->deskripsi;
-        $pengiriman->namaPembeli = Pembeli::findOrFail($pengiriman->idPembeli)->nama;
-        $pengiriman->namaPegawai = Pegawai::find($pengiriman->idPegawai)->nama ?? '-';
+        $penitipan = TransaksiPenitipan::findOrFail($id);
+        $produk = Produk::findOrFail($penitipan->detailTransaksiPenjualan[0]->idProduk);
+        $penitipan->produk = $produk->deskripsi;
+        $penitipan->namaPembeli = Pembeli::findOrFail($penitipan->idPembeli)->nama;
+        $penitipan->namaPegawai = Pegawai::find($penitipan->idPegawai)->nama ?? '-';
         // Ambil gambar-gambar produk dari field gambar
         $gambarArray = $produk->gambar ? explode(',', $produk->gambar) : ['default.jpg'];
 
@@ -55,20 +54,20 @@ class TransaksiPengirimanController extends Controller
     public function penjadwalanKirimPage($id)
     {
         dd(Carbon::now()->format('d/m/Y H:i:s'));
-        $pengiriman = TransaksiPenjualan::findOrFail($id);
+        $pengiriman = TransaksiPenitipan::findOrFail($id);
         $kurir = Pegawai::where('idJabatan', 6)->get();
         return view('pegawai.gudang.pengiriman.penjadwalanKirim', compact('pengiriman', 'kurir'));
     }
 
     public function penjadwalanAmbilPage($id)
     {
-        $pengiriman = TransaksiPenjualan::findOrFail($id);
+        $pengiriman = TransaksiPenitipan::findOrFail($id);
         return view('pegawai.gudang.pengiriman.penjadwalanAmbil', compact('pengiriman'));
     }
 
     public function penjadwalanKirim(Request $request, $id)
     {
-        $pengiriman = TransaksiPenjualan::find($id);
+        $pengiriman = TransaksiPenitipan::find($id);
 
         $validator = Validator::make($request->all(), [
             'kurir' => 'required',
@@ -150,7 +149,7 @@ class TransaksiPengirimanController extends Controller
 
     public function penjadwalanAmbil(Request $request, $id)
     {
-        $pengiriman = TransaksiPenjualan::find($id);
+        $pengiriman = TransaksiPenitipan::find($id);
 
         $validator = Validator::make($request->all(), [
             'tanggalAmbil' => 'required|date',
@@ -197,7 +196,7 @@ class TransaksiPengirimanController extends Controller
 
     public function konfirmasiAmbil($id)
     {
-        $pengiriman = TransaksiPenjualan::findOrFail($id);
+        $pengiriman = TransaksiPenitipan::findOrFail($id);
 
         $pengiriman->update([
             'status' => 'ambil',
@@ -206,32 +205,4 @@ class TransaksiPengirimanController extends Controller
 
         return redirect()->route('gudang.pengiriman.index')->with('success', 'Produk telah diambil.');
     }
-
-    // public function updateStatusExpired()
-    // {
-    //     $sekarang = Carbon::now();
-    //     $pengiriman = TransaksiPenjualan::where('status', 'pengambilan')
-    //         ->where('tanggalBatasAmbil', '<', $sekarang)
-    //         ->get();
-    //     $detailPengiriman = DetailTransaksiPenjualan::whereIn('idTransaksiPenjualan', $pengiriman->pluck('idTransaksiPenjualan'))->get();
-    //     $produk = Produk::whereIn('idProduk', $detailPengiriman->pluck('idProduk'))->get();
-
-    //     foreach ($pengiriman as $item) {
-    //         $item->update([
-    //             'status' => 'hangus',
-    //         ]);
-    //     }
-
-    //     foreach ($produk as $item) {
-    //         $item->update([
-    //             'status' => 'barang untuk donasi',
-    //         ]);
-    //     }
-
-    //     return response()->json([
-    //         'message' => 'Status transaksi dan produk telah diperbarui.',
-    //         'pengiriman_count' => $pengiriman->count(),
-    //         'produk_count' => $produk->count(),
-    //     ]);
-    // }
 }
