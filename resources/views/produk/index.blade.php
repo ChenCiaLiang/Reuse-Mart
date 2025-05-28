@@ -82,7 +82,7 @@
                 </a>
                 <div class="p-4">
                     <h3 class="text-lg font-semibold mb-2 truncate">{{ $p->deskripsi }}</h3>
-                    <div class="flex items-center mb-2">
+                   {{-- <div class="flex items-center mb-2">
                         <div class="flex text-yellow-400">
                             @for($i = 1; $i <= 5; $i++)
                                 @if($i <= $p->ratingProduk)
@@ -95,7 +95,7 @@
                             @endfor
                         </div>
                         <span class="text-gray-600 text-sm ml-1">({{ $p->ratingProduk }})</span>
-                    </div>
+                    </div>--}}
                     <div class="flex justify-between items-center">
                         <span class="text-green-700 font-bold">Rp {{ number_format($p->hargaJual, 0, ',', '.') }}</span>
                         <button class="buy-button bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-full" data-product-id="{{ $p->idProduk }}">

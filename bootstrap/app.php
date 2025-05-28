@@ -33,6 +33,13 @@ return Application::configure(basePath: dirname(__DIR__))
             ->everyMinute()
             ->withoutOverlapping()
             ->sendOutputTo(storage_path('logs/expired-transactions.log'));
+
+            // Schedule command untuk update rating penitip
+            $schedule->command('penitip:update-rating')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->sendOutputTo(storage_path('logs/rating-penitip.log'))
+            ->appendOutputTo(storage_path('logs/rating-penitip.log'));
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

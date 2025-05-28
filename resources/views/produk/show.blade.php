@@ -35,20 +35,25 @@
                 <div class="w-full md:w-1/2">
                     <h1 class="text-2xl font-bold mb-2">{{ $produk->deskripsi }}</h1>
                     
-                    <!-- Rating -->
+                    <!-- Rating Penitip -->
                     <div class="flex items-center mb-4">
                         <div class="flex text-yellow-400">
                             @for($i = 1; $i <= 5; $i++)
-                                @if($i <= $produk->ratingProduk)
+                                @if($i <= $ratingPenitip)
                                     <i class="fas fa-star"></i>
-                                @elseif($i <= $produk->ratingProduk + 0.5)
+                                @elseif($i <= $ratingPenitip + 0.5)
                                     <i class="fas fa-star-half-alt"></i>
                                 @else
                                     <i class="far fa-star"></i>
                                 @endif
                             @endfor
                         </div>
-                        <span class="text-gray-600 text-sm ml-1">({{ $produk->ratingProduk }})</span>
+                        <span class="text-gray-600 text-sm ml-2">
+                            ({{ number_format($ratingPenitip, 1) }})
+                            @if($penitip)
+                                - Rating Penitip: {{ $penitip->nama }}
+                            @endif
+                        </span>
                     </div>
                     
                     <!-- Price -->
@@ -61,6 +66,33 @@
                         <span class="text-gray-700">Status: </span>
                         <span class="font-medium text-green-600">{{ $produk->status }}</span>
                     </div>
+                    
+                    <!-- Seller Info -->
+                    @if($penitip)
+                    <div class="mb-4 p-3 bg-gray-50 rounded-lg border">
+                        <div class="flex items-center">
+                            <i class="fas fa-user-circle text-gray-400 text-2xl mr-3"></i>
+                            <div>
+                                <div class="font-medium text-gray-800">{{ $penitip->nama }}</div>
+                                <div class="text-sm text-gray-600">Penitip</div>
+                                <div class="flex items-center mt-1">
+                                    <div class="flex text-yellow-400 text-sm">
+                                        @for($i = 1; $i <= 5; $i++)
+                                            @if($i <= $penitip->rating)
+                                                <i class="fas fa-star"></i>
+                                            @elseif($i <= $penitip->rating + 0.5)
+                                                <i class="fas fa-star-half-alt"></i>
+                                            @else
+                                                <i class="far fa-star"></i>
+                                            @endif
+                                        @endfor
+                                    </div>
+                                    <span class="text-xs text-gray-500 ml-1">({{ number_format($penitip->rating, 1) }})</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
                     
                     <!-- Warranty Badge -->
                     @if($produk->tanggalGaransi && \Carbon\Carbon::parse($produk->tanggalGaransi)->isFuture())
@@ -112,7 +144,7 @@
                 </div>
             </div>
             
-            <!-- Diskusi Produk Section - Bagian Baru yang Ditambahkan -->
+            <!-- Diskusi Produk Section -->
             <div class="mt-12 border-t pt-8">
                 <h2 class="text-xl font-bold mb-6">Diskusi Produk</h2>
                 

@@ -147,6 +147,12 @@ Route::prefix('customer')->group(function () {
         Route::get('/history', [PembeliController::class, 'historyTransaksi'])->name('history');
         Route::get('/transaksi/{idTransaksi}', [PembeliController::class, 'detailTransaksi'])->name('transaksi.detail');
 
+        // Rating routes - Tambahkan ini
+        Route::prefix('rating')->name('rating.')->group(function () {
+            Route::get('/', [PembeliController::class, 'indexRating'])->name('index');
+            Route::post('/store', [PembeliController::class, 'storeRating'])->name('store');
+        });
+
         //alamat
         Route::prefix('alamat')->name('alamat.')->group(function () {
             Route::get('/', [AlamatController::class, 'index'])->name('index');

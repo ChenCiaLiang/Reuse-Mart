@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Produk;
 use App\Models\DiskusiProduk;
 use App\Models\KategoriProduk;
+use App\Models\DetailTransaksiPenitipan;
+use App\Models\Penitip;
 
 class ProdukController extends Controller
 {
@@ -37,6 +39,7 @@ class ProdukController extends Controller
 
         return view('produk.index', compact('produk', 'kategoriList', 'search', 'kategori'));
     }
+    
     public function indexPopup()
     {
         // Ambil produk yang tersedia (tidak terjual atau didonasikan)
@@ -56,6 +59,20 @@ class ProdukController extends Controller
         // Ambil data produk berdasarkan ID
         $produk = Produk::findOrFail($id);
 
+        // Ambil data penitip dari produk melalui detail transaksi penitipan
+        $penitip = null;
+        $ratingPenitip = 0;
+        
+        // Cari penitip melalui detail transaksi penitipan
+        $detailPenitipan = DetailTransaksiPenitipan::where('idProduk', $id)
+            ->with(['transaksiPenitipan.penitip'])
+            ->first();
+            
+        if ($detailPenitipan && $detailPenitipan->transaksiPenitipan) {
+            $penitip = $detailPenitipan->transaksiPenitipan->penitip;
+            $ratingPenitip = $penitip ? $penitip->rating : 0;
+        }
+
         // Ambil gambar-gambar produk dari field gambar
         $gambarArray = $produk->gambar ? explode(',', $produk->gambar) : ['default.jpg'];
 
@@ -73,6 +90,6 @@ class ProdukController extends Controller
             ->orderBy('tanggalDiskusi', 'desc')
             ->get();
 
-        return view('produk.show', compact('produk', 'gambarArray', 'produkTerkait', 'diskusi'));
+        return view('produk.show', compact('produk', 'gambarArray', 'produkTerkait', 'diskusi', 'penitip', 'ratingPenitip'));
     }
 }
