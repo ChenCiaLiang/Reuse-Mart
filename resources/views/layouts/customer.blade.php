@@ -49,7 +49,13 @@
                         <!-- Cart Icon untuk Pembeli -->
                         <a href="{{ route('pembeli.cart.show') }}" class="relative text-white hover:text-gray-400">
                             <i class="fas fa-shopping-cart text-xl"></i>
-                            <span class="cart-count absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">0</span>
+                            <span class="cart-count absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+                                {{-- PERBAIKAN: Hitung cart count dari session --}}
+                                @php
+                                    $cartCount = session('cart') ? count(session('cart')) : 0;
+                                @endphp
+                                {{ $cartCount }}
+                            </span>
                         </a>
                     @endif
                     
@@ -62,9 +68,12 @@
                     @php
                         $userType = session('role') ?? null;
                     @endphp
-                    <a class="nav-link text-white hover:text-gray-400" href="{{ route($userType . '.profile') }}"><i
-                                    class="fa-solid fa-user"></i></a>
-                    <button class="md:hidden hover:text-green-200"><i class="fas fa-bars"></i></button>
+                    <a class="nav-link text-white hover:text-gray-400" href="{{ route($userType . '.profile') }}">
+                        <i class="fa-solid fa-user"></i>
+                    </a>
+                    <button class="md:hidden hover:text-green-200">
+                        <i class="fas fa-bars"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -176,6 +185,37 @@
                     item.classList.remove('hover:text-green-200');
                 }
             });
+        });
+
+        // PERBAIKAN: Function untuk update cart count
+        function updateCartCountInHeader() {
+            @if(session('role') === 'pembeli')
+            fetch('{{ route("pembeli.cart.count") }}', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const cartBadge = document.querySelector('.cart-count');
+                if (cartBadge) {
+                    cartBadge.textContent = data.count;
+                }
+            })
+            .catch(error => console.error('Error updating cart count:', error));
+            @endif
+        }
+
+        // PERBAIKAN: Update cart count saat page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCartCountInHeader();
+        });
+
+        // PERBAIKAN: Update cart count saat kembali ke page (dari browser history)
+        window.addEventListener('pageshow', function(event) {
+            // Update cart count ketika user kembali ke halaman
+            setTimeout(updateCartCountInHeader, 100);
         });
     </script>
 </body>

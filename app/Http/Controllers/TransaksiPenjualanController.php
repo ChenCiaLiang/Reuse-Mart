@@ -106,7 +106,7 @@ class TransaksiPenjualanController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Produk berhasil ditambahkan ke keranjang',
-                'cartCount' => count($cart)
+                'cartCount' => count($cart) // PERBAIKAN: Pastikan cartCount dikembalikan
             ]);
         }
 
@@ -118,48 +118,71 @@ class TransaksiPenjualanController extends Controller
      */
     public function removeFromCart(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'idProduk' => 'required|exists:produk,idProduk',
-        ]);
+        try {
+            $validator = Validator::make($request->all(), [
+                'idProduk' => 'required|exists:produk,idProduk',
+            ]);
 
-        if ($validator->fails()) {
-            if ($request->expectsJson()) {
-                return response()->json(['errors' => $validator->errors()], 422);
+            if ($validator->fails()) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Data tidak valid',
+                        'errors' => $validator->errors()
+                    ], 422);
+                }
+                return back()->withErrors($validator);
             }
-            return back()->withErrors($validator);
-        }
 
-        // Check authentication
-        if (!session('user') || session('role') !== 'pembeli') {
-            if ($request->expectsJson()) {
-                return response()->json(['error' => 'Unauthorized'], 401);
+            // Check authentication
+            if (!session('user') || session('role') !== 'pembeli') {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Unauthorized'
+                    ], 401);
+                }
+                return redirect()->route('loginPage');
             }
-            return redirect()->route('loginPage');
-        }
 
-        $idProduk = $request->idProduk;
-        $cart = session('cart', []);
-        
-        if (isset($cart[$idProduk])) {
-            unset($cart[$idProduk]);
-            session(['cart' => $cart]);
+            $idProduk = $request->idProduk;
+            $cart = session('cart', []);
+            
+            if (isset($cart[$idProduk])) {
+                unset($cart[$idProduk]);
+                session(['cart' => $cart]);
+                
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Produk berhasil dihapus dari keranjang',
+                        'cartCount' => count($cart),
+                        'remainingItems' => count($cart)
+                    ], 200);
+                }
+                return back()->with('success', 'Produk berhasil dihapus dari keranjang');
+            }
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Produk tidak ditemukan dalam keranjang'
+                ], 404);
+            }
+            return back()->with('error', 'Produk tidak ditemukan dalam keranjang');
+            
+        } catch (\Exception $e) {
+            \Log::error('Error removing from cart: ' . $e->getMessage());
             
             if ($request->expectsJson()) {
                 return response()->json([
-                    'success' => true,
-                    'message' => 'Produk berhasil dihapus dari keranjang',
-                    'cartCount' => count($cart)
-                ]);
+                    'success' => false,
+                    'error' => 'Terjadi kesalahan server'
+                ], 500);
             }
-            return back()->with('success', 'Produk berhasil dihapus dari keranjang');
+            return back()->with('error', 'Terjadi kesalahan saat menghapus produk');
         }
-
-        if ($request->expectsJson()) {
-            return response()->json(['error' => 'Produk tidak ditemukan dalam keranjang'], 404);
-        }
-        return back()->with('error', 'Produk tidak ditemukan dalam keranjang');
     }
-
     /**
      * Menampilkan halaman checkout
      */
@@ -540,12 +563,27 @@ class TransaksiPenjualanController extends Controller
      */
     public function getCartCount()
     {
-        // Check authentication
-        if (!session('user') || session('role') !== 'pembeli') {
-            return response()->json(['count' => 0]);
-        }
+        try {
+            // Check authentication
+            if (!session('user') || session('role') !== 'pembeli') {
+                return response()->json(['count' => 0], 200);
+            }
 
-        $cart = session('cart', []);
-        return response()->json(['count' => count($cart)]);
+            $cart = session('cart', []);
+            $count = count($cart);
+            
+            return response()->json([
+                'count' => $count,
+                'success' => true
+            ], 200);
+            
+        } catch (\Exception $e) {
+            \Log::error('Error getting cart count: ' . $e->getMessage());
+            return response()->json([
+                'count' => 0,
+                'success' => false,
+                'error' => 'Terjadi kesalahan'
+            ], 200); // Still return 200 to prevent JS errors
+        }
     }
 }
