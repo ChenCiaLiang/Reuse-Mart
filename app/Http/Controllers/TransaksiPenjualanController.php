@@ -19,6 +19,11 @@ class TransaksiPenjualanController extends Controller
      */
     public function showCart()
     {
+        // Check if user is logged in as pembeli
+        if (!session('user') || session('role') !== 'pembeli') {
+            return redirect()->route('loginPage')->with('error', 'Silakan login sebagai pembeli terlebih dahulu');
+        }
+
         $idPembeli = session('user')['idPembeli'];
         $pembeli = Pembeli::findOrFail($idPembeli);
         
@@ -124,6 +129,14 @@ class TransaksiPenjualanController extends Controller
             return back()->withErrors($validator);
         }
 
+        // Check authentication
+        if (!session('user') || session('role') !== 'pembeli') {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+            return redirect()->route('loginPage');
+        }
+
         $idProduk = $request->idProduk;
         $cart = session('cart', []);
         
@@ -152,6 +165,11 @@ class TransaksiPenjualanController extends Controller
      */
     public function showCheckout()
     {
+        // Check authentication
+        if (!session('user') || session('role') !== 'pembeli') {
+            return redirect()->route('loginPage')->with('error', 'Silakan login sebagai pembeli terlebih dahulu');
+        }
+
         $idPembeli = session('user')['idPembeli'];
         $pembeli = Pembeli::findOrFail($idPembeli);
         
@@ -172,6 +190,25 @@ class TransaksiPenjualanController extends Controller
         $products = Produk::whereIn('idProduk', $productIds)
             ->where('status', 'Tersedia')
             ->get();
+            
+        // Validasi apakah semua produk masih tersedia
+        if ($products->count() !== count($productIds)) {
+            // Ada produk yang sudah tidak tersedia
+            $availableIds = $products->pluck('idProduk')->toArray();
+            $unavailableIds = array_diff($productIds, $availableIds);
+            
+            // Remove unavailable products from cart
+            foreach ($unavailableIds as $unavailableId) {
+                unset($cart[$unavailableId]);
+            }
+            session(['cart' => $cart]);
+            
+            if (empty($cart)) {
+                return redirect()->route('pembeli.cart.show')->with('error', 'Semua produk dalam keranjang sudah tidak tersedia');
+            }
+            
+            return redirect()->route('pembeli.cart.show')->with('error', 'Beberapa produk sudah tidak tersedia dan telah dihapus dari keranjang');
+        }
         
         foreach ($products as $product) {
             $cartItems[] = [
@@ -206,6 +243,11 @@ class TransaksiPenjualanController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        // Check authentication
+        if (!session('user') || session('role') !== 'pembeli') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
         $idPembeli = session('user')['idPembeli'];
         $pembeli = Pembeli::findOrFail($idPembeli);
         
@@ -221,6 +263,10 @@ class TransaksiPenjualanController extends Controller
             ->where('status', 'Tersedia')
             ->get();
         
+        if ($products->count() !== count($productIds)) {
+            return response()->json(['error' => 'Beberapa produk sudah tidak tersedia'], 400);
+        }
+        
         $subtotal = 0;
         foreach ($products as $product) {
             $subtotal += $product->hargaJual;
@@ -229,6 +275,17 @@ class TransaksiPenjualanController extends Controller
         // Hitung ongkir (Fungsionalitas 60)
         $ongkir = 0;
         if ($request->metode_pengiriman === 'kurir') {
+            // Validasi alamat jika kurir
+            if ($request->idAlamat) {
+                $alamat = Alamat::where('idAlamat', $request->idAlamat)
+                    ->where('idPembeli', $idPembeli)
+                    ->first();
+                    
+                if (!$alamat) {
+                    return response()->json(['error' => 'Alamat tidak valid'], 400);
+                }
+            }
+            
             // Ongkir gratis jika total pembelian >= 1.5 juta
             // Ongkir = 100 ribu jika total pembelian < 1.5 juta
             if ($subtotal < 1500000) {
@@ -281,6 +338,11 @@ class TransaksiPenjualanController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        // Check authentication
+        if (!session('user') || session('role') !== 'pembeli') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
         // Simpan metode pengiriman ke session
         session([
             'checkout_shipping_method' => $request->metode_pengiriman
@@ -304,6 +366,11 @@ class TransaksiPenjualanController extends Controller
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        // Check authentication
+        if (!session('user') || session('role') !== 'pembeli') {
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
 
         $idPembeli = session('user')['idPembeli'];
@@ -346,6 +413,11 @@ class TransaksiPenjualanController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        // Check authentication
+        if (!session('user') || session('role') !== 'pembeli') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
         $idPembeli = session('user')['idPembeli'];
         $pembeli = Pembeli::findOrFail($idPembeli);
         
@@ -380,6 +452,11 @@ class TransaksiPenjualanController extends Controller
      */
     public function getCheckoutInfo()
     {
+        // Check authentication
+        if (!session('user') || session('role') !== 'pembeli') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
         $idPembeli = session('user')['idPembeli'];
         $pembeli = Pembeli::findOrFail($idPembeli);
         
@@ -395,7 +472,13 @@ class TransaksiPenjualanController extends Controller
         
         // Hitung total
         $productIds = array_keys($cart);
-        $products = Produk::whereIn('idProduk', $productIds)->get();
+        $products = Produk::whereIn('idProduk', $productIds)
+            ->where('status', 'Tersedia')
+            ->get();
+        
+        if ($products->count() !== count($productIds)) {
+            return response()->json(['error' => 'Beberapa produk sudah tidak tersedia'], 400);
+        }
         
         $subtotal = $products->sum('hargaJual');
         
@@ -457,6 +540,11 @@ class TransaksiPenjualanController extends Controller
      */
     public function getCartCount()
     {
+        // Check authentication
+        if (!session('user') || session('role') !== 'pembeli') {
+            return response()->json(['count' => 0]);
+        }
+
         $cart = session('cart', []);
         return response()->json(['count' => count($cart)]);
     }

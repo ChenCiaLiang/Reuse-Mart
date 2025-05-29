@@ -45,6 +45,14 @@
                     </ul>
                 </nav>
                 <div class="flex items-center space-x-4">
+                    @if(session('role') === 'pembeli')
+                        <!-- Cart Icon untuk Pembeli -->
+                        <a href="{{ route('pembeli.cart.show') }}" class="relative text-white hover:text-gray-400">
+                            <i class="fas fa-shopping-cart text-xl"></i>
+                            <span class="cart-count absolute -top-2 -right-2 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">0</span>
+                        </a>
+                    @endif
+                    
                     <form action="{{ route('logout') }}" method="POST">
                         @csrf
                         <button type="submit" class="flex items-center text-white hover:text-gray-400 w-full">
