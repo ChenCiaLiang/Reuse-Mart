@@ -11,6 +11,7 @@ use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\RequestDonasiController;
 use App\Http\Controllers\TransaksiPengirimanController;
 use App\Http\Controllers\TransaksiPenitipanController;
+use App\Http\Controllers\TransaksiPenjualanController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -163,6 +164,23 @@ Route::prefix('customer')->group(function () {
             Route::get('/{id}/edit', [AlamatController::class, 'edit'])->name('edit');
             Route::put('/{id}', [AlamatController::class, 'update'])->name('update');
             Route::delete('/{id}', [AlamatController::class, 'destroy'])->name('destroy');
+        });
+
+        // TAMBAHAN BARU: Cart dan Checkout Routes (Fungsionalitas 57-62)
+        Route::prefix('cart')->name('cart.')->group(function () {
+            Route::get('/', [TransaksiPenjualanController::class, 'showCart'])->name('show'); // Lihat keranjang
+            Route::post('/add', [TransaksiPenjualanController::class, 'addToCart'])->name('add'); // Fungsi 57: Add to cart
+            Route::post('/remove', [TransaksiPenjualanController::class, 'removeFromCart'])->name('remove'); // Fungsi 57: Remove from cart
+            Route::get('/count', [TransaksiPenjualanController::class, 'getCartCount'])->name('count'); // Get cart count
+        });
+
+        Route::prefix('checkout')->name('checkout.')->group(function () {
+            Route::get('/', [TransaksiPenjualanController::class, 'showCheckout'])->name('show'); // Halaman checkout
+            Route::post('/calculate-total', [TransaksiPenjualanController::class, 'calculateTotal'])->name('calculate-total'); // Fungsi 60: Hitung total
+            Route::post('/update-shipping-method', [TransaksiPenjualanController::class, 'updateShippingMethod'])->name('update-shipping-method'); // Fungsi 58: Update metode pengiriman
+            Route::post('/update-shipping-address', [TransaksiPenjualanController::class, 'updateShippingAddress'])->name('update-shipping-address'); // Fungsi 59: Update alamat pengiriman
+            Route::post('/update-point-usage', [TransaksiPenjualanController::class, 'updatePointUsage'])->name('update-point-usage'); // Fungsi 61: Update penggunaan poin
+            Route::get('/info', [TransaksiPenjualanController::class, 'getCheckoutInfo'])->name('info'); // Get checkout info lengkap
         });
     });
 

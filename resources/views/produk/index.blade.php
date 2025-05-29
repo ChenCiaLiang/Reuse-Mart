@@ -96,10 +96,21 @@
                         </div>
                         <span class="text-gray-600 text-sm ml-1">({{ $p->ratingProduk }})</span>
                     </div>--}}
-                    <div class="flex justify-between items-center">
-                        <span class="text-green-700 font-bold">Rp {{ number_format($p->hargaJual, 0, ',', '.') }}</span>
-                        <button class="buy-button bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-full" data-product-id="{{ $p->idProduk }}">
-                            <i class="fas fa-shopping-cart mr-1"></i> Beli
+                    <div class="mb-3">
+                        <span class="text-green-700 font-bold text-lg">Rp {{ number_format($p->hargaJual, 0, ',', '.') }}</span>
+                    </div>
+                    
+                    <!-- Add to Cart Button -->
+                    <div class="mb-2">
+                        <button class="addToCartBtn w-full bg-green-600 hover:bg-green-700 text-white text-center py-2 rounded-lg transition duration-300 text-sm" data-product-id="{{ $p->idProduk }}">
+                            <i class="fas fa-shopping-cart mr-2"></i> Tambahkan ke Keranjang
+                        </button>
+                    </div>
+                    
+                    <!-- Buy Now Button -->
+                    <div>
+                        <button class="buyNowBtn w-full border-2 border-green-600 text-green-600 hover:bg-green-50 text-center py-2 rounded-lg transition duration-300 text-sm" data-product-id="{{ $p->idProduk }}">
+                            Beli Sekarang
                         </button>
                     </div>
                 </div>
@@ -165,11 +176,11 @@
             }
         }
 
-        // Handle buy button clicks
+        // Handle button clicks
         document.addEventListener('DOMContentLoaded', function() {
-            const buyButtons = document.querySelectorAll('.buy-button');
-            
-            buyButtons.forEach(button => {
+            // Handle Add to Cart buttons
+            const addToCartButtons = document.querySelectorAll('.addToCartBtn');
+            addToCartButtons.forEach(button => {
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -178,12 +189,41 @@
                     
                     // Jika user sudah login sebagai pembeli
                     if (userData.isLoggedIn && userData.role === 'pembeli') {
-                        // Redirect ke halaman detail produk atau halaman pembelian
-                        // Untuk sementara redirect ke detail produk
+                        // Logic untuk menambahkan ke keranjang
+                        // Untuk sementara redirect ke halaman detail produk
+                        // Atau bisa ditambahkan AJAX call untuk menambahkan ke keranjang
+                        console.log('Menambahkan produk ' + productId + ' ke keranjang');
+                        
+                        // Contoh implementasi sederhana - redirect ke detail produk
                         window.location.href = `{{ url('/customer/produk/show') }}/${productId}`;
                         
-                        // Atau jika ingin langsung ke proses pembelian, bisa ditambahkan logic di sini
-                        // misalnya: window.location.href = `/checkout/${productId}`;
+                        // Atau jika sudah ada API keranjang:
+                        // addToCart(productId);
+                    } else {
+                        // Jika belum login atau bukan pembeli, tampilkan modal
+                        showModal();
+                    }
+                });
+            });
+
+            // Handle Buy Now buttons
+            const buyNowButtons = document.querySelectorAll('.buyNowBtn');
+            buyNowButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const productId = this.getAttribute('data-product-id');
+                    
+                    // Jika user sudah login sebagai pembeli
+                    if (userData.isLoggedIn && userData.role === 'pembeli') {
+                        // Logic untuk langsung beli
+                        // Redirect ke halaman checkout atau detail produk
+                        console.log('Beli langsung produk ' + productId);
+                        window.location.href = `{{ url('/customer/produk/show') }}/${productId}`;
+                        
+                        // Atau langsung ke checkout:
+                        // window.location.href = `/checkout/${productId}`;
                     } else {
                         // Jika belum login atau bukan pembeli, tampilkan modal
                         showModal();
@@ -201,5 +241,33 @@
                 });
             }
         });
+
+        // Fungsi untuk menambahkan ke keranjang (jika menggunakan AJAX)
+        // function addToCart(productId) {
+        //     fetch('/api/cart/add', {
+        //         method: 'POST',
+        //         headers: {
+        //             'Content-Type': 'application/json',
+        //             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        //         },
+        //         body: JSON.stringify({
+        //             product_id: productId,
+        //             quantity: 1
+        //         })
+        //     })
+        //     .then(response => response.json())
+        //     .then(data => {
+        //         if (data.success) {
+        //             // Tampilkan notifikasi sukses
+        //             showNotification('Produk berhasil ditambahkan ke keranjang!', 'success');
+        //         } else {
+        //             showNotification('Gagal menambahkan produk ke keranjang!', 'error');
+        //         }
+        //     })
+        //     .catch(error => {
+        //         console.error('Error:', error);
+        //         showNotification('Terjadi kesalahan!', 'error');
+        //     });
+        // }
     </script>
 @endsection
