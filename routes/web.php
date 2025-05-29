@@ -12,6 +12,7 @@ use App\Http\Controllers\RequestDonasiController;
 use App\Http\Controllers\TransaksiPengirimanController;
 use App\Http\Controllers\TransaksiPenitipanController;
 use App\Http\Controllers\TransaksiPenjualanController;
+use App\Http\Controllers\MerchandiseController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -86,6 +87,14 @@ Route::prefix('pegawai')->middleware('RolePegawai:pegawai')->group(function () {
             Route::get('/{id}/edit', [PenitipController::class, 'edit'])->name('edit');
             Route::put('/{id}', [PenitipController::class, 'update'])->name('update');
             Route::delete('/{id}', [PenitipController::class, 'destroy'])->name('destroy');
+        });
+
+        // Route merchandise
+        Route::prefix('merchandise')->name('merchandise.')->group(function () {
+            Route::get('/', [MerchandiseController::class, 'index'])->name('index');
+            Route::get('/{id}', [MerchandiseController::class, 'show'])->name('show');
+            Route::get('/{id}/konfirmasi', [MerchandiseController::class, 'konfirmasiForm'])->name('konfirmasi.form');
+            Route::post('/{id}/konfirmasi', [MerchandiseController::class, 'konfirmasiPengambilan'])->name('konfirmasi');
         });
     });
 

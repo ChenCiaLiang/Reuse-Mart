@@ -19,9 +19,14 @@
         </div>
         
         <nav class="mt-5">
-            <a href="{{ route('cs.dashboard') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('cs.penitip.*') ? 'bg-green-700' : '' }}">
+            <a href="{{ route('cs.penitip.index') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('cs.penitip.*') ? 'bg-green-700' : '' }}">
                 <i class="fas fa-users mr-3"></i>
                 <span>Manajemen Penitip</span>
+            </a>
+            
+            <a href="{{ route('cs.merchandise.index') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('cs.merchandise.*') ? 'bg-green-700' : '' }}">
+                <i class="fas fa-gift mr-3"></i>
+                <span>Klaim Merchandise</span>
             </a>
         </nav>
         
@@ -44,7 +49,7 @@
                 <h1 class="text-lg font-semibold text-gray-700">
                     @if(request()->routeIs('cs.dashboard'))
                         Dashboard
-                    @elseif(request()->routeIs('cs.dashboard'))
+                    @elseif(request()->routeIs('cs.penitip.index'))
                         Manajemen Penitip
                     @elseif(request()->routeIs('cs.penitip.create'))
                         Tambah Penitip Baru
@@ -52,6 +57,12 @@
                         Edit Penitip
                     @elseif(request()->routeIs('cs.penitip.show'))
                         Detail Penitip
+                    @elseif(request()->routeIs('cs.merchandise.index'))
+                        Klaim Merchandise
+                    @elseif(request()->routeIs('cs.merchandise.show'))
+                        Detail Klaim Merchandise
+                    @elseif(request()->routeIs('cs.merchandise.konfirmasi.*'))
+                        Konfirmasi Pengambilan Merchandise
                     @else
                         ReUseMart Customer Service Panel
                     @endif
@@ -89,6 +100,30 @@
     <script>
         setTimeout(function() {
             document.getElementById('flash-message').style.display = 'none';
+        }, 3000);
+    </script>
+    @endif
+
+    <!-- Flash Message Success -->
+    @if (session('success'))
+    <div id="flash-success" class="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg">
+        {{ session('success') }}
+    </div>
+    <script>
+        setTimeout(function() {
+            document.getElementById('flash-success').style.display = 'none';
+        }, 3000);
+    </script>
+    @endif
+
+    <!-- Flash Message Error -->
+    @if (session('error'))
+    <div id="flash-error" class="fixed bottom-4 right-4 bg-red-600 text-white px-4 py-2 rounded shadow-lg">
+        {{ session('error') }}
+    </div>
+    <script>
+        setTimeout(function() {
+            document.getElementById('flash-error').style.display = 'none';
         }, 3000);
     </script>
     @endif

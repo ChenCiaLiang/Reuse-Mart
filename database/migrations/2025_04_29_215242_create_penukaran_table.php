@@ -13,10 +13,11 @@ return new class extends Migration
     {
         Schema::create('penukaran', function (Blueprint $table) {
             $table->id('idPenukaran');
-            $table->dateTime('tanggalPenerimaan');
+            $table->dateTime('tanggalPenerimaan')->nullable();
             $table->dateTime('tanggalPengajuan');
             $table->unsignedBigInteger('idMerchandise');
             $table->unsignedBigInteger('idPembeli');
+            $table->string('statusPenukaran', 50);
             $table->foreign('idMerchandise')
                 ->references('idMerchandise')->on('merchandise')
                 ->onDelete('cascade')

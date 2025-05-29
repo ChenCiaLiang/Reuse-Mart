@@ -18,7 +18,8 @@ class Penukaran extends Model
         'tanggalPenerimaan',
         'tanggalPengajuan',
         'idMerchandise',
-        'idPembeli'
+        'idPembeli',
+        'statusPenukaran'
     ];
 
     public function merchandise(): BelongsTo
