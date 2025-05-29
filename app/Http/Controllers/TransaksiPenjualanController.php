@@ -586,4 +586,522 @@ class TransaksiPenjualanController extends Controller
             ], 200); // Still return 200 to prevent JS errors
         }
     }
+
+    // TAMBAHAN UNTUK TransaksiPenjualanController.php
+    // Tambahkan method-method ini ke dalam class TransaksiPenjualanController yang sudah ada
+
+    /**
+     * Melakukan Checkout - Menambah data transaksi di database (Fungsionalitas 63)
+     */
+    public function proceedCheckout(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'metode_pengiriman' => 'required|in:kurir,ambil_sendiri',
+            'idAlamat' => 'required_if:metode_pengiriman,kurir|exists:alamat,idAlamat',
+            'poin_digunakan' => 'nullable|integer|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        // Check authentication
+        if (!session('user') || session('role') !== 'pembeli') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        DB::beginTransaction();
+        try {
+            $idPembeli = session('user')['idPembeli'];
+            $pembeli = Pembeli::findOrFail($idPembeli);
+            
+            // Validasi cart
+            $cart = session('cart', []);
+            if (empty($cart)) {
+                return response()->json(['error' => 'Keranjang belanja kosong'], 400);
+            }
+            
+            // Validasi produk masih tersedia
+            $productIds = array_keys($cart);
+            $products = Produk::whereIn('idProduk', $productIds)
+                ->where('status', 'Tersedia')
+                ->get();
+                
+            if ($products->count() !== count($productIds)) {
+                return response()->json(['error' => 'Beberapa produk sudah tidak tersedia'], 400);
+            }
+            
+            // Hitung total dan validasi
+            $subtotal = $products->sum('hargaJual');
+            $ongkir = 0;
+            if ($request->metode_pengiriman === 'kurir') {
+                $ongkir = $subtotal >= 1500000 ? 0 : 100000;
+                
+                // Validasi alamat
+                if ($request->idAlamat) {
+                    $alamat = Alamat::where('idAlamat', $request->idAlamat)
+                        ->where('idPembeli', $idPembeli)
+                        ->first();
+                    if (!$alamat) {
+                        return response()->json(['error' => 'Alamat tidak valid'], 400);
+                    }
+                }
+            }
+            
+            // Validasi dan hitung penggunaan poin (Fungsionalitas 65)
+            $poinDigunakan = min($request->poin_digunakan ?? 0, $pembeli->poin);
+            $diskonPoin = $poinDigunakan * 10;
+            $totalSebelumDiskon = $subtotal + $ongkir;
+            $diskonPoin = min($diskonPoin, $totalSebelumDiskon);
+            $poinDigunakan = floor($diskonPoin / 10);
+            $totalAkhir = $totalSebelumDiskon - $diskonPoin;
+            
+            // Generate nomor transaksi (Fungsionalitas 64)
+            $nomorTransaksi = $this->generateTransactionNumber();
+            
+            // Buat transaksi penjualan (Fungsionalitas 63)
+            $tanggalPesan = Carbon::now();
+            $tanggalBatasLunas = $tanggalPesan->copy()->addMinutes(15); // 15 menit timeout
+            
+            $transaksi = TransaksiPenjualan::create([
+                'bonus' => 0.00,
+                'status' => 'menunggu_pembayaran',
+                'tanggalLaku' => null,
+                'tanggalPesan' => $tanggalPesan,
+                'tanggalBatasLunas' => $tanggalBatasLunas,
+                'tanggalLunas' => null,
+                'tanggalBatasAmbil' => null,
+                'tanggalKirim' => null,
+                'tanggalAmbil' => null,
+                'idPembeli' => $idPembeli,
+                'idPegawai' => null,
+            ]);
+            
+            // Simpan detail transaksi dan update status produk (Fungsionalitas 66)
+            foreach ($products as $product) {
+                DetailTransaksiPenjualan::create([
+                    'idTransaksiPenjualan' => $transaksi->idTransaksiPenjualan,
+                    'idProduk' => $product->idProduk,
+                ]);
+                
+                // Update status produk menjadi sold out
+                $product->update(['status' => 'Sold Out']);
+            }
+            
+            // Kurangi poin yang digunakan (Fungsionalitas 65)
+            if ($poinDigunakan > 0) {
+                $pembeli->update(['poin' => $pembeli->poin - $poinDigunakan]);
+            }
+            
+            // Simpan data checkout ke session untuk keperluan payment
+            session([
+                'checkout_data' => [
+                    'idTransaksi' => $transaksi->idTransaksiPenjualan,
+                    'nomorTransaksi' => $nomorTransaksi,
+                    'subtotal' => $subtotal,
+                    'ongkir' => $ongkir,
+                    'diskon_poin' => $diskonPoin,
+                    'total_akhir' => $totalAkhir,
+                    'metode_pengiriman' => $request->metode_pengiriman,
+                    'idAlamat' => $request->idAlamat,
+                    'poin_digunakan' => $poinDigunakan,
+                ]
+            ]);
+            
+            // Clear cart
+            $this->clearCart();
+            
+            DB::commit();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Transaksi berhasil dibuat',
+                'idTransaksi' => $transaksi->idTransaksiPenjualan,
+                'nomorTransaksi' => $nomorTransaksi,
+                'redirect_url' => route('pembeli.payment.show', $transaksi->idTransaksiPenjualan)
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error in proceedCheckout: ' . $e->getMessage());
+            return response()->json(['error' => 'Terjadi kesalahan saat memproses transaksi'], 500);
+        }
+    }
+
+    /**
+     * Generate nomor transaksi (Fungsionalitas 64)
+     */
+    private function generateTransactionNumber()
+    {
+        $year = date('y'); // 2 digit tahun
+        $month = date('m'); // 2 digit bulan
+        
+        // Ambil nomor urut terakhir untuk bulan ini
+        $lastTransaction = TransaksiPenjualan::whereYear('tanggalPesan', date('Y'))
+            ->whereMonth('tanggalPesan', date('m'))
+            ->orderBy('idTransaksiPenjualan', 'desc')
+            ->first();
+        
+        $nomorUrut = 1;
+        if ($lastTransaction) {
+            $nomorUrut = $lastTransaction->idTransaksiPenjualan + 1;
+        }
+        
+        return sprintf('%s.%s.%03d', $year, $month, $nomorUrut);
+    }
+
+    /**
+     * Menampilkan halaman pembayaran
+     */
+    public function showPayment($idTransaksi)
+    {
+        // Check authentication
+        if (!session('user') || session('role') !== 'pembeli') {
+            return redirect()->route('loginPage')->with('error', 'Silakan login sebagai pembeli terlebih dahulu');
+        }
+
+        $idPembeli = session('user')['idPembeli'];
+        
+        $transaksi = TransaksiPenjualan::where('idTransaksiPenjualan', $idTransaksi)
+            ->where('idPembeli', $idPembeli)
+            ->with(['detailTransaksiPenjualan.produk'])
+            ->first();
+            
+        if (!$transaksi) {
+            return redirect()->route('pembeli.profile')->with('error', 'Transaksi tidak ditemukan');
+        }
+        
+        // Check if transaction is still valid (within 15 minutes)
+        if ($transaksi->status === 'menunggu_pembayaran' && Carbon::now()->gt($transaksi->tanggalBatasLunas)) {
+            // Transaction expired, cancel it
+            $this->cancelExpiredTransaction($transaksi);
+            return redirect()->route('pembeli.profile')->with('error', 'Transaksi telah kedaluwarsa');
+        }
+        
+        $checkoutData = session('checkout_data', []);
+        
+        return view('customer.pembeli.payment.index', compact('transaksi', 'checkoutData'));
+    }
+
+    /**
+     * Upload bukti pembayaran (Fungsionalitas 68)
+     */
+    public function uploadPaymentProof(Request $request, $idTransaksi)
+    {
+        $validator = Validator::make($request->all(), [
+            'bukti_pembayaran' => 'required|image|mimes:jpeg,jpg,png|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+            return back()->withErrors($validator)->withInput();
+        }
+
+        // Check authentication
+        if (!session('user') || session('role') !== 'pembeli') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $idPembeli = session('user')['idPembeli'];
+        
+        $transaksi = TransaksiPenjualan::where('idTransaksiPenjualan', $idTransaksi)
+            ->where('idPembeli', $idPembeli)
+            ->first();
+            
+        if (!$transaksi) {
+            return response()->json(['error' => 'Transaksi tidak ditemukan'], 404);
+        }
+        
+        // Check if transaction is still valid
+        if ($transaksi->status !== 'menunggu_pembayaran') {
+            return response()->json(['error' => 'Status transaksi tidak valid untuk upload pembayaran'], 400);
+        }
+        
+        if (Carbon::now()->gt($transaksi->tanggalBatasLunas)) {
+            // Transaction expired
+            $this->cancelExpiredTransaction($transaksi);
+            return response()->json(['error' => 'Transaksi telah kedaluwarsa'], 400);
+        }
+
+        DB::beginTransaction();
+        try {
+            // Upload file
+            $buktiFile = $request->file('bukti_pembayaran');
+            $filename = 'bukti_' . $idTransaksi . '_' . time() . '.' . $buktiFile->getClientOriginalExtension();
+            $buktiFile->move(public_path('uploads/bukti_pembayaran'), $filename);
+            
+            // Update transaksi - gunakan kolom yang ada
+            $transaksi->update([
+                'status' => 'menunggu_verifikasi'
+            ]);
+            
+            // Simpan path bukti pembayaran di session untuk sementara
+            // Karena tidak boleh tambah kolom, gunakan session storage
+            session(['bukti_pembayaran_' . $idTransaksi => 'uploads/bukti_pembayaran/' . $filename]);
+            
+            DB::commit();
+            
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Bukti pembayaran berhasil diupload dan sedang diverifikasi'
+                ]);
+            }
+            
+            return redirect()->route('pembeli.payment.show', $idTransaksi)
+                ->with('success', 'Bukti pembayaran berhasil diupload dan sedang diverifikasi');
+                
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error uploading payment proof: ' . $e->getMessage());
+            
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Terjadi kesalahan saat mengupload bukti pembayaran'], 500);
+            }
+            
+            return back()->with('error', 'Terjadi kesalahan saat mengupload bukti pembayaran');
+        }
+    }
+
+    /**
+     * Menampilkan daftar transaksi yang perlu diverifikasi (untuk CS)
+     */
+    public function indexVerification()
+    {
+        $transaksiList = TransaksiPenjualan::where('status', 'menunggu_verifikasi')
+            ->with(['pembeli', 'detailTransaksiPenjualan.produk'])
+            ->orderBy('tanggalPesan', 'desc')
+            ->paginate(10);
+            
+        return view('pegawai.cs.verification.index', compact('transaksiList'));
+    }
+
+    /**
+     * Menampilkan detail transaksi untuk verifikasi (untuk CS)
+     */
+    public function showVerification($idTransaksi)
+    {
+        $transaksi = TransaksiPenjualan::where('idTransaksiPenjualan', $idTransaksi)
+            ->where('status', 'menunggu_verifikasi')
+            ->with(['pembeli', 'detailTransaksiPenjualan.produk'])
+            ->first();
+            
+        if (!$transaksi) {
+            return redirect()->route('cs.verification.index')->with('error', 'Transaksi tidak ditemukan');
+        }
+        
+        return view('pegawai.cs.verification.show', compact('transaksi'));
+    }
+
+    /**
+     * Verifikasi bukti pembayaran (Fungsionalitas 69)
+     */
+    public function verifyPayment(Request $request, $idTransaksi)
+    {
+        $validator = Validator::make($request->all(), [
+            'status_verifikasi' => 'required|in:valid,tidak_valid',
+            'catatan' => 'nullable|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $transaksi = TransaksiPenjualan::where('idTransaksiPenjualan', $idTransaksi)
+            ->where('status', 'menunggu_verifikasi')
+            ->first();
+            
+        if (!$transaksi) {
+            return redirect()->route('cs.verification.index')->with('error', 'Transaksi tidak ditemukan');
+        }
+
+        DB::beginTransaction();
+        try {
+            if ($request->status_verifikasi === 'valid') {
+                // Pembayaran valid - Update ke status disiapkan (Fungsionalitas 70)
+                $this->updateStatusToDisiapkan($transaksi);
+                $message = 'Pembayaran telah diverifikasi dan transaksi sedang disiapkan';
+            } else {
+                // Pembayaran tidak valid - Cancel transaksi (Fungsionalitas 67)
+                $this->cancelTransaction($transaksi, 'Bukti pembayaran tidak valid: ' . $request->catatan);
+                $message = 'Pembayaran ditolak dan transaksi dibatalkan';
+            }
+            
+            DB::commit();
+            
+            return redirect()->route('cs.verification.index')->with('success', $message);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error verifying payment: ' . $e->getMessage());
+            return back()->with('error', 'Terjadi kesalahan saat memverifikasi pembayaran');
+        }
+    }
+
+    /**
+     * Update status transaksi menjadi "Disiapkan" (Fungsionalitas 70)
+     */
+    private function updateStatusToDisiapkan($transaksi)
+    {
+        // Update status transaksi
+        $transaksi->update([
+            'status' => 'disiapkan',
+            'tanggalLunas' => Carbon::now(),
+            'tanggalLaku' => Carbon::now(),
+        ]);
+        
+        // Hitung dan berikan poin yang didapat (Fungsionalitas 62)
+        $this->calculateAndAwardPoints($transaksi);
+        
+        // TODO: Kirim notifikasi ke penitip
+        // Implementasi notifikasi bisa ditambahkan di sini
+        
+        return $transaksi;
+    }
+
+    /**
+     * Hitung dan berikan poin ke pembeli (Fungsionalitas 62)
+     */
+    private function calculateAndAwardPoints($transaksi)
+    {
+        $checkoutData = session('checkout_data', []);
+        $totalAkhir = $checkoutData['total_akhir'] ?? 0;
+        
+        if ($totalAkhir > 0) {
+            // Hitung poin yang didapat: 1 poin = Rp 10.000
+            $poinDapat = floor($totalAkhir / 10000);
+            
+            // Bonus 20% jika pembelian > Rp 500.000
+            if ($totalAkhir > 500000) {
+                $bonusPoin = floor($poinDapat * 0.2);
+                $poinDapat += $bonusPoin;
+            }
+            
+            // Tambahkan poin ke pembeli
+            $pembeli = $transaksi->pembeli;
+            $pembeli->update(['poin' => $pembeli->poin + $poinDapat]);
+        }
+    }
+
+    /**
+     * Cancel transaksi yang expired atau tidak valid (Fungsionalitas 67)
+     */
+    private function cancelExpiredTransaction($transaksi)
+    {
+        return $this->cancelTransaction($transaksi, 'Transaksi kedaluwarsa - pembayaran tidak dilakukan dalam 15 menit');
+    }
+
+    /**
+     * Cancel transaksi dan kembalikan semua perubahan
+     */
+    private function cancelTransaction($transaksi, $reason = 'Transaksi dibatalkan')
+    {
+        DB::beginTransaction();
+        try {
+            // Kembalikan status produk ke tersedia
+            $detailTransaksi = DetailTransaksiPenjualan::where('idTransaksiPenjualan', $transaksi->idTransaksiPenjualan)->get();
+            foreach ($detailTransaksi as $detail) {
+                $produk = Produk::find($detail->idProduk);
+                if ($produk) {
+                    $produk->update(['status' => 'Tersedia']);
+                }
+            }
+            
+            // Kembalikan poin jika ada yang digunakan
+            $checkoutData = session('checkout_data', []);
+            if (isset($checkoutData['poin_digunakan']) && $checkoutData['poin_digunakan'] > 0) {
+                $pembeli = $transaksi->pembeli;
+                $pembeli->update(['poin' => $pembeli->poin + $checkoutData['poin_digunakan']]);
+            }
+            
+            // Update status transaksi - gunakan kolom yang ada
+            $transaksi->update([
+                'status' => 'batal'
+            ]);
+            
+            // Simpan catatan pembatalan di session
+            session(['catatan_batal_' . $transaksi->idTransaksiPenjualan => $reason]);
+            
+            // Hapus data checkout dari session
+            session()->forget('checkout_data');
+            
+            DB::commit();
+            return true;
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error canceling transaction: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Check dan cancel transaksi yang expired (untuk dijalankan via cron/scheduler)
+     */
+    public function checkExpiredTransactions()
+    {
+        $expiredTransactions = TransaksiPenjualan::where('status', 'menunggu_pembayaran')
+            ->where('tanggalBatasLunas', '<', Carbon::now())
+            ->get();
+            
+        foreach ($expiredTransactions as $transaksi) {
+            $this->cancelExpiredTransaction($transaksi);
+        }
+        
+        return response()->json([
+            'message' => 'Expired transactions checked',
+            'cancelled' => $expiredTransactions->count()
+        ]);
+    }
+
+    /**
+     * Get transaction status - untuk AJAX polling
+     */
+    public function getTransactionStatus($idTransaksi)
+    {
+        // Check authentication
+        if (!session('user') || session('role') !== 'pembeli') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $idPembeli = session('user')['idPembeli'];
+        
+        $transaksi = TransaksiPenjualan::where('idTransaksiPenjualan', $idTransaksi)
+            ->where('idPembeli', $idPembeli)
+            ->first();
+            
+        if (!$transaksi) {
+            return response()->json(['error' => 'Transaksi tidak ditemukan'], 404);
+        }
+        
+        $timeRemaining = 0;
+        if ($transaksi->status === 'menunggu_pembayaran') {
+            $timeRemaining = max(0, Carbon::parse($transaksi->tanggalBatasLunas)->diffInSeconds(Carbon::now()));
+        }
+        
+        return response()->json([
+            'status' => $transaksi->status,
+            'timeRemaining' => $timeRemaining,
+            'tanggalBatasLunas' => $transaksi->tanggalBatasLunas,
+            'isExpired' => $transaksi->status === 'menunggu_pembayaran' && Carbon::now()->gt($transaksi->tanggalBatasLunas)
+        ]);
+    }
+
+    /**
+     * Helper method untuk mengambil bukti pembayaran dari session
+     */
+    private function getBuktiPembayaran($idTransaksi)
+    {
+        return session('bukti_pembayaran_' . $idTransaksi);
+    }
+
+    /**
+     * Helper method untuk mengambil catatan pembatalan dari session  
+     */
+    private function getCatatanBatal($idTransaksi)
+    {
+        return session('catatan_batal_' . $idTransaksi);
+    }
 }

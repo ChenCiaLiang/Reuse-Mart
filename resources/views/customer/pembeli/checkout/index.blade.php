@@ -391,36 +391,112 @@ function updatePriceDisplay() {
     }
 }
 
-// Proceed to checkout (will be implemented in next functionality)
+// Proceed to checkout (Fungsionalitas 63)
 function proceedCheckout() {
     // Validate shipping method and address
     const metodePengiriman = document.querySelector('input[name="metode_pengiriman"]:checked');
     if (!metodePengiriman) {
-        alert('Silakan pilih metode pengiriman');
+        showNotification('Silakan pilih metode pengiriman', 'error');
         return;
     }
     
     if (metodePengiriman.value === 'kurir') {
         const alamat = document.querySelector('input[name="idAlamat"]:checked');
         if (!alamat) {
-            alert('Silakan pilih alamat pengiriman');
+            showNotification('Silakan pilih alamat pengiriman', 'error');
             return;
         }
     }
     
-    // For now, show confirmation (will be replaced with actual checkout process)
-    const confirmation = confirm(
-        `Konfirmasi Pesanan:\n` +
-        `Total: Rp ${new Intl.NumberFormat('id-ID').format(currentCalculation.total_akhir)}\n` +
-        `Poin digunakan: ${currentCalculation.poin_digunakan}\n` +
-        `Poin didapat: ${currentCalculation.poin_didapat}\n\n` +
-        `Lanjutkan ke pembayaran?`
-    );
+    // Disable button and show loading
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    checkoutBtn.disabled = true;
+    checkoutBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...';
     
-    if (confirmation) {
-        alert('Fitur checkout akan segera tersedia. Terima kasih!');
-        // TODO: Implement actual checkout process (Fungsionalitas 63-70)
-    }
+    showLoading();
+    
+    // Prepare data
+    const checkoutData = {
+        metode_pengiriman: metodePengiriman.value,
+        idAlamat: metodePengiriman.value === 'kurir' ? document.querySelector('input[name="idAlamat"]:checked')?.value : null,
+        poin_digunakan: currentCalculation.poin_digunakan
+    };
+    
+    // Send checkout request
+    fetch('{{ route("pembeli.checkout.proceed") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(checkoutData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        
+        if (data.success) {
+            showNotification('Transaksi berhasil dibuat! Mengarahkan ke halaman pembayaran...', 'success');
+            
+            // Redirect ke halaman pembayaran
+            setTimeout(() => {
+                window.location.href = data.redirect_url;
+            }, 1500);
+        } else {
+            // Reset button
+            checkoutBtn.disabled = false;
+            checkoutBtn.innerHTML = '<i class="fas fa-credit-card mr-2"></i>Lanjut ke Pembayaran';
+            
+            showNotification(data.error || 'Terjadi kesalahan saat memproses transaksi', 'error');
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error:', error);
+        
+        // Reset button
+        checkoutBtn.disabled = false;
+        checkoutBtn.innerHTML = '<i class="fas fa-credit-card mr-2"></i>Lanjut ke Pembayaran';
+        
+        showNotification('Terjadi kesalahan saat memproses transaksi', 'error');
+    });
+}
+
+// Fungsi helper untuk menampilkan notifikasi
+function showNotification(message, type = 'info') {
+    // Remove existing notifications
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(notif => notif.remove());
+    
+    const notification = document.createElement('div');
+    notification.className = `notification fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 ${
+        type === 'success' ? 'bg-green-500 text-white' : 
+        type === 'error' ? 'bg-red-500 text-white' : 
+        'bg-blue-500 text-white'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${
+                type === 'success' ? 'fa-check-circle' : 
+                type === 'error' ? 'fa-times-circle' : 
+                'fa-info-circle'
+            } mr-2"></i>
+            <span>${message}</span>
+            <button type="button" onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
 }
 
 // Loading functions

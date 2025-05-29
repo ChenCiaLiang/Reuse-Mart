@@ -96,6 +96,13 @@ Route::prefix('pegawai')->middleware('RolePegawai:pegawai')->group(function () {
             Route::get('/{id}/konfirmasi', [MerchandiseController::class, 'konfirmasiForm'])->name('konfirmasi.form');
             Route::post('/{id}/konfirmasi', [MerchandiseController::class, 'konfirmasiPengambilan'])->name('konfirmasi');
         });
+        
+        // TAMBAHAN BARU: Payment Verification Routes (Fungsionalitas 69-70)
+        Route::prefix('verification')->name('verification.')->group(function () {
+            Route::get('/', [TransaksiPenjualanController::class, 'indexVerification'])->name('index');
+            Route::get('/{idTransaksi}', [TransaksiPenjualanController::class, 'showVerification'])->name('show');
+            Route::post('/{idTransaksi}/verify', [TransaksiPenjualanController::class, 'verifyPayment'])->name('verify');
+        });
     });
 
     //untuk gudang bro
@@ -190,6 +197,15 @@ Route::prefix('customer')->group(function () {
             Route::post('/update-shipping-address', [TransaksiPenjualanController::class, 'updateShippingAddress'])->name('update-shipping-address'); // Fungsi 59: Update alamat pengiriman
             Route::post('/update-point-usage', [TransaksiPenjualanController::class, 'updatePointUsage'])->name('update-point-usage'); // Fungsi 61: Update penggunaan poin
             Route::get('/info', [TransaksiPenjualanController::class, 'getCheckoutInfo'])->name('info'); // Get checkout info lengkap
+
+            Route::post('/proceed', [TransaksiPenjualanController::class, 'proceedCheckout'])->name('proceed');
+        });
+        
+        // TAMBAHAN BARU: Payment Routes (Fungsionalitas 68)
+        Route::prefix('payment')->name('payment.')->group(function () {
+            Route::get('/{idTransaksi}', [TransaksiPenjualanController::class, 'showPayment'])->name('show');
+            Route::post('/{idTransaksi}/upload', [TransaksiPenjualanController::class, 'uploadPaymentProof'])->name('upload');
+            Route::get('/{idTransaksi}/status', [TransaksiPenjualanController::class, 'getTransactionStatus'])->name('status');
         });
     });
 
@@ -233,6 +249,9 @@ Route::prefix('customer')->group(function () {
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // });
+
+Route::get('/system/check-expired-transactions', [TransaksiPenjualanController::class, 'checkExpiredTransactions'])
+    ->name('system.check-expired-transactions');
 
 Route::get('/unAuthorized', function () {
     return view('auth.unAuthorized');
