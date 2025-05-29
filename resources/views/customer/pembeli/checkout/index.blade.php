@@ -134,10 +134,12 @@
                         $gambarArray = $item['product']->gambar ? explode(',', $item['product']->gambar) : ['default.jpg'];
                         $thumbnail = $gambarArray[0];
                         @endphp
-                        <img class="h-12 w-12 rounded object-cover"
-                            src="{{ asset('uploads/produk/' . trim($thumbnail)) }}"
+                        <!-- PERBAIKAN: Gunakan path yang sama dengan cart dan tambahkan error handling -->
+                        <img class="h-12 w-12 rounded object-cover bg-gray-200"
+                            src="{{ asset('images/produk/' . trim($thumbnail)) }}"
                             alt="{{ $item['product']->deskripsi }}"
-                            onerror="this.src='{{ asset('images/default.jpg') }}'">
+                            onerror="handleCheckoutImageError(this)"
+                            data-attempted-default="false">
                         <div class="flex-grow">
                             <h4 class="text-sm font-medium text-gray-900 truncate">{{ $item['product']->deskripsi }}</h4>
                             <p class="text-xs text-gray-500">Qty: {{ $item['quantity'] }}</p>
@@ -207,6 +209,60 @@
 </div>
 
 <script>
+console.log('Checkout page loaded');
+
+// =============================================
+// PERBAIKAN: Fungsi untuk handle image error di checkout
+// =============================================
+function handleCheckoutImageError(img) {
+    console.log('Checkout image failed to load:', img.src);
+    
+    // Cek apakah sudah pernah mencoba default image
+    if (img.dataset.attemptedDefault === 'true') {
+        console.log('Default image also failed, using placeholder');
+        // Jika default image juga gagal, ganti dengan placeholder
+        img.style.display = 'none';
+        
+        // Buat placeholder div dengan ukuran yang sesuai untuk checkout
+        const placeholder = document.createElement('div');
+        placeholder.className = 'h-12 w-12 rounded bg-gray-200 flex items-center justify-center flex-shrink-0';
+        placeholder.innerHTML = '<i class="fas fa-image text-gray-400"></i>';
+        
+        // Replace image dengan placeholder
+        img.parentNode.replaceChild(placeholder, img);
+        return;
+    }
+    
+    // Tandai bahwa kita sudah mencoba default
+    img.dataset.attemptedDefault = 'true';
+    
+    // Coba beberapa path default yang sama dengan cart
+    const defaultPaths = [
+        '/images/default.jpg',
+        '/images/produk/default.jpg', 
+        '/images/no-image.png',
+        '/images/placeholder.jpg'
+    ];
+    
+    // Coba path default pertama yang berbeda
+    const currentSrc = img.src;
+    for (let path of defaultPaths) {
+        if (!currentSrc.includes(path)) {
+            console.log('Trying default image:', path);
+            img.src = path;
+            return;
+        }
+    }
+    
+    // Jika semua default gagal, buat placeholder
+    console.log('All default images failed, creating placeholder');
+    img.style.display = 'none';
+    const placeholder = document.createElement('div');
+    placeholder.className = 'h-12 w-12 rounded bg-gray-200 flex items-center justify-center flex-shrink-0';
+    placeholder.innerHTML = '<i class="fas fa-image text-gray-400"></i>';
+    img.parentNode.replaceChild(placeholder, img);
+}
+
 // Global variables
 let currentCalculation = {
     subtotal: {{ $subtotal }},

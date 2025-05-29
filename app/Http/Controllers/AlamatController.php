@@ -116,7 +116,7 @@ class AlamatController extends Controller
         $alamat = Alamat::findOrFail($id);
 
         // Cek apakah alamat ini milik pembeli yang sedang login
-        if (session('user') != $alamat->idPembeli) {
+        if (session('user')['idPembeli'] != $alamat->idPembeli) {
             return redirect()->route('unauthorized');
         }
 
@@ -150,7 +150,7 @@ class AlamatController extends Controller
             }
             $idPembeli = $request->user()->idPembeli;
         } else {
-            if (session('user') != $alamat->idPembeli) {
+            if (session('user')['idPembeli'] != $alamat->idPembeli) {
                 return redirect()->route('unauthorized');
             }
             $idPembeli = session('user')['idPembeli'];
