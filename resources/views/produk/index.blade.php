@@ -96,21 +96,11 @@
                         </div>
                         <span class="text-gray-600 text-sm ml-1">({{ $p->ratingProduk }})</span>
                     </div>--}}
-                    <div class="mb-3">
-                        <span class="text-green-700 font-bold text-lg">Rp {{ number_format($p->hargaJual, 0, ',', '.') }}</span>
-                    </div>
-                    
-                    <!-- Add to Cart Button -->
-                    <div class="mb-2">
-                        <button class="addToCartBtn w-full bg-green-600 hover:bg-green-700 text-white text-center py-2 rounded-lg transition duration-300 text-sm" data-product-id="{{ $p->idProduk }}">
-                            <i class="fas fa-shopping-cart mr-2"></i> Tambahkan ke Keranjang
-                        </button>
-                    </div>
-                    
-                    <!-- Buy Now Button -->
-                    <div>
-                        <button class="buyNowBtn w-full border-2 border-green-600 text-green-600 hover:bg-green-50 text-center py-2 rounded-lg transition duration-300 text-sm" data-product-id="{{ $p->idProduk }}">
-                            Beli Sekarang
+                    <div class="flex justify-between items-center">
+                        <span class="text-green-700 font-bold">Rp {{ number_format($p->hargaJual, 0, ',', '.') }}</span>
+                        <button class="buy-button bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-full" 
+                                data-product-id="{{ $p->idProduk }}" onclick="event.preventDefault(); event.stopPropagation();">
+                            <i class="fas fa-shopping-cart mr-1"></i> Beli
                         </button>
                     </div>
                 </div>
@@ -176,39 +166,120 @@
             }
         }
 
-        // Handle button clicks
-        document.addEventListener('DOMContentLoaded', function() {
-            // Handle Add to Cart buttons
-            const addToCartButtons = document.querySelectorAll('.addToCartBtn');
-            addToCartButtons.forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    const productId = this.getAttribute('data-product-id');
-                    
-                    // Jika user sudah login sebagai pembeli
-                    if (userData.isLoggedIn && userData.role === 'pembeli') {
-                        // Logic untuk menambahkan ke keranjang
-                        // Untuk sementara redirect ke halaman detail produk
-                        // Atau bisa ditambahkan AJAX call untuk menambahkan ke keranjang
-                        console.log('Menambahkan produk ' + productId + ' ke keranjang');
-                        
-                        // Contoh implementasi sederhana - redirect ke detail produk
-                        window.location.href = `{{ url('/customer/produk/show') }}/${productId}`;
-                        
-                        // Atau jika sudah ada API keranjang:
-                        // addToCart(productId);
-                    } else {
-                        // Jika belum login atau bukan pembeli, tampilkan modal
-                        showModal();
-                    }
-                });
+        // Fungsi add to cart (Fungsionalitas 57)
+        function addToCart(productId) {
+            // Show loading
+            showLoading();
+            
+            fetch('{{ route("pembeli.cart.add") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    idProduk: productId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    showNotification('Produk berhasil ditambahkan ke keranjang!', 'success');
+                    updateCartCount();
+                } else {
+                    showNotification(data.error || 'Terjadi kesalahan saat menambahkan ke keranjang', 'error');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error:', error);
+                showNotification('Terjadi kesalahan saat menambahkan ke keranjang', 'error');
             });
+        }
 
-            // Handle Buy Now buttons
-            const buyNowButtons = document.querySelectorAll('.buyNowBtn');
-            buyNowButtons.forEach(button => {
+        // Fungsi untuk menampilkan notifikasi
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 ${
+                type === 'success' ? 'bg-green-500 text-white' : 
+                type === 'error' ? 'bg-red-500 text-white' : 
+                'bg-blue-500 text-white'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas ${
+                        type === 'success' ? 'fa-check-circle' : 
+                        type === 'error' ? 'fa-times-circle' : 
+                        'fa-info-circle'
+                    } mr-2"></i>
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // Fungsi untuk menampilkan/menyembunyikan loading
+        function showLoading() {
+            let overlay = document.getElementById('loadingOverlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'loadingOverlay';
+                overlay.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50';
+                overlay.innerHTML = `
+                    <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
+                        <span class="text-gray-700">Memproses...</span>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+            }
+            overlay.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // Fungsi untuk update cart count
+        function updateCartCount() {
+            fetch('{{ route("pembeli.cart.count") }}', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const cartBadge = document.querySelector('.cart-count');
+                if (cartBadge) {
+                    cartBadge.textContent = data.count;
+                }
+            })
+            .catch(error => console.error('Error updating cart count:', error));
+        }
+
+        // Handle buy button clicks
+        document.addEventListener('DOMContentLoaded', function() {
+            const buyButtons = document.querySelectorAll('.buy-button');
+            
+            buyButtons.forEach(button => {
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -217,13 +288,8 @@
                     
                     // Jika user sudah login sebagai pembeli
                     if (userData.isLoggedIn && userData.role === 'pembeli') {
-                        // Logic untuk langsung beli
-                        // Redirect ke halaman checkout atau detail produk
-                        console.log('Beli langsung produk ' + productId);
-                        window.location.href = `{{ url('/customer/produk/show') }}/${productId}`;
-                        
-                        // Atau langsung ke checkout:
-                        // window.location.href = `/checkout/${productId}`;
+                        // Add to cart
+                        addToCart(productId);
                     } else {
                         // Jika belum login atau bukan pembeli, tampilkan modal
                         showModal();
@@ -241,33 +307,5 @@
                 });
             }
         });
-
-        // Fungsi untuk menambahkan ke keranjang (jika menggunakan AJAX)
-        // function addToCart(productId) {
-        //     fetch('/api/cart/add', {
-        //         method: 'POST',
-        //         headers: {
-        //             'Content-Type': 'application/json',
-        //             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        //         },
-        //         body: JSON.stringify({
-        //             product_id: productId,
-        //             quantity: 1
-        //         })
-        //     })
-        //     .then(response => response.json())
-        //     .then(data => {
-        //         if (data.success) {
-        //             // Tampilkan notifikasi sukses
-        //             showNotification('Produk berhasil ditambahkan ke keranjang!', 'success');
-        //         } else {
-        //             showNotification('Gagal menambahkan produk ke keranjang!', 'error');
-        //         }
-        //     })
-        //     .catch(error => {
-        //         console.error('Error:', error);
-        //         showNotification('Terjadi kesalahan!', 'error');
-        //     });
-        // }
     </script>
 @endsection
