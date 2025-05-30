@@ -28,11 +28,18 @@ class TransaksiPenjualan extends Model
         'tanggalAmbil',
         'idPembeli',
         'idPegawai', //KURIR
+        'alamatPengiriman', // TAMBAHAN BARU
+        'metodePengiriman', // TAMBAHAN BARU
     ];
 
     public function pembeli(): BelongsTo
     {
         return $this->belongsTo(Pembeli::class, 'idPembeli', 'idPembeli');
+    }
+
+    public function pegawai(): BelongsTo
+    {
+        return $this->belongsTo(Pegawai::class, 'idPegawai', 'idPegawai');
     }
 
     public function detailTransaksiPenjualan(): HasMany
@@ -43,5 +50,27 @@ class TransaksiPenjualan extends Model
     public function komisi(): HasOne
     {
         return $this->hasOne(Komisi::class, 'idTransaksiPenjualan', 'idTransaksiPenjualan');
+    }
+    
+    /**
+     * Get alamat pengiriman sebagai array
+     */
+    public function getAlamatPengirimanArrayAttribute()
+    {
+        return $this->alamatPengiriman ? json_decode($this->alamatPengiriman, true) : null;
+    }
+    
+    /**
+     * Set alamat pengiriman dari array
+     */
+    public function setAlamatFromAlamatModel($alamat)
+    {
+        if ($alamat) {
+            $this->alamatPengiriman = json_encode([
+                'jenis' => $alamat->jenis,
+                'alamatLengkap' => $alamat->alamatLengkap,
+                'idAlamat' => $alamat->idAlamat
+            ]);
+        }
     }
 }

@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
     Route::get('/', function () {
-        return view('welcome');
+        return view('customer.homePage');
     })->name('dashboard');
 
     Route::get('/login', function () {

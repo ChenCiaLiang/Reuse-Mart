@@ -1,4 +1,4 @@
-{{-- Perbaikan untuk masalah countdown yang langsung habis --}}
+{{-- PERBAIKAN untuk masalah countdown yang langsung habis --}}
 @php
 function getImageUrl($imagePath, $defaultImage = 'default.jpg') {
     if (empty($imagePath)) {
@@ -17,13 +17,38 @@ function getImageUrl($imagePath, $defaultImage = 'default.jpg') {
     return asset('images/' . $defaultImage);
 }
 
-// PERBAIKAN: Hitung remaining time di backend
+// PERBAIKAN: Hitung remaining time dengan lebih akurat
 $remainingSeconds = 0;
+$isExpired = false;
+
 if ($transaksi->status === 'menunggu_pembayaran') {
     $now = \Carbon\Carbon::now();
     $batasLunas = \Carbon\Carbon::parse($transaksi->tanggalBatasLunas);
-    $remainingSeconds = max(0, $batasLunas->diffInSeconds($now));
+    
+    // Gunakan diffInSeconds dengan parameter false untuk mendapatkan nilai negatif jika sudah lewat
+    $diffSeconds = $batasLunas->diffInSeconds($now, false);
+    
+    if ($now->lt($batasLunas)) {
+        // Masih dalam batas waktu
+        $remainingSeconds = $diffSeconds;
+    } else {
+        // Sudah expired
+        $remainingSeconds = 0;
+        $isExpired = true;
+    }
+    
+    // Debug log (bisa dihapus setelah testing)
+    \Log::info('Timer calculation', [
+        'now' => $now->format('Y-m-d H:i:s'),
+        'batas' => $batasLunas->format('Y-m-d H:i:s'),
+        'diff_seconds' => $diffSeconds,
+        'remaining' => $remainingSeconds,
+        'is_expired' => $isExpired
+    ]);
 }
+
+// Total duration tetap 60 detik (1 menit)
+$totalDuration = 60;
 @endphp
 
 @extends('layouts.customer')
@@ -220,6 +245,60 @@ if ($transaksi->status === 'menunggu_pembayaran') {
                                 @endif
                             </div>
                         </div>
+
+                        <!-- Alamat Pengiriman Section - TAMBAHAN BARU -->
+                        <div class="bg-gray-50 rounded-lg p-4 mt-4">
+                            <h4 class="font-semibold text-gray-800 mb-3">Detail Pengiriman</h4>
+                            
+                            @php
+                            $alamatData = null;
+                            if($transaksi->alamatPengiriman) {
+                                $alamatData = json_decode($transaksi->alamatPengiriman, true);
+                            }
+                            @endphp
+                            
+                            <div class="space-y-2">
+                                <div class="flex items-start">
+                                    <i class="fas fa-truck text-gray-500 mt-1 mr-3"></i>
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-700">Metode Pengiriman:</span>
+                                        <p class="text-gray-900">
+                                            @if($transaksi->metodePengiriman === 'kurir')
+                                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs mr-2">
+                                                    <i class="fas fa-shipping-fast mr-1"></i>Kurir ReUseMart
+                                                </span>
+                                            @else
+                                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs mr-2">
+                                                    <i class="fas fa-store mr-1"></i>Ambil Sendiri
+                                                </span>
+                                            @endif
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-start">
+                                    <i class="fas fa-map-marker-alt text-gray-500 mt-1 mr-3"></i>
+                                    <div class="flex-grow">
+                                        <span class="text-sm font-medium text-gray-700">Alamat:</span>
+                                        @if($alamatData)
+                                            <div class="bg-white border border-gray-200 rounded p-3 mt-1">
+                                                <div class="flex items-center mb-1">
+                                                    <span class="font-medium text-gray-900">{{ $alamatData['jenis'] ?? 'Alamat' }}</span>
+                                                    @if($transaksi->metodePengiriman === 'kurir')
+                                                        <span class="ml-2 bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded">Pengiriman</span>
+                                                    @else
+                                                        <span class="ml-2 bg-green-100 text-green-700 text-xs px-2 py-1 rounded">Pickup</span>
+                                                    @endif
+                                                </div>
+                                                <p class="text-gray-600 text-sm">{{ $alamatData['alamatLengkap'] ?? 'Alamat tidak tersedia' }}</p>
+                                            </div>
+                                        @else
+                                            <p class="text-gray-500 text-sm italic">Alamat tidak tersedia</p>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Right Column - Upload Form atau Status -->
@@ -368,37 +447,52 @@ if ($transaksi->status === 'menunggu_pembayaran') {
 </div>
 
 <script>
-console.log('Payment page loaded - Fixed countdown version');
+console.log('Payment page loaded - FIXED timer version');
 
 // ================================================
-// PERBAIKAN: Global Variables
+// PERBAIKAN: Global Variables dengan data backend yang akurat
 // ================================================
 let countdownTimer = null;
 let isTimerExpired = false;
 let isUploadInProgress = false;
 
-// PERBAIKAN: Data dari backend
+// PERBAIKAN: Data dari backend dengan perhitungan yang tepat
 const remainingSeconds = {{ $remainingSeconds ?? 0 }};
-const totalDuration = 60; // 1 menit
+const isInitiallyExpired = {{ $isExpired ? 'true' : 'false' }};
+const totalDuration = {{ $totalDuration ?? 60 }};
+const transactionStatus = '{{ $transaksi->status }}';
 
-console.log('Initial remaining seconds:', remainingSeconds);
-console.log('Timer expired?', remainingSeconds <= 0);
+console.log('Timer initialization:', {
+    remainingSeconds: remainingSeconds,
+    isInitiallyExpired: isInitiallyExpired,
+    totalDuration: totalDuration,
+    status: transactionStatus
+});
 
 // ================================================
-// PERBAIKAN: Countdown Timer dengan backend data
+// PERBAIKAN: Countdown Timer dengan validasi lebih ketat
 // ================================================
-@if($transaksi->status === 'menunggu_pembayaran' && $remainingSeconds > 0)
+@if($transaksi->status === 'menunggu_pembayaran')
 function initializeCountdown() {
-    console.log('Initializing countdown with', remainingSeconds, 'seconds remaining');
+    console.log('Initializing countdown...');
     
-    // Jika waktu sudah habis di backend, langsung expired
-    if (remainingSeconds <= 0) {
+    // Jika sudah expired dari backend, langsung handle
+    if (isInitiallyExpired || remainingSeconds <= 0) {
+        console.log('Transaction already expired from backend');
         handleTimerExpired();
         return;
     }
     
     // Set initial values
-    let currentSeconds = remainingSeconds;
+    let currentSeconds = Math.max(0, Math.floor(remainingSeconds));
+    console.log('Starting countdown with', currentSeconds, 'seconds');
+    
+    // Jika currentSeconds masih 0 atau negatif, langsung expired
+    if (currentSeconds <= 0) {
+        console.log('No time remaining, expiring immediately');
+        handleTimerExpired();
+        return;
+    }
     
     // Initial update
     updateCountdownDisplay(currentSeconds);
@@ -406,9 +500,10 @@ function initializeCountdown() {
     // Update setiap detik
     countdownTimer = setInterval(() => {
         currentSeconds--;
-        console.log('Countdown:', currentSeconds);
+        console.log('Countdown tick:', currentSeconds);
         
         if (currentSeconds <= 0) {
+            console.log('Timer reached zero, expiring...');
             handleTimerExpired();
             return;
         }
@@ -429,10 +524,10 @@ function updateCountdownDisplay(seconds) {
         countdownElement.innerHTML = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
     }
     
-    // Update circular progress
+    // Update circular progress - PERBAIKAN: Gunakan totalDuration yang benar
     const circle = document.getElementById('timerCircle');
     if (circle) {
-        const progress = Math.max(0, seconds / totalDuration);
+        const progress = Math.max(0, Math.min(1, seconds / totalDuration));
         const circumference = 2 * Math.PI * 45; // radius = 45
         const offset = circumference * (1 - progress);
         circle.style.strokeDashoffset = offset;
@@ -499,8 +594,13 @@ function handleTimerExpired() {
         uploadBtn.className = 'w-full bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg cursor-not-allowed';
     }
     
-    // Show notification
+    // Show notification dan auto redirect setelah 5 detik
     showTimerExpiredNotification();
+    
+    // Auto redirect ke profile setelah 10 detik
+    setTimeout(() => {
+        window.location.href = '{{ route("pembeli.profile") }}';
+    }, 10000);
 }
 
 function showTimerExpiredNotification() {
@@ -511,9 +611,9 @@ function showTimerExpiredNotification() {
             <i class="fas fa-exclamation-triangle text-2xl mr-3 mt-1"></i>
             <div class="flex-grow">
                 <h4 class="font-bold mb-2">Waktu Pembayaran Habis</h4>
-                <p class="text-sm mb-3">Transaksi akan dibatalkan otomatis. Klik refresh untuk melihat status terbaru.</p>
-                <button onclick="location.reload()" class="bg-white text-red-600 px-3 py-1 rounded text-sm font-medium hover:bg-gray-100">
-                    <i class="fas fa-refresh mr-1"></i> Refresh
+                <p class="text-sm mb-3">Transaksi akan dibatalkan otomatis. Anda akan diarahkan kembali ke profil dalam 10 detik.</p>
+                <button onclick="window.location.href='{{ route("pembeli.profile") }}'" class="bg-white text-red-600 px-3 py-1 rounded text-sm font-medium hover:bg-gray-100">
+                    <i class="fas fa-arrow-left mr-1"></i> Kembali Sekarang
                 </button>
             </div>
             <button onclick="this.parentElement.parentElement.remove()" class="text-white hover:text-gray-200 ml-2">
@@ -525,17 +625,27 @@ function showTimerExpiredNotification() {
     document.body.appendChild(notification);
 }
 
-// Initialize countdown saat page load
+// Initialize countdown when DOM ready
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, initializing countdown...');
-    initializeCountdown();
+    console.log('DOM loaded, status:', transactionStatus);
+    if (transactionStatus === 'menunggu_pembayaran') {
+        initializeCountdown();
+    }
 });
+
 @else
-console.log('Timer not initialized - status:', '{{ $transaksi->status }}', 'remaining:', {{ $remainingSeconds ?? 0 }});
+console.log('Timer not initialized - status:', transactionStatus, 'remaining:', remainingSeconds);
+
+// Jika status bukan menunggu_pembayaran tapi ada expired transaction, auto redirect
+@if($transaksi->status === 'batal')
+setTimeout(() => {
+    window.location.href = '{{ route("pembeli.profile") }}';
+}, 5000);
+@endif
 @endif
 
 // ================================================
-// Upload Function (sama seperti sebelumnya)
+// Upload Function dengan Error Handling yang lebih baik
 // ================================================
 function handleUpload() {
     if (isUploadInProgress) {
@@ -624,6 +734,8 @@ function handleUpload() {
         
         if (error.name === 'AbortError') {
             showNotification('Upload timeout. Silakan coba lagi.', 'error');
+        } else if (error.message.includes('Failed to fetch')) {
+            showNotification('Koneksi bermasalah. Silakan periksa koneksi internet Anda.', 'error');
         } else {
             showNotification('Terjadi kesalahan saat mengupload bukti pembayaran', 'error');
         }
@@ -632,7 +744,7 @@ function handleUpload() {
 
 function resetUploadButton() {
     const uploadBtn = document.getElementById('uploadBtn');
-    if (uploadBtn) {
+    if (uploadBtn && !isTimerExpired) {
         uploadBtn.disabled = false;
         uploadBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>Upload Bukti Pembayaran';
     }

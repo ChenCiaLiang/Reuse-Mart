@@ -1,4 +1,4 @@
-@extends('layouts.customer')
+@extends(session('user') ? 'layouts.customer' : 'layouts.umum')
 
 @section('content')
  <div>

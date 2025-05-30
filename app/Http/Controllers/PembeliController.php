@@ -70,6 +70,7 @@ class PembeliController extends Controller
     }
     /**
      * Menampilkan detail transaksi
+     * UPDATED: Menambahkan data alamat pengiriman
      */
     public function detailTransaksi($idTransaksiPenjualan)
     {
@@ -80,6 +81,11 @@ class PembeliController extends Controller
             // Dapatkan detail transaksi
             $transaksi = TransaksiPenjualan::findOrFail($idTransaksiPenjualan);
 
+            // Pastikan transaksi ini milik pembeli yang login
+            if ($transaksi->idPembeli !== $idPembeli) {
+                return redirect()->route('pembeli.profile')->with('error', 'Anda tidak memiliki akses ke transaksi ini');
+            }
+
             // Dapatkan produk yang dijual
             $detailTransaksi = DetailTransaksiPenjualan::where('idTransaksiPenjualan', $idTransaksiPenjualan)
                 ->with('produk')
@@ -87,8 +93,19 @@ class PembeliController extends Controller
 
             // Dapatkan pembeli
             $pembeli = $transaksi->pembeli;
+            
+            // TAMBAHAN BARU: Parse alamat pengiriman
+            $alamatPengiriman = null;
+            if ($transaksi->alamatPengiriman) {
+                $alamatPengiriman = json_decode($transaksi->alamatPengiriman, true);
+            }
 
-            return view('customer.pembeli.transaksi.detail', compact('transaksi', 'detailTransaksi', 'pembeli'));
+            return view('customer.pembeli.transaksi.detail', compact(
+                'transaksi', 
+                'detailTransaksi', 
+                'pembeli',
+                'alamatPengiriman' // TAMBAHAN BARU
+            ));
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error("Error in detailTransaksi: " . $e->getMessage());
             return redirect()->route('pembeli.profile')->with('error', 'Terjadi kesalahan saat mengakses detail transaksi');
