@@ -211,12 +211,21 @@
                         </div>
                     </div>
 
-                    <!-- Buy Button atau Status Info -->
+                    <!-- MODIFIKASI: Dual Button System untuk produk tersedia -->
                     @if($p->status === 'Tersedia')
-                        <button class="buy-button w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition duration-300" 
-                                data-product-id="{{ $p->idProduk }}" onclick="event.preventDefault(); event.stopPropagation();">
-                            <i class="fas fa-shopping-cart mr-1"></i> Beli Sekarang
-                        </button>
+                        <div class="space-y-2">
+                            <!-- Tombol Tambah ke Keranjang -->
+                            <button class="add-to-cart-btn w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition duration-300 text-sm" 
+                                    data-product-id="{{ $p->idProduk }}" onclick="event.preventDefault(); event.stopPropagation();">
+                                <i class="fas fa-shopping-cart mr-1"></i> Tambah ke Keranjang
+                            </button>
+                            
+                            <!-- Tombol Beli Sekarang -->
+                            <button class="buy-now-btn w-full border-2 border-green-600 text-green-600 hover:bg-green-50 px-3 py-2 rounded-lg transition duration-300 text-sm" 
+                                    data-product-id="{{ $p->idProduk }}" onclick="event.preventDefault(); event.stopPropagation();">
+                                <i class="fas fa-bolt mr-1"></i> Beli Sekarang
+                            </button>
+                        </div>
                     @else
                         <div class="w-full text-center py-2 px-3 rounded-lg border-2 border-dashed
                             {{ $p->status === 'Terjual' ? 'border-red-300 text-red-600' : 'border-blue-300 text-blue-600' }}">
@@ -295,7 +304,7 @@
             }
         }
 
-        // Fungsi add to cart (Fungsionalitas 57)
+        // MODIFIKASI: Fungsi add to cart (Fungsionalitas 57)
         function addToCart(productId) {
             // Show loading
             showLoading();
@@ -325,6 +334,42 @@
                 hideLoading();
                 console.error('Error:', error);
                 showNotification('Terjadi kesalahan saat menambahkan ke keranjang', 'error');
+            });
+        }
+
+        // MODIFIKASI: Fungsi buy now (langsung ke checkout)
+        function buyNow(productId) {
+            // Show loading
+            showLoading();
+            
+            fetch('{{ route("pembeli.buy.direct") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    idProduk: productId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    showNotification('Mengarahkan ke halaman checkout...', 'success');
+                    // Redirect ke checkout setelah delay singkat
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 1000);
+                } else {
+                    showNotification(data.error || 'Terjadi kesalahan saat memproses pesanan', 'error');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error:', error);
+                showNotification('Terjadi kesalahan saat memproses pesanan', 'error');
             });
         }
 
@@ -404,11 +449,11 @@
             .catch(error => console.error('Error updating cart count:', error));
         }
 
-        // Handle buy button clicks
+        // MODIFIKASI: Handle button clicks untuk dual button system
         document.addEventListener('DOMContentLoaded', function() {
-            const buyButtons = document.querySelectorAll('.buy-button');
-            
-            buyButtons.forEach(button => {
+            // Handle Add to Cart buttons
+            const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
+            addToCartButtons.forEach(button => {
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -417,8 +462,26 @@
                     
                     // Jika user sudah login sebagai pembeli
                     if (userData.isLoggedIn && userData.role === 'pembeli') {
-                        // Add to cart
                         addToCart(productId);
+                    } else {
+                        // Jika belum login atau bukan pembeli, tampilkan modal
+                        showModal();
+                    }
+                });
+            });
+
+            // Handle Buy Now buttons
+            const buyNowButtons = document.querySelectorAll('.buy-now-btn');
+            buyNowButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const productId = this.getAttribute('data-product-id');
+                    
+                    // Jika user sudah login sebagai pembeli
+                    if (userData.isLoggedIn && userData.role === 'pembeli') {
+                        buyNow(productId);
                     } else {
                         // Jika belum login atau bukan pembeli, tampilkan modal
                         showModal();

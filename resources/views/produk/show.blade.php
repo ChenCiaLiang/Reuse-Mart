@@ -3,6 +3,38 @@
 @section('content')
     <!-- Main Content -->
     <main class="container mx-auto px-4 py-8">
+        <!-- TAMBAHAN BARU: Breadcrumb dan Back Button -->
+        <div class="flex items-center justify-between mb-6">
+            <nav class="flex" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                    <li class="inline-flex items-center">
+                        <a href="{{ route('produk.index') }}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-green-600">
+                            <i class="fas fa-home mr-2"></i>
+                            Semua Produk
+                        </a>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                            <span class="text-sm font-medium text-gray-500">{{ $produk->kategori->nama }}</span>
+                        </div>
+                    </li>
+                    <li aria-current="page">
+                        <div class="flex items-center">
+                            <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                            <span class="text-sm font-medium text-gray-900 truncate max-w-xs">{{ $produk->deskripsi }}</span>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+            
+            <!-- TAMBAHAN BARU: Back Button -->
+            <a href="{{ route('produk.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Kembali ke Produk
+            </a>
+        </div>
+
         <div class="bg-white rounded-lg shadow-md p-6">
             <div class="flex flex-col md:flex-row">
                 <!-- Product Images -->
@@ -151,20 +183,38 @@
                         <span class="font-medium">{{ $produk->kategori->nama }}</span>
                     </div>
                     
-                    <!-- Action Buttons -->
+                    <!-- MODIFIKASI BARU: Action Buttons -->
                     @if($produk->status === 'Tersedia')
-                        <!-- Add to Cart Button -->
-                        <div class="mb-4">
-                            <button id="addToCartBtn" class="w-full bg-green-600 hover:bg-green-700 text-white text-center py-3 rounded-lg transition duration-300">
-                                <i class="fas fa-shopping-cart mr-2"></i> Tambahkan ke Keranjang
+                        <div class="space-y-3">
+                            <!-- Add to Cart Button -->
+                            <button id="addToCartBtn" 
+                                    class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
+                                    data-product-id="{{ $produk->idProduk }}">
+                                <i class="fas fa-shopping-cart mr-2"></i>
+                                <span>Tambahkan ke Keranjang</span>
                             </button>
-                        </div>
-                        
-                        <!-- Buy Now Button -->
-                        <div class="mb-4">
-                            <button id="buyNowBtn" class="w-full border-2 border-green-600 text-green-600 hover:bg-green-50 text-center py-3 rounded-lg transition duration-300">
-                                Beli Sekarang
+                            
+                            <!-- Buy Now Button -->
+                            <button id="buyNowBtn" 
+                                    class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
+                                    data-product-id="{{ $produk->idProduk }}">
+                                <i class="fas fa-bolt mr-2"></i>
+                                <span>Beli Sekarang</span>
                             </button>
+                            
+                            <!-- Divider -->
+                            <div class="flex items-center my-4">
+                                <div class="flex-grow border-t border-gray-300"></div>
+                                <span class="flex-shrink mx-4 text-gray-500 text-sm">atau</span>
+                                <div class="flex-grow border-t border-gray-300"></div>
+                            </div>
+                            
+                            <!-- Continue Shopping Button -->
+                            <a href="{{ route('produk.index') }}" 
+                               class="w-full inline-block text-center border-2 border-gray-400 text-gray-600 hover:bg-gray-50 font-medium py-2 px-4 rounded-lg transition-colors">
+                                <i class="fas fa-search mr-2"></i>
+                                Lihat Produk Lainnya
+                            </a>
                         </div>
                     @else
                         <!-- Not Available Message -->
@@ -375,7 +425,17 @@
     </div>
     @endif
 
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
+            <span class="text-gray-700">Memproses...</span>
+        </div>
+    </div>
+
     <script>
+        console.log('Product show page loaded - Modified version');
+
         // Data user dari server
         const userData = {
             isLoggedIn: {{ session('user') ? 'true' : 'false' }},
@@ -397,7 +457,7 @@
             element.classList.add('border-green-600');
         }
 
-        // Fungsi untuk menampilkan modal
+        // MODIFIKASI BARU: Fungsi untuk menampilkan modal
         function showModal() {
             const modal = document.getElementById('loginModal');
             if (modal) {
@@ -406,7 +466,7 @@
             }
         }
 
-        // Fungsi untuk menutup modal
+        // MODIFIKASI BARU: Fungsi untuk menutup modal
         function closeModal() {
             const modal = document.getElementById('loginModal');
             if (modal) {
@@ -415,39 +475,220 @@
             }
         }
 
-        // Fungsi untuk handle aksi beli
-        function handleBuyAction(actionType) {
-            if (userData.isLoggedIn && userData.role === 'pembeli') {
-                // User sudah login sebagai pembeli
-                if (actionType === 'cart') {
-                    alert('Produk berhasil ditambahkan ke keranjang!');
-                    // Nanti bisa diganti dengan fungsi add to cart yang sesungguhnya
-                } else if (actionType === 'buy') {
-                    alert('Mengarahkan ke halaman checkout...');
-                    // Nanti bisa diganti dengan redirect ke checkout
-                    // window.location.href = `/checkout/{{ $produk->idProduk }}`;
-                }
-            } else {
-                // Belum login atau bukan pembeli - tampilkan modal
-                showModal();
+        // MODIFIKASI BARU: Fungsi untuk add to cart
+        function addToCart(productId) {
+            console.log('Adding to cart:', productId);
+            
+            // Disable button dan show loading
+            const addToCartBtn = document.getElementById('addToCartBtn');
+            if (addToCartBtn) {
+                addToCartBtn.disabled = true;
+                addToCartBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menambahkan...';
             }
+            
+            showLoading();
+            
+            fetch('{{ route("pembeli.cart.add") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    idProduk: productId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                
+                if (data.success) {
+                    showNotification('Produk berhasil ditambahkan ke keranjang!', 'success');
+                    updateCartCount();
+                    
+                    // Reset button
+                    if (addToCartBtn) {
+                        addToCartBtn.disabled = false;
+                        addToCartBtn.innerHTML = '<i class="fas fa-shopping-cart mr-2"></i><span>Tambahkan ke Keranjang</span>';
+                    }
+                } else {
+                    showNotification(data.error || 'Terjadi kesalahan saat menambahkan ke keranjang', 'error');
+                    
+                    // Reset button
+                    if (addToCartBtn) {
+                        addToCartBtn.disabled = false;
+                        addToCartBtn.innerHTML = '<i class="fas fa-shopping-cart mr-2"></i><span>Tambahkan ke Keranjang</span>';
+                    }
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error:', error);
+                showNotification('Terjadi kesalahan saat menambahkan ke keranjang', 'error');
+                
+                // Reset button
+                if (addToCartBtn) {
+                    addToCartBtn.disabled = false;
+                    addToCartBtn.innerHTML = '<i class="fas fa-shopping-cart mr-2"></i><span>Tambahkan ke Keranjang</span>';
+                }
+            });
         }
 
-        // Event listener untuk tombol-tombol
+        // MODIFIKASI BARU: Fungsi untuk buy now (direct buy)
+        function buyNow(productId) {
+            console.log('Buy now:', productId);
+            
+            // Disable button dan show loading
+            const buyNowBtn = document.getElementById('buyNowBtn');
+            if (buyNowBtn) {
+                buyNowBtn.disabled = true;
+                buyNowBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...';
+            }
+            
+            showLoading();
+            
+            fetch('{{ route("pembeli.buy.direct") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    idProduk: productId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                
+                if (data.success) {
+                    showNotification('Mengarahkan ke checkout...', 'success');
+                    
+                    // Redirect ke checkout
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 1000);
+                } else {
+                    showNotification(data.error || 'Terjadi kesalahan saat memproses pembelian', 'error');
+                    
+                    // Reset button
+                    if (buyNowBtn) {
+                        buyNowBtn.disabled = false;
+                        buyNowBtn.innerHTML = '<i class="fas fa-bolt mr-2"></i><span>Beli Sekarang</span>';
+                    }
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error:', error);
+                showNotification('Terjadi kesalahan saat memproses pembelian', 'error');
+                
+                // Reset button
+                if (buyNowBtn) {
+                    buyNowBtn.disabled = false;
+                    buyNowBtn.innerHTML = '<i class="fas fa-bolt mr-2"></i><span>Beli Sekarang</span>';
+                }
+            });
+        }
+
+        // MODIFIKASI BARU: Fungsi helper untuk notifikasi
+        function showNotification(message, type = 'info') {
+            // Remove existing notifications
+            const existingNotifications = document.querySelectorAll('.notification');
+            existingNotifications.forEach(notif => notif.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `notification fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 ${
+                type === 'success' ? 'bg-green-500 text-white' : 
+                type === 'error' ? 'bg-red-500 text-white' : 
+                'bg-blue-500 text-white'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas ${
+                        type === 'success' ? 'fa-check-circle' : 
+                        type === 'error' ? 'fa-times-circle' : 
+                        'fa-info-circle'
+                    } mr-2"></i>
+                    <span>${message}</span>
+                    <button type="button" onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // MODIFIKASI BARU: Fungsi untuk update cart count
+        function updateCartCount() {
+            fetch('{{ route("pembeli.cart.count") }}', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const cartBadge = document.querySelector('.cart-count');
+                if (cartBadge) {
+                    cartBadge.textContent = data.count;
+                }
+            })
+            .catch(error => console.error('Error updating cart count:', error));
+        }
+
+        // Loading functions
+        function showLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.classList.add('hidden');
+        }
+
+        // MODIFIKASI BARU: Event listener untuk tombol-tombol
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, setting up event listeners...');
+            
             // Tombol tambah ke keranjang
             const addToCartBtn = document.getElementById('addToCartBtn');
             if (addToCartBtn) {
-                addToCartBtn.addEventListener('click', function() {
-                    handleBuyAction('cart');
+                addToCartBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const productId = this.getAttribute('data-product-id');
+                    
+                    if (userData.isLoggedIn && userData.role === 'pembeli') {
+                        addToCart(productId);
+                    } else {
+                        showModal();
+                    }
                 });
             }
             
             // Tombol beli sekarang
             const buyNowBtn = document.getElementById('buyNowBtn');
             if (buyNowBtn) {
-                buyNowBtn.addEventListener('click', function() {
-                    handleBuyAction('buy');
+                buyNowBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const productId = this.getAttribute('data-product-id');
+                    
+                    if (userData.isLoggedIn && userData.role === 'pembeli') {
+                        buyNow(productId);
+                    } else {
+                        showModal();
+                    }
                 });
             }
 
@@ -460,6 +701,13 @@
                     }
                 });
             }
+
+            // Close modal and loading with Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                }
+            });
         });
     </script>
 @endsection
