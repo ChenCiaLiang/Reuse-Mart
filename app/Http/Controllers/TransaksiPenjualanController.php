@@ -184,7 +184,7 @@ class TransaksiPenjualanController extends Controller
         }
     }
     /**
-     * Menampilkan halaman checkout
+     * Modifikasi method showCheckout untuk support beli langsung
      */
     public function showCheckout()
     {
@@ -200,16 +200,18 @@ class TransaksiPenjualanController extends Controller
         $alamatList = Alamat::where('idPembeli', $idPembeli)->get();
         $alamatDefault = $alamatList->where('statusDefault', true)->first();
         
-        // Ambil data cart
-        $cart = session('cart', []);
-        if (empty($cart)) {
-            return redirect()->route('pembeli.cart.show')->with('error', 'Keranjang belanja kosong');
+        // PERBAIKAN: Cek apakah ini dari direct buy atau cart biasa
+        $isDirectBuy = session()->has('direct_buy');
+        $items = $isDirectBuy ? session('direct_buy', []) : session('cart', []);
+        
+        if (empty($items)) {
+            return redirect()->route('pembeli.cart.show')->with('error', 'Tidak ada produk untuk checkout');
         }
         
         $cartItems = [];
         $subtotal = 0;
         
-        $productIds = array_keys($cart);
+        $productIds = array_keys($items);
         $products = Produk::whereIn('idProduk', $productIds)
             ->where('status', 'Tersedia')
             ->get();
@@ -220,17 +222,22 @@ class TransaksiPenjualanController extends Controller
             $availableIds = $products->pluck('idProduk')->toArray();
             $unavailableIds = array_diff($productIds, $availableIds);
             
-            // Remove unavailable products from cart
+            // Remove unavailable products
             foreach ($unavailableIds as $unavailableId) {
-                unset($cart[$unavailableId]);
-            }
-            session(['cart' => $cart]);
-            
-            if (empty($cart)) {
-                return redirect()->route('pembeli.cart.show')->with('error', 'Semua produk dalam keranjang sudah tidak tersedia');
+                unset($items[$unavailableId]);
             }
             
-            return redirect()->route('pembeli.cart.show')->with('error', 'Beberapa produk sudah tidak tersedia dan telah dihapus dari keranjang');
+            if ($isDirectBuy) {
+                session(['direct_buy' => $items]);
+            } else {
+                session(['cart' => $items]);
+            }
+            
+            if (empty($items)) {
+                return redirect()->route('pembeli.cart.show')->with('error', 'Semua produk sudah tidak tersedia');
+            }
+            
+            return redirect()->route('pembeli.checkout.show')->with('error', 'Beberapa produk sudah tidak tersedia dan telah dihapus');
         }
         
         foreach ($products as $product) {
@@ -247,10 +254,10 @@ class TransaksiPenjualanController extends Controller
             'pembeli', 
             'alamatList', 
             'alamatDefault', 
-            'subtotal'
+            'subtotal',
+            'isDirectBuy'  // Tambahkan flag ini
         ));
     }
-
     /**
      * Menghitung total belanja dengan ongkir (Fungsionalitas 60)
      */
@@ -661,7 +668,7 @@ class TransaksiPenjualanController extends Controller
             
             // Buat transaksi penjualan (Fungsionalitas 63)
             $tanggalPesan = Carbon::now();
-            $tanggalBatasLunas = $tanggalPesan->copy()->addMinutes(15); // 15 menit timeout
+            $tanggalBatasLunas = $tanggalPesan->copy()->addMinutes(1); // 1 menit timeout
             
             $transaksi = TransaksiPenjualan::create([
                 'bonus' => 0.00,
@@ -685,7 +692,7 @@ class TransaksiPenjualanController extends Controller
                 ]);
                 
                 // Update status produk menjadi sold out
-                $product->update(['status' => 'Sold Out']);
+                $product->update(['status' => 'Terjual']);
             }
             
             // Kurangi poin yang digunakan (Fungsionalitas 65)
@@ -726,6 +733,65 @@ class TransaksiPenjualanController extends Controller
             \Log::error('Error in proceedCheckout: ' . $e->getMessage());
             return response()->json(['error' => 'Terjadi kesalahan saat memproses transaksi'], 500);
         }
+    }
+
+    /**
+     * Beli langsung tanpa masuk keranjang (langsung ke checkout)
+     */
+    public function buyDirect(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'idProduk' => 'required|exists:produk,idProduk',
+        ]);
+
+        if ($validator->fails()) {
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+            return back()->withErrors($validator)->withInput();
+        }
+
+        // Cek apakah user sudah login sebagai pembeli
+        if (!session('user') || session('role') !== 'pembeli') {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+            return redirect()->route('loginPage')->with('error', 'Silakan login sebagai pembeli terlebih dahulu');
+        }
+
+        $idProduk = $request->idProduk;
+        
+        // Cek apakah produk masih tersedia
+        $produk = Produk::where('idProduk', $idProduk)
+            ->where('status', 'Tersedia')
+            ->first();
+            
+        if (!$produk) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Produk tidak tersedia'], 404);
+            }
+            return back()->with('error', 'Produk tidak tersedia');
+        }
+
+        // Buat session khusus untuk beli langsung (berbeda dari cart biasa)
+        session([
+            'direct_buy' => [
+                $idProduk => 1
+            ]
+        ]);
+
+        // Clear cart biasa untuk menghindari konflik
+        session()->forget('cart');
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Mengarahkan ke checkout...',
+                'redirect_url' => route('pembeli.checkout.show')
+            ]);
+        }
+
+        return redirect()->route('pembeli.checkout.show');
     }
 
     /**
@@ -771,7 +837,7 @@ class TransaksiPenjualanController extends Controller
             return redirect()->route('pembeli.profile')->with('error', 'Transaksi tidak ditemukan');
         }
         
-        // Check if transaction is still valid (within 15 minutes)
+        // Check if transaction is still valid (within 1 minutes)
         if ($transaksi->status === 'menunggu_pembayaran' && Carbon::now()->gt($transaksi->tanggalBatasLunas)) {
             // Transaction expired, cancel it
             $this->cancelExpiredTransaction($transaksi);
@@ -990,7 +1056,7 @@ class TransaksiPenjualanController extends Controller
      */
     private function cancelExpiredTransaction($transaksi)
     {
-        return $this->cancelTransaction($transaksi, 'Transaksi kedaluwarsa - pembayaran tidak dilakukan dalam 15 menit');
+        return $this->cancelTransaction($transaksi, 'Transaksi kedaluwarsa - pembayaran tidak dilakukan dalam 1 menit');
     }
 
     /**

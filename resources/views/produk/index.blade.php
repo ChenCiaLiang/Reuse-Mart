@@ -3,9 +3,31 @@
 @section('content')
     <!-- Main Content -->
     <main class="container mx-auto px-4 py-8">
+        <!-- Status Statistics Card -->
+        <div class="bg-gradient-to-r from-green-500 to-blue-600 rounded-lg shadow-md p-6 mb-8 text-white">
+            <h2 class="text-2xl font-bold mb-4">Status Produk ReUseMart</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white bg-opacity-20 rounded-lg p-4 text-center">
+                    <div class="text-3xl font-bold">{{ $statusStats['tersedia'] }}</div>
+                    <div class="text-sm opacity-90">Produk Tersedia</div>
+                    <div class="w-3 h-3 bg-green-500 rounded-full mx-auto mt-2"></div>
+                </div>
+                <div class="bg-white bg-opacity-20 rounded-lg p-4 text-center">
+                    <div class="text-3xl font-bold">{{ $statusStats['terjual'] }}</div>
+                    <div class="text-sm opacity-90">Produk Terjual</div>
+                    <div class="w-3 h-3 bg-red-500 rounded-full mx-auto mt-2"></div>
+                </div>
+                <div class="bg-white bg-opacity-20 rounded-lg p-4 text-center">
+                    <div class="text-3xl font-bold">{{ $statusStats['didonasikan'] }}</div>
+                    <div class="text-sm opacity-90">Produk Didonasikan</div>
+                    <div class="w-3 h-3 bg-blue-500 rounded-full mx-auto mt-2"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Search and Filter Section -->
         <div class="bg-white rounded-lg shadow-md p-4 mb-8">
-            <form action="{{ route('produk.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <form action="{{ route('produk.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div class="md:col-span-2">
                     <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Cari Produk</label>
                     <input type="text" name="search" id="search" value="{{ $search ?? '' }}" 
@@ -25,13 +47,30 @@
                         @endforeach
                     </select>
                 </div>
+
+                <div>
+                    <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select name="status" id="status" 
+                            class="w-full border border-gray-300 rounded-md shadow-sm px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-600">
+                        <option value="">Semua Status</option>
+                        <option value="Tersedia" {{ isset($status) && $status == 'Tersedia' ? 'selected' : '' }}>
+                            ✅ Tersedia
+                        </option>
+                        <option value="Terjual" {{ isset($status) && $status == 'Terjual' ? 'selected' : '' }}>
+                            ❌ Terjual
+                        </option>
+                        <option value="Didonasikan" {{ isset($status) && $status == 'Didonasikan' ? 'selected' : '' }}>
+                            💝 Didonasikan
+                        </option>
+                    </select>
+                </div>
                 
                 <div class="flex items-end">
-                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition duration-300">
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition duration-300 mr-2">
                         <i class="fas fa-search mr-2"></i>Cari
                     </button>
-                    @if($search || $kategori)
-                        <a href="{{ route('produk.index') }}" class="ml-2 bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-md transition duration-300">
+                    @if($search || $kategori || $status)
+                        <a href="{{ route('produk.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-md transition duration-300">
                             Reset
                         </a>
                     @endif
@@ -39,8 +78,27 @@
             </form>
         </div>
 
+        <!-- Status Legend -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h3 class="font-semibold text-blue-800 mb-2">Keterangan Status Produk:</h3>
+            <div class="flex flex-wrap gap-4 text-sm">
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                    <span class="text-green-700">Tersedia - Dapat dibeli</span>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                    <span class="text-red-700">Terjual - Sudah dibeli customer</span>
+                </div>
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                    <span class="text-blue-700">Didonasikan - Disumbangkan ke organisasi</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Search Results Info -->
-        @if($search || $kategori)
+        @if($search || $kategori || $status)
             <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-700 p-4 mb-6">
                 <p>
                     Menampilkan hasil pencarian untuk 
@@ -48,12 +106,20 @@
                         kata kunci "<strong>{{ $search }}</strong>"
                     @endif
                     
-                    @if($search && $kategori)
+                    @if($search && ($kategori || $status))
                         pada 
                     @endif
                     
                     @if($kategori)
                         kategori "<strong>{{ $kategoriList->where('idKategori', $kategori)->first()->nama }}</strong>"
+                    @endif
+
+                    @if($kategori && $status)
+                        dengan 
+                    @endif
+
+                    @if($status)
+                        status "<strong>{{ $status }}</strong>"
                     @endif
                     
                     ({{ count($produk) }} produk ditemukan)
@@ -64,45 +130,103 @@
         <!-- Product Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             @forelse($produk as $p)
-            <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300">
-                <a href="{{ route('produk.show', $p->idProduk) }}">
+            <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-300 relative
+                {{ $p->status !== 'Tersedia' ? 'opacity-75' : '' }}">
+                
+                <!-- Status Overlay untuk produk tidak tersedia -->
+                @if($p->status !== 'Tersedia')
+                    <div class="absolute inset-0 bg-black bg-opacity-50 z-10 flex items-center justify-center rounded-lg">
+                        <div class="text-center text-white">
+                            @if($p->status === 'Terjual')
+                                <i class="fas fa-check-circle text-4xl mb-2 text-red-400"></i>
+                                <p class="font-bold text-lg">TERJUAL</p>
+                            @elseif($p->status === 'Didonasikan')
+                                <i class="fas fa-heart text-4xl mb-2 text-blue-400"></i>
+                                <p class="font-bold text-lg">DIDONASIKAN</p>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Product Link - hanya untuk produk tersedia -->
+                @if($p->status === 'Tersedia')
+                    <a href="{{ route('produk.show', $p->idProduk) }}">
+                @endif
                     <div class="relative h-48 overflow-hidden">
                         @php
                             $gambarArray = $p->gambar ? explode(',', $p->gambar) : ['default.jpg'];
                             $thumbnail = $gambarArray[0];
                         @endphp
                         <img src="{{ asset('images/produk/' . $thumbnail) }}" alt="{{ $p->deskripsi }}" 
-                            class="w-full h-full object-cover" onerror="this.src='{{ asset('images/produk/default.jpg') }}'">
+                            class="w-full h-full object-cover {{ $p->status !== 'Tersedia' ? 'grayscale' : '' }}" 
+                            onerror="this.src='{{ asset('images/produk/default.jpg') }}'">
+                        
+                        <!-- Status Badge -->
+                        <div class="absolute top-2 left-2">
+                            @if($p->status === 'Tersedia')
+                                <span class="bg-green-500 text-white text-xs font-bold py-1 px-2 rounded-full">
+                                    <i class="fas fa-check-circle mr-1"></i>TERSEDIA
+                                </span>
+                            @elseif($p->status === 'Terjual')
+                                <span class="bg-red-500 text-white text-xs font-bold py-1 px-2 rounded-full">
+                                    <i class="fas fa-times-circle mr-1"></i>TERJUAL
+                                </span>
+                            @elseif($p->status === 'Didonasikan')
+                                <span class="bg-blue-500 text-white text-xs font-bold py-1 px-2 rounded-full">
+                                    <i class="fas fa-heart mr-1"></i>DIDONASIKAN
+                                </span>
+                            @endif
+                        </div>
+
+                        <!-- Warranty Badge -->
                         @if($p->tanggalGaransi && \Carbon\Carbon::parse($p->tanggalGaransi)->isFuture())
-                        <div class="absolute top-0 right-0 bg-green-600 text-white text-xs py-1 px-2 m-2 rounded">
-                            Garansi
+                        <div class="absolute top-2 right-2 bg-green-600 text-white text-xs py-1 px-2 rounded">
+                            <i class="fas fa-shield-alt mr-1"></i>Garansi
                         </div>
                         @endif
                     </div>
-                </a>
+                @if($p->status === 'Tersedia')
+                    </a>
+                @endif
+                
                 <div class="p-4">
-                    <h3 class="text-lg font-semibold mb-2 truncate">{{ $p->deskripsi }}</h3>
-                   {{-- <div class="flex items-center mb-2">
-                        <div class="flex text-yellow-400">
-                            @for($i = 1; $i <= 5; $i++)
-                                @if($i <= $p->ratingProduk)
-                                    <i class="fas fa-star"></i>
-                                @elseif($i <= $p->ratingProduk + 0.5)
-                                    <i class="fas fa-star-half-alt"></i>
-                                @else
-                                    <i class="far fa-star"></i>
-                                @endif
-                            @endfor
+                    <h3 class="text-lg font-semibold mb-2 truncate {{ $p->status !== 'Tersedia' ? 'text-gray-500' : '' }}">
+                        {{ $p->deskripsi }}
+                    </h3>
+                   
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-green-700 font-bold {{ $p->status !== 'Tersedia' ? 'text-gray-500' : '' }}">
+                            Rp {{ number_format($p->hargaJual, 0, ',', '.') }}
+                        </span>
+                        
+                        <!-- Status Indicator Dot -->
+                        <div class="flex items-center">
+                            @if($p->status === 'Tersedia')
+                                <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                            @elseif($p->status === 'Terjual')
+                                <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                            @elseif($p->status === 'Didonasikan')
+                                <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                            @endif
                         </div>
-                        <span class="text-gray-600 text-sm ml-1">({{ $p->ratingProduk }})</span>
-                    </div>--}}
-                    <div class="flex justify-between items-center">
-                        <span class="text-green-700 font-bold">Rp {{ number_format($p->hargaJual, 0, ',', '.') }}</span>
-                        <button class="buy-button bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-full" 
-                                data-product-id="{{ $p->idProduk }}" onclick="event.preventDefault(); event.stopPropagation();">
-                            <i class="fas fa-shopping-cart mr-1"></i> Beli
-                        </button>
                     </div>
+
+                    <!-- Buy Button atau Status Info -->
+                    @if($p->status === 'Tersedia')
+                        <button class="buy-button w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition duration-300" 
+                                data-product-id="{{ $p->idProduk }}" onclick="event.preventDefault(); event.stopPropagation();">
+                            <i class="fas fa-shopping-cart mr-1"></i> Beli Sekarang
+                        </button>
+                    @else
+                        <div class="w-full text-center py-2 px-3 rounded-lg border-2 border-dashed
+                            {{ $p->status === 'Terjual' ? 'border-red-300 text-red-600' : 'border-blue-300 text-blue-600' }}">
+                            @if($p->status === 'Terjual')
+                                <i class="fas fa-sold-out mr-1"></i> Sudah Terjual
+                            @else
+                                <i class="fas fa-heart mr-1"></i> Telah Didonasikan
+                            @endif
+                        </div>
+                    @endif
                 </div>
             </div>
             @empty
@@ -110,6 +234,11 @@
                 <img src="{{ asset('images/empty-state.svg') }}" alt="Tidak ada produk" class="w-48 mx-auto mb-4">
                 <h3 class="text-xl font-bold text-gray-600 mb-2">Produk Tidak Ditemukan</h3>
                 <p class="text-gray-500">Maaf, produk yang Anda cari tidak tersedia saat ini.</p>
+                @if($search || $kategori || $status)
+                    <a href="{{ route('produk.index') }}" class="inline-block mt-4 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition duration-300">
+                        Lihat Semua Produk
+                    </a>
+                @endif
             </div>
             @endforelse
         </div>

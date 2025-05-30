@@ -1,4 +1,4 @@
-{{-- Solusi 1: Tambahkan Helper Function di bagian atas blade --}}
+{{-- Perbaikan untuk masalah countdown yang langsung habis --}}
 @php
 function getImageUrl($imagePath, $defaultImage = 'default.jpg') {
     if (empty($imagePath)) {
@@ -15,6 +15,14 @@ function getImageUrl($imagePath, $defaultImage = 'default.jpg') {
     }
     
     return asset('images/' . $defaultImage);
+}
+
+// PERBAIKAN: Hitung remaining time di backend
+$remainingSeconds = 0;
+if ($transaksi->status === 'menunggu_pembayaran') {
+    $now = \Carbon\Carbon::now();
+    $batasLunas = \Carbon\Carbon::parse($transaksi->tanggalBatasLunas);
+    $remainingSeconds = max(0, $batasLunas->diffInSeconds($now));
 }
 @endphp
 
@@ -43,6 +51,17 @@ function getImageUrl($imagePath, $defaultImage = 'default.jpg') {
                 @if (session('error'))
                 <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
                     <p>{{ session('error') }}</p>
+                </div>
+                @endif
+
+                <!-- PERBAIKAN: Debug info (hapus setelah testing) -->
+                @if($transaksi->status === 'menunggu_pembayaran')
+                <div class="bg-gray-100 border border-gray-300 rounded-lg p-4 mb-6 text-sm">
+                    <h4 class="font-semibold mb-2">Debug Info (akan dihapus):</h4>
+                    <p><strong>Server Time:</strong> {{ \Carbon\Carbon::now()->format('Y-m-d H:i:s') }}</p>
+                    <p><strong>Batas Lunas:</strong> {{ $transaksi->tanggalBatasLunas }}</p>
+                    <p><strong>Remaining Seconds:</strong> {{ $remainingSeconds }}</p>
+                    <p><strong>Status:</strong> {{ $transaksi->status }}</p>
                 </div>
                 @endif
                 
@@ -79,24 +98,75 @@ function getImageUrl($imagePath, $defaultImage = 'default.jpg') {
                 <div class="grid lg:grid-cols-2 gap-8">
                     <!-- Left Column - Payment Info -->
                     <div>
-                        <!-- Timer Section (jika masih menunggu pembayaran) -->
-                        @if($transaksi->status === 'menunggu_pembayaran')
-                        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <i class="fas fa-clock text-red-600 text-2xl"></i>
-                                </div>
-                                <div class="ml-3">
+                        <!-- PERBAIKAN: Visual Timer Section -->
+                        @if($transaksi->status === 'menunggu_pembayaran' && $remainingSeconds > 0)
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
                                     <h3 class="text-lg font-medium text-red-800">Batas Waktu Pembayaran</h3>
                                     <p class="text-red-600 text-sm">Selesaikan pembayaran sebelum:</p>
                                     <p class="text-red-800 font-semibold">{{ \Carbon\Carbon::parse($transaksi->tanggalBatasLunas)->format('d M Y H:i') }} WIB</p>
-                                    <div class="mt-3">
-                                        <div class="text-xl font-bold text-red-600" id="countdown">
-                                            <i class="fas fa-spinner fa-spin"></i> Menghitung...
+                                </div>
+                                
+                                <!-- PERBAIKAN: Visual Countdown Timer -->
+                                <div class="text-center">
+                                    <div class="relative inline-block">
+                                        <!-- Circular Progress -->
+                                        <div class="w-20 h-20">
+                                            <svg class="w-20 h-20 transform -rotate-90" viewBox="0 0 100 100">
+                                                <!-- Background Circle -->
+                                                <circle
+                                                    cx="50"
+                                                    cy="50"
+                                                    r="45"
+                                                    stroke="#fee2e2"
+                                                    stroke-width="8"
+                                                    fill="none"
+                                                />
+                                                <!-- Progress Circle -->
+                                                <circle
+                                                    id="timerCircle"
+                                                    cx="50"
+                                                    cy="50"
+                                                    r="45"
+                                                    stroke="#16a34a"
+                                                    stroke-width="8"
+                                                    fill="none"
+                                                    stroke-linecap="round"
+                                                    stroke-dasharray="283"
+                                                    stroke-dashoffset="0"
+                                                    class="transition-all duration-1000 ease-linear"
+                                                />
+                                            </svg>
+                                        </div>
+                                        <!-- Timer Text -->
+                                        <div class="absolute inset-0 flex items-center justify-center">
+                                            <div class="text-center">
+                                                <div id="countdown" class="text-lg font-bold text-red-600">
+                                                    01:00
+                                                </div>
+                                                <div class="text-xs text-red-500">menit</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- PERBAIKAN: Status indicator -->
+                            <div id="timerStatus" class="mt-4 p-3 bg-green-100 border border-green-300 rounded text-green-800 text-sm">
+                                <i class="fas fa-clock mr-2"></i>
+                                Waktu pembayaran sedang berjalan...
+                            </div>
+                        </div>
+                        @elseif($transaksi->status === 'menunggu_pembayaran' && $remainingSeconds <= 0)
+                        <!-- Timer sudah habis -->
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-6 mb-6 text-center">
+                            <i class="fas fa-times-circle text-4xl text-red-600 mb-4"></i>
+                            <h3 class="text-lg font-semibold text-red-800 mb-2">Waktu Pembayaran Habis</h3>
+                            <p class="text-red-600 mb-4">Batas waktu pembayaran telah berakhir. Transaksi akan segera dibatalkan.</p>
+                            <button onclick="location.reload()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
+                                <i class="fas fa-refresh mr-2"></i>Refresh Halaman
+                            </button>
                         </div>
                         @endif
 
@@ -154,12 +224,13 @@ function getImageUrl($imagePath, $defaultImage = 'default.jpg') {
 
                     <!-- Right Column - Upload Form atau Status -->
                     <div>
-                        @if($transaksi->status === 'menunggu_pembayaran')
-                        <!-- Upload Form -->
+                        @if($transaksi->status === 'menunggu_pembayaran' && $remainingSeconds > 0)
+                        <!-- PERBAIKAN: Upload Form -->
                         <div class="bg-white border border-gray-200 rounded-lg p-6">
                             <h3 class="text-lg font-semibold text-gray-800 mb-4">Upload Bukti Pembayaran</h3>
                             
-                            <form id="paymentForm" enctype="multipart/form-data">
+                            <!-- PERBAIKAN: Form dengan proper handling -->
+                            <form id="paymentForm" enctype="multipart/form-data" onsubmit="return false;">
                                 @csrf
                                 <div class="mb-4">
                                     <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -183,11 +254,18 @@ function getImageUrl($imagePath, $defaultImage = 'default.jpg') {
                                     <div id="fileError" class="text-red-500 text-sm mt-1 hidden"></div>
                                 </div>
                                 
-                                <button type="submit" id="uploadBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+                                <button type="button" onclick="handleUpload()" id="uploadBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
                                     <i class="fas fa-upload mr-2"></i>
                                     Upload Bukti Pembayaran
                                 </button>
                             </form>
+                        </div>
+                        @elseif($transaksi->status === 'menunggu_pembayaran' && $remainingSeconds <= 0)
+                        <!-- Waktu habis -->
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                            <i class="fas fa-clock text-4xl text-red-600 mb-4"></i>
+                            <h3 class="text-lg font-semibold text-red-800 mb-2">Waktu Pembayaran Habis</h3>
+                            <p class="text-red-600 mb-4">Upload bukti pembayaran tidak dapat dilakukan karena waktu telah habis.</p>
                         </div>
                         @elseif($transaksi->status === 'menunggu_verifikasi')
                         <!-- Verifikasi Status -->
@@ -196,19 +274,6 @@ function getImageUrl($imagePath, $defaultImage = 'default.jpg') {
                             <h3 class="text-lg font-semibold text-blue-800 mb-2">Pembayaran Sedang Diverifikasi</h3>
                             <p class="text-blue-600 mb-4">Bukti pembayaran Anda sudah diterima dan sedang diverifikasi oleh tim kami.</p>
                             <p class="text-sm text-blue-500">Proses verifikasi biasanya membutuhkan waktu 2x24 jam.</p>
-                            
-                            <!-- Show uploaded proof -->
-                            @if(session('bukti_pembayaran_' . $transaksi->idTransaksiPenjualan))
-                            <div class="mt-4">
-                                <p class="text-sm text-blue-600 mb-2">Bukti pembayaran yang diupload:</p>
-                                <img src="{{ asset(session('bukti_pembayaran_' . $transaksi->idTransaksiPenjualan)) }}" 
-                                     alt="Bukti Pembayaran" 
-                                     class="max-w-xs h-auto rounded border mx-auto cursor-pointer"
-                                     onload="handleImageLoad(this)"
-                                     onerror="handleImageError(this)"
-                                     onclick="openImageModal(this.src)">
-                            </div>
-                            @endif
                         </div>
                         @elseif($transaksi->status === 'disiapkan')
                         <!-- Status Disiapkan -->
@@ -218,6 +283,16 @@ function getImageUrl($imagePath, $defaultImage = 'default.jpg') {
                             <p class="text-green-600 mb-4">Pesanan Anda sedang disiapkan untuk pengiriman.</p>
                             <a href="{{ route('pembeli.profile') }}" class="inline-block bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
                                 Lihat Status Pesanan
+                            </a>
+                        </div>
+                        @elseif($transaksi->status === 'batal')
+                        <!-- Status Batal -->
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                            <i class="fas fa-times-circle text-4xl text-red-600 mb-4"></i>
+                            <h3 class="text-lg font-semibold text-red-800 mb-2">Transaksi Dibatalkan</h3>
+                            <p class="text-red-600 mb-4">Waktu pembayaran telah habis atau bukti pembayaran tidak valid.</p>
+                            <a href="{{ route('produk.index') }}" class="inline-block bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
+                                Belanja Lagi
                             </a>
                         </div>
                         @endif
@@ -253,13 +328,12 @@ function getImageUrl($imagePath, $defaultImage = 'default.jpg') {
                     </div>
                 </div>
 
-                <!-- Order Items dengan Solusi Gambar yang Robust -->
+                <!-- Order Items -->
                 <div class="mt-8 border-t pt-6">
                     <h3 class="text-lg font-semibold mb-4">Item Pesanan</h3>
                     <div class="space-y-3">
                         @foreach($transaksi->detailTransaksiPenjualan as $detail)
                         <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded">
-                            {{-- Solusi Gambar yang Robust --}}
                             <div class="h-12 w-12 rounded overflow-hidden bg-gray-200 flex items-center justify-center">
                                 <img class="h-full w-full object-cover"
                                     src="{{ getImageUrl($detail->produk->gambar ?? '') }}"
@@ -285,19 +359,6 @@ function getImageUrl($imagePath, $defaultImage = 'default.jpg') {
     </div>
 </div>
 
-<!-- Image Modal -->
-<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
-    <div class="max-w-4xl max-h-full p-4">
-        <div class="relative">
-            <button onclick="closeImageModal()" 
-                    class="absolute top-4 right-4 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-            <img id="modalImage" src="" alt="Bukti Pembayaran" class="max-w-full max-h-full object-contain">
-        </div>
-    </div>
-</div>
-
 <!-- Loading Overlay -->
 <div id="loadingOverlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
     <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
@@ -307,90 +368,311 @@ function getImageUrl($imagePath, $defaultImage = 'default.jpg') {
 </div>
 
 <script>
-// Fungsi untuk handle loading gambar yang berhasil
+console.log('Payment page loaded - Fixed countdown version');
+
+// ================================================
+// PERBAIKAN: Global Variables
+// ================================================
+let countdownTimer = null;
+let isTimerExpired = false;
+let isUploadInProgress = false;
+
+// PERBAIKAN: Data dari backend
+const remainingSeconds = {{ $remainingSeconds ?? 0 }};
+const totalDuration = 60; // 1 menit
+
+console.log('Initial remaining seconds:', remainingSeconds);
+console.log('Timer expired?', remainingSeconds <= 0);
+
+// ================================================
+// PERBAIKAN: Countdown Timer dengan backend data
+// ================================================
+@if($transaksi->status === 'menunggu_pembayaran' && $remainingSeconds > 0)
+function initializeCountdown() {
+    console.log('Initializing countdown with', remainingSeconds, 'seconds remaining');
+    
+    // Jika waktu sudah habis di backend, langsung expired
+    if (remainingSeconds <= 0) {
+        handleTimerExpired();
+        return;
+    }
+    
+    // Set initial values
+    let currentSeconds = remainingSeconds;
+    
+    // Initial update
+    updateCountdownDisplay(currentSeconds);
+    
+    // Update setiap detik
+    countdownTimer = setInterval(() => {
+        currentSeconds--;
+        console.log('Countdown:', currentSeconds);
+        
+        if (currentSeconds <= 0) {
+            handleTimerExpired();
+            return;
+        }
+        
+        updateCountdownDisplay(currentSeconds);
+    }, 1000);
+}
+
+function updateCountdownDisplay(seconds) {
+    if (isTimerExpired) return;
+    
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    
+    // Update text countdown
+    const countdownElement = document.getElementById('countdown');
+    if (countdownElement) {
+        countdownElement.innerHTML = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+    
+    // Update circular progress
+    const circle = document.getElementById('timerCircle');
+    if (circle) {
+        const progress = Math.max(0, seconds / totalDuration);
+        const circumference = 2 * Math.PI * 45; // radius = 45
+        const offset = circumference * (1 - progress);
+        circle.style.strokeDashoffset = offset;
+        
+        // Change color based on remaining time
+        if (seconds <= 20) {
+            circle.style.stroke = '#dc2626'; // red-600
+        } else if (seconds <= 40) {
+            circle.style.stroke = '#ea580c'; // orange-600
+        } else {
+            circle.style.stroke = '#16a34a'; // green-600
+        }
+    }
+    
+    // Update status message
+    const statusElement = document.getElementById('timerStatus');
+    if (statusElement) {
+        if (seconds <= 20) {
+            statusElement.className = 'mt-4 p-3 bg-red-100 border border-red-300 rounded text-red-800 text-sm';
+            statusElement.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>Waktu pembayaran hampir habis! Segera upload bukti pembayaran.';
+        } else if (seconds <= 40) {
+            statusElement.className = 'mt-4 p-3 bg-yellow-100 border border-yellow-300 rounded text-yellow-800 text-sm';
+            statusElement.innerHTML = '<i class="fas fa-clock mr-2"></i>Waktu pembayaran sedang berjalan...';
+        } else {
+            statusElement.className = 'mt-4 p-3 bg-green-100 border border-green-300 rounded text-green-800 text-sm';
+            statusElement.innerHTML = '<i class="fas fa-clock mr-2"></i>Waktu pembayaran sedang berjalan...';
+        }
+    }
+}
+
+function handleTimerExpired() {
+    console.log('Timer expired!');
+    isTimerExpired = true;
+    
+    // Stop timer
+    if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+    }
+    
+    // Update UI
+    const countdownElement = document.getElementById('countdown');
+    if (countdownElement) {
+        countdownElement.innerHTML = '<span class="text-red-600">HABIS</span>';
+    }
+    
+    const circle = document.getElementById('timerCircle');
+    if (circle) {
+        circle.style.strokeDashoffset = '283'; // Fully empty
+        circle.style.stroke = '#dc2626';
+    }
+    
+    const statusElement = document.getElementById('timerStatus');
+    if (statusElement) {
+        statusElement.className = 'mt-4 p-3 bg-red-100 border border-red-300 rounded text-red-800 text-sm';
+        statusElement.innerHTML = '<i class="fas fa-times-circle mr-2"></i>Waktu pembayaran telah habis. Transaksi akan dibatalkan.';
+    }
+    
+    // Disable upload form
+    const uploadBtn = document.getElementById('uploadBtn');
+    if (uploadBtn) {
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = '<i class="fas fa-times mr-2"></i>Waktu Habis';
+        uploadBtn.className = 'w-full bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg cursor-not-allowed';
+    }
+    
+    // Show notification
+    showTimerExpiredNotification();
+}
+
+function showTimerExpiredNotification() {
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-4 z-50 p-6 bg-red-500 text-white rounded-lg shadow-lg max-w-sm';
+    notification.innerHTML = `
+        <div class="flex items-start">
+            <i class="fas fa-exclamation-triangle text-2xl mr-3 mt-1"></i>
+            <div class="flex-grow">
+                <h4 class="font-bold mb-2">Waktu Pembayaran Habis</h4>
+                <p class="text-sm mb-3">Transaksi akan dibatalkan otomatis. Klik refresh untuk melihat status terbaru.</p>
+                <button onclick="location.reload()" class="bg-white text-red-600 px-3 py-1 rounded text-sm font-medium hover:bg-gray-100">
+                    <i class="fas fa-refresh mr-1"></i> Refresh
+                </button>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" class="text-white hover:text-gray-200 ml-2">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+}
+
+// Initialize countdown saat page load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing countdown...');
+    initializeCountdown();
+});
+@else
+console.log('Timer not initialized - status:', '{{ $transaksi->status }}', 'remaining:', {{ $remainingSeconds ?? 0 }});
+@endif
+
+// ================================================
+// Upload Function (sama seperti sebelumnya)
+// ================================================
+function handleUpload() {
+    if (isUploadInProgress) {
+        showNotification('Upload sedang dalam proses, harap tunggu', 'warning');
+        return;
+    }
+    
+    if (isTimerExpired) {
+        showNotification('Waktu pembayaran telah habis', 'error');
+        return;
+    }
+    
+    const buktiInput = document.getElementById('buktiPembayaran');
+    const uploadBtn = document.getElementById('uploadBtn');
+    
+    if (!buktiInput.files[0]) {
+        showNotification('Silakan pilih file bukti pembayaran', 'error');
+        return;
+    }
+    
+    // Prevent multiple uploads
+    isUploadInProgress = true;
+    
+    // Disable button and show loading
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Mengupload...';
+    
+    document.getElementById('loadingOverlay').classList.remove('hidden');
+    
+    const formData = new FormData();
+    formData.append('bukti_pembayaran', buktiInput.files[0]);
+    formData.append('_token', '{{ csrf_token() }}');
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    
+    fetch('{{ route("pembeli.payment.upload", $transaksi->idTransaksiPenjualan) }}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        signal: controller.signal
+    })
+    .then(response => {
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        return response.json();
+    })
+    .then(data => {
+        console.log('Upload response:', data);
+        
+        document.getElementById('loadingOverlay').classList.add('hidden');
+        isUploadInProgress = false;
+        
+        if (data.success) {
+            showNotification('Bukti pembayaran berhasil diupload!', 'success');
+            
+            // Stop countdown timer
+            if (countdownTimer) {
+                clearInterval(countdownTimer);
+                countdownTimer = null;
+            }
+            
+            // Show success dan reload setelah delay
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+            
+        } else {
+            resetUploadButton();
+            showNotification(data.error || 'Terjadi kesalahan saat mengupload bukti pembayaran', 'error');
+        }
+    })
+    .catch(error => {
+        clearTimeout(timeoutId);
+        document.getElementById('loadingOverlay').classList.add('hidden');
+        isUploadInProgress = false;
+        
+        console.error('Upload error:', error);
+        resetUploadButton();
+        
+        if (error.name === 'AbortError') {
+            showNotification('Upload timeout. Silakan coba lagi.', 'error');
+        } else {
+            showNotification('Terjadi kesalahan saat mengupload bukti pembayaran', 'error');
+        }
+    });
+}
+
+function resetUploadButton() {
+    const uploadBtn = document.getElementById('uploadBtn');
+    if (uploadBtn) {
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>Upload Bukti Pembayaran';
+    }
+}
+
+// ================================================
+// Image Functions
+// ================================================
 function handleImageLoad(img) {
     img.style.display = 'block';
-    // Hide placeholder icon if exists
     const placeholder = img.nextElementSibling;
     if (placeholder && placeholder.classList.contains('hidden')) {
         placeholder.style.display = 'none';
     }
 }
 
-// Fungsi untuk handle error loading gambar
 function handleImageError(img) {
-    console.log('Image failed to load:', img.src);
-    
-    // Jangan coba load default.jpg jika sudah error dengan default.jpg
     if (img.src.includes('default.jpg') || img.src.includes('placeholder')) {
-        // Show placeholder icon instead
         img.style.display = 'none';
         const placeholder = img.nextElementSibling;
         if (placeholder) {
             placeholder.classList.remove('hidden');
             placeholder.style.display = 'flex';
-        } else {
-            // Create placeholder if doesn't exist
-            const placeholderDiv = document.createElement('div');
-            placeholderDiv.innerHTML = '<i class="fas fa-image text-gray-400"></i>';
-            placeholderDiv.className = 'text-gray-400 text-xl flex items-center justify-center';
-            img.parentNode.appendChild(placeholderDiv);
         }
         return;
     }
     
-    // Try loading default image
     const defaultImageUrl = '{{ asset("images/default.jpg") }}';
     img.src = defaultImageUrl;
 }
 
-// Fungsi untuk membuat placeholder gambar
-function createImagePlaceholder() {
-    return `
-        <div class="h-12 w-12 rounded bg-gray-200 flex items-center justify-center">
-            <i class="fas fa-image text-gray-400"></i>
-        </div>
-    `;
-}
-
-// Countdown timer untuk batas pembayaran
-@if($transaksi->status === 'menunggu_pembayaran')
-function updateCountdown() {
-    const targetTime = new Date('{{ $transaksi->tanggalBatasLunas }}').getTime();
-    const now = new Date().getTime();
-    const distance = targetTime - now;
-    
-    if (distance < 0) {
-        document.getElementById('countdown').innerHTML = '<span class="text-red-600">WAKTU HABIS</span>';
-        // Refresh page to show expired status
-        setTimeout(() => location.reload(), 3000);
-        return;
-    }
-    
-    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-    
-    document.getElementById('countdown').innerHTML = 
-        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-}
-
-// Update countdown setiap detik
-setInterval(updateCountdown, 1000);
-updateCountdown();
-@endif
-
-// Image preview functionality
 function previewImage(input) {
     const file = input.files[0];
     const fileError = document.getElementById('fileError');
     const uploadArea = document.getElementById('uploadArea');
     const imagePreview = document.getElementById('imagePreview');
     
-    // Reset error
     fileError.classList.add('hidden');
     
     if (file) {
-        // Validate file type
         if (!file.type.startsWith('image/')) {
             fileError.textContent = 'File harus berupa gambar';
             fileError.classList.remove('hidden');
@@ -398,7 +680,6 @@ function previewImage(input) {
             return;
         }
         
-        // Validate file size (2MB = 2 * 1024 * 1024 bytes)
         if (file.size > 2 * 1024 * 1024) {
             fileError.textContent = 'Ukuran file maksimal 2MB';
             fileError.classList.remove('hidden');
@@ -423,75 +704,18 @@ function removeImage() {
     document.getElementById('fileError').classList.add('hidden');
 }
 
-// Form submission
-document.getElementById('paymentForm')?.addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const buktiInput = document.getElementById('buktiPembayaran');
-    const uploadBtn = document.getElementById('uploadBtn');
-    
-    if (!buktiInput.files[0]) {
-        showNotification('Silakan pilih file bukti pembayaran', 'error');
-        return;
-    }
-    
-    // Disable button and show loading
-    uploadBtn.disabled = true;
-    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Mengupload...';
-    
-    document.getElementById('loadingOverlay').classList.remove('hidden');
-    
-    const formData = new FormData();
-    formData.append('bukti_pembayaran', buktiInput.files[0]);
-    formData.append('_token', '{{ csrf_token() }}');
-    
-    fetch('{{ route("pembeli.payment.upload", $transaksi->idTransaksiPenjualan) }}', {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById('loadingOverlay').classList.add('hidden');
-        
-        if (data.success) {
-            showNotification('Bukti pembayaran berhasil diupload!', 'success');
-            
-            // Reload page after short delay
-            setTimeout(() => {
-                location.reload();
-            }, 2000);
-        } else {
-            // Reset button
-            uploadBtn.disabled = false;
-            uploadBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>Upload Bukti Pembayaran';
-            
-            showNotification(data.error || 'Terjadi kesalahan saat mengupload bukti pembayaran', 'error');
-        }
-    })
-    .catch(error => {
-        document.getElementById('loadingOverlay').classList.add('hidden');
-        console.error('Error:', error);
-        
-        // Reset button
-        uploadBtn.disabled = false;
-        uploadBtn.innerHTML = '<i class="fas fa-upload mr-2"></i>Upload Bukti Pembayaran';
-        
-        showNotification('Terjadi kesalahan saat mengupload bukti pembayaran', 'error');
-    });
-});
-
-// Notification function
+// ================================================
+// Notification Function
+// ================================================
 function showNotification(message, type = 'info') {
     const existingNotifications = document.querySelectorAll('.notification');
     existingNotifications.forEach(notif => notif.remove());
     
     const notification = document.createElement('div');
-    notification.className = `notification fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 ${
+    notification.className = `notification fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 max-w-sm ${
         type === 'success' ? 'bg-green-500 text-white' : 
         type === 'error' ? 'bg-red-500 text-white' : 
+        type === 'warning' ? 'bg-yellow-500 text-white' :
         'bg-blue-500 text-white'
     }`;
     notification.innerHTML = `
@@ -499,9 +723,10 @@ function showNotification(message, type = 'info') {
             <i class="fas ${
                 type === 'success' ? 'fa-check-circle' : 
                 type === 'error' ? 'fa-times-circle' : 
+                type === 'warning' ? 'fa-exclamation-triangle' :
                 'fa-info-circle'
             } mr-2"></i>
-            <span>${message}</span>
+            <span class="flex-grow">${message}</span>
             <button type="button" onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
                 <i class="fas fa-times"></i>
             </button>
@@ -517,66 +742,14 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-// Image modal functions
-function openImageModal(src) {
-    // Don't open modal for placeholder images
-    if (src.includes('default.jpg') || src.includes('placeholder')) {
-        return;
+// ================================================
+// Cleanup
+// ================================================
+window.addEventListener('beforeunload', function() {
+    if (countdownTimer) {
+        clearInterval(countdownTimer);
     }
-    
-    document.getElementById('modalImage').src = src;
-    document.getElementById('imageModal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeImageModal() {
-    document.getElementById('imageModal').classList.add('hidden');
-    document.body.style.overflow = 'auto';
-}
-
-// Close modal when clicking outside image
-document.getElementById('imageModal')?.addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeImageModal();
-    }
-});
-
-// Close modal with Escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeImageModal();
-    }
-});
-
-// Ensure all images have proper error handling when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    const images = document.querySelectorAll('img');
-    images.forEach(img => {
-        if (!img.onload) {
-            img.onload = function() { handleImageLoad(this); };
-        }
-        if (!img.onerror) {
-            img.onerror = function() { handleImageError(this); };
-        }
-    });
 });
 </script>
 
-{{-- Pastikan file default.jpg ada di public/images/ --}}
-<script>
-// Check if default image exists, if not create a base64 placeholder
-function checkDefaultImage() {
-    const testImg = new Image();
-    testImg.onload = function() {
-        console.log('Default image exists');
-    };
-    testImg.onerror = function() {
-        console.warn('Default image not found, using icon placeholder');
-        // You could create a base64 placeholder here if needed
-    };
-    testImg.src = '{{ asset("images/default.jpg") }}';
-}
-
-checkDefaultImage();
-</script>
 @endsection

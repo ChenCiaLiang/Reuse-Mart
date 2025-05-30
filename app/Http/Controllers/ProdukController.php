@@ -16,10 +16,10 @@ class ProdukController extends Controller
         // Ambil parameter pencarian
         $search = $request->input('search');
         $kategori = $request->input('kategori');
+        $status = $request->input('status'); // Filter status baru
 
-        // Query dasar
-        $query = Produk::where('status', '!=', 'Terjual')
-            ->where('status', '!=', 'Didonasikan');
+        // Query dasar - tampilkan semua produk untuk memberikan konteks visual
+        $query = Produk::query();
 
         // Filter berdasarkan pencarian teks
         if ($search) {
@@ -31,20 +31,31 @@ class ProdukController extends Controller
             $query->where('idKategori', $kategori);
         }
 
+        // Filter berdasarkan status
+        if ($status) {
+            $query->where('status', $status);
+        }
+
         // Ambil produk dengan filter yang telah ditentukan
         $produk = $query->orderBy('created_at', 'desc')->get();
 
         // Ambil kategori untuk filter dropdown
         $kategoriList = KategoriProduk::all();
 
-        return view('produk.index', compact('produk', 'kategoriList', 'search', 'kategori'));
+        // Data untuk statistik status
+        $statusStats = [
+            'tersedia' => Produk::where('status', 'Tersedia')->count(),
+            'terjual' => Produk::where('status', 'Terjual')->count(),
+            'didonasikan' => Produk::where('status', 'Didonasikan')->count(),
+        ];
+
+        return view('produk.index', compact('produk', 'kategoriList', 'search', 'kategori', 'status', 'statusStats'));
     }
     
     public function indexPopup()
     {
-        // Ambil produk yang tersedia (tidak terjual atau didonasikan)
-        $produk = Produk::where('status', '!=', 'Terjual')
-            ->where('status', '!=', 'Didonasikan')
+        // Untuk popup, tetap hanya tampilkan produk yang tersedia
+        $produk = Produk::where('status', 'Tersedia')
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -76,11 +87,10 @@ class ProdukController extends Controller
         // Ambil gambar-gambar produk dari field gambar
         $gambarArray = $produk->gambar ? explode(',', $produk->gambar) : ['default.jpg'];
 
-        // Ambil produk terkait (dari kategori yang sama)
+        // Ambil produk terkait (dari kategori yang sama, hanya yang tersedia)
         $produkTerkait = Produk::where('idKategori', $produk->idKategori)
             ->where('idProduk', '!=', $id)
-            ->where('status', '!=', 'Terjual')
-            ->where('status', '!=', 'Didonasikan')
+            ->where('status', 'Tersedia')
             ->limit(4)
             ->get();
 

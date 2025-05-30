@@ -6,11 +6,29 @@
         <div class="bg-white rounded-lg shadow-md p-6">
             <div class="flex flex-col md:flex-row">
                 <!-- Product Images -->
-                <div class="w-full md:w-1/2 mb-6 md:mb-0 md:pr-6">
+                <div class="w-full md:w-1/2 mb-6 md:mb-0 md:pr-6 relative">
+                    <!-- Status Overlay untuk produk tidak tersedia -->
+                    @if($produk->status !== 'Tersedia')
+                        <div class="absolute inset-0 bg-black bg-opacity-50 z-10 flex items-center justify-center rounded-lg">
+                            <div class="text-center text-white">
+                                @if($produk->status === 'Terjual')
+                                    <i class="fas fa-check-circle text-8xl mb-4 text-red-400"></i>
+                                    <p class="font-bold text-3xl mb-2">PRODUK TERJUAL</p>
+                                    <p class="text-lg opacity-90">Produk ini sudah dibeli oleh customer lain</p>
+                                @elseif($produk->status === 'Didonasikan')
+                                    <i class="fas fa-heart text-8xl mb-4 text-blue-400"></i>
+                                    <p class="font-bold text-3xl mb-2">PRODUK DIDONASIKAN</p>
+                                    <p class="text-lg opacity-90">Produk ini telah disumbangkan ke organisasi sosial</p>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+
                     <!-- Main Image -->
                     <div class="bg-gray-100 rounded-lg p-2 mb-4">
                         <img id="mainImage" src="{{ asset('images/produk/' . $gambarArray[0]) }}" 
-                            alt="{{ $produk->deskripsi }}" class="w-full h-64 md:h-80 lg:h-96 object-contain rounded-lg"
+                            alt="{{ $produk->deskripsi }}" 
+                            class="w-full h-64 md:h-80 lg:h-96 object-contain rounded-lg {{ $produk->status !== 'Tersedia' ? 'grayscale' : '' }}"
                             onerror="this.src='{{ asset('images/produk/default.jpg') }}'">
                     </div>
                     
@@ -23,7 +41,7 @@
                             onclick="changeImage('{{ asset('images/produk/' . $gambar) }}', this)">
                             <img src="{{ asset('images/produk/' . $gambar) }}" 
                                 alt="{{ $produk->deskripsi }} - Gambar {{ $index + 1 }}"
-                                class="w-full h-full object-cover"
+                                class="w-full h-full object-cover {{ $produk->status !== 'Tersedia' ? 'grayscale' : '' }}"
                                 onerror="this.src='{{ asset('images/produk/default.jpg') }}'">
                         </div>
                         @endforeach
@@ -33,7 +51,26 @@
                 
                 <!-- Product Info -->
                 <div class="w-full md:w-1/2">
-                    <h1 class="text-2xl font-bold mb-2">{{ $produk->deskripsi }}</h1>
+                    <h1 class="text-2xl font-bold mb-2 {{ $produk->status !== 'Tersedia' ? 'text-gray-500' : '' }}">
+                        {{ $produk->deskripsi }}
+                    </h1>
+                    
+                    <!-- Status Badge - Prominent -->
+                    <div class="mb-4">
+                        @if($produk->status === 'Tersedia')
+                            <span class="bg-green-100 text-green-800 text-lg font-bold py-2 px-4 rounded-full border-2 border-green-500">
+                                <i class="fas fa-check-circle mr-2"></i>TERSEDIA UNTUK DIBELI
+                            </span>
+                        @elseif($produk->status === 'Terjual')
+                            <span class="bg-red-100 text-red-800 text-lg font-bold py-2 px-4 rounded-full border-2 border-red-500">
+                                <i class="fas fa-times-circle mr-2"></i>SUDAH TERJUAL
+                            </span>
+                        @elseif($produk->status === 'Didonasikan')
+                            <span class="bg-blue-100 text-blue-800 text-lg font-bold py-2 px-4 rounded-full border-2 border-blue-500">
+                                <i class="fas fa-heart mr-2"></i>TELAH DIDONASIKAN
+                            </span>
+                        @endif
+                    </div>
                     
                     <!-- Rating Penitip -->
                     <div class="flex items-center mb-4">
@@ -57,14 +94,13 @@
                     </div>
                     
                     <!-- Price -->
-                    <div class="text-3xl font-bold text-green-700 mb-4">
+                    <div class="text-3xl font-bold mb-4 {{ $produk->status !== 'Tersedia' ? 'text-gray-500 line-through' : 'text-green-700' }}">
                         Rp {{ number_format($produk->hargaJual, 0, ',', '.') }}
-                    </div>
-                    
-                    <!-- Status -->
-                    <div class="mb-4">
-                        <span class="text-gray-700">Status: </span>
-                        <span class="font-medium text-green-600">{{ $produk->status }}</span>
+                        @if($produk->status !== 'Tersedia')
+                            <span class="text-sm font-normal text-gray-500 block">
+                                (Harga saat masih tersedia)
+                            </span>
+                        @endif
                     </div>
                     
                     <!-- Seller Info -->
@@ -115,21 +151,74 @@
                         <span class="font-medium">{{ $produk->kategori->nama }}</span>
                     </div>
                     
-                    <!-- Add to Cart Button -->
-                    <div class="mb-4">
-                        <button id="addToCartBtn" class="w-full bg-green-600 hover:bg-green-700 text-white text-center py-3 rounded-lg transition duration-300">
-                            <i class="fas fa-shopping-cart mr-2"></i> Tambahkan ke Keranjang
-                        </button>
-                    </div>
-                    
-                    <!-- Buy Now Button -->
-                    <div>
-                        <button id="buyNowBtn" class="w-full border-2 border-green-600 text-green-600 hover:bg-green-50 text-center py-3 rounded-lg transition duration-300">
-                            Beli Sekarang
-                        </button>
-                    </div>
+                    <!-- Action Buttons -->
+                    @if($produk->status === 'Tersedia')
+                        <!-- Add to Cart Button -->
+                        <div class="mb-4">
+                            <button id="addToCartBtn" class="w-full bg-green-600 hover:bg-green-700 text-white text-center py-3 rounded-lg transition duration-300">
+                                <i class="fas fa-shopping-cart mr-2"></i> Tambahkan ke Keranjang
+                            </button>
+                        </div>
+                        
+                        <!-- Buy Now Button -->
+                        <div class="mb-4">
+                            <button id="buyNowBtn" class="w-full border-2 border-green-600 text-green-600 hover:bg-green-50 text-center py-3 rounded-lg transition duration-300">
+                                Beli Sekarang
+                            </button>
+                        </div>
+                    @else
+                        <!-- Not Available Message -->
+                        <div class="mb-4 p-4 rounded-lg border-2 border-dashed
+                            {{ $produk->status === 'Terjual' ? 'border-red-300 bg-red-50' : 'border-blue-300 bg-blue-50' }}">
+                            <div class="text-center">
+                                @if($produk->status === 'Terjual')
+                                    <i class="fas fa-times-circle text-red-500 text-2xl mb-2"></i>
+                                    <p class="text-red-700 font-semibold mb-1">Produk Sudah Terjual</p>
+                                    <p class="text-red-600 text-sm">Produk ini telah dibeli oleh customer lain</p>
+                                @else
+                                    <i class="fas fa-heart text-blue-500 text-2xl mb-2"></i>
+                                    <p class="text-blue-700 font-semibold mb-1">Produk Telah Didonasikan</p>
+                                    <p class="text-blue-600 text-sm">Produk ini telah disumbangkan untuk kepentingan sosial</p>
+                                @endif
+                            </div>
+                        </div>
+                        
+                        <!-- Explore Similar Products Button -->
+                        <div>
+                            <a href="{{ route('produk.index', ['kategori' => $produk->idKategori, 'status' => 'Tersedia']) }}" 
+                               class="w-full inline-block text-center border-2 border-green-600 text-green-600 hover:bg-green-50 py-3 rounded-lg transition duration-300">
+                                <i class="fas fa-search mr-2"></i> Cari Produk Serupa yang Tersedia
+                            </a>
+                        </div>
+                    @endif
                 </div>
             </div>
+            
+            <!-- Status Information Card -->
+            @if($produk->status !== 'Tersedia')
+            <div class="mt-8 p-6 rounded-lg {{ $produk->status === 'Terjual' ? 'bg-red-50 border border-red-200' : 'bg-blue-50 border border-blue-200' }}">
+                <h3 class="text-lg font-bold mb-3 {{ $produk->status === 'Terjual' ? 'text-red-800' : 'text-blue-800' }}">
+                    Informasi Status Produk
+                </h3>
+                @if($produk->status === 'Terjual')
+                    <p class="text-red-700 mb-2">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Produk ini telah berhasil terjual kepada customer lain. ReUseMart berkomitmen memberikan kesempatan kedua untuk barang bekas berkualitas.
+                    </p>
+                    <p class="text-red-600 text-sm">
+                        Kami memiliki produk serupa lainnya yang mungkin sesuai dengan kebutuhan Anda.
+                    </p>
+                @else
+                    <p class="text-blue-700 mb-2">
+                        <i class="fas fa-heart mr-2"></i>
+                        Produk ini telah disumbangkan kepada organisasi sosial sebagai bagian dari program CSR ReUseMart untuk membantu masyarakat yang membutuhkan.
+                    </p>
+                    <p class="text-blue-600 text-sm">
+                        Terima kasih kepada penitip yang telah berkontribusi dalam program sosial ini.
+                    </p>
+                @endif
+            </div>
+            @endif
             
             <!-- Product Description -->
             <div class="mt-12 border-t pt-8">
@@ -144,7 +233,8 @@
                 </div>
             </div>
             
-            <!-- Diskusi Produk Section -->
+            <!-- Diskusi Produk Section - Hanya tampil untuk produk tersedia -->
+            @if($produk->status === 'Tersedia')
             <div class="mt-12 border-t pt-8">
                 <h2 class="text-xl font-bold mb-6">Diskusi Produk</h2>
                 
@@ -214,12 +304,13 @@
                     </div>
                 @endif
             </div>
+            @endif
         </div>
         
-        <!-- Related Products -->
+        <!-- Related Products - Hanya produk tersedia -->
         @if(count($produkTerkait) > 0)
         <div class="mt-12">
-            <h2 class="text-2xl font-bold mb-6">Produk Terkait</h2>
+            <h2 class="text-2xl font-bold mb-6">Produk Terkait yang Tersedia</h2>
             
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
                 @foreach($produkTerkait as $p)
@@ -229,9 +320,17 @@
                             <img src="{{ asset('images/produk/' . $p->thumbnail) }}" 
                                 alt="{{ $p->deskripsi }}" class="w-full h-full object-cover"
                                 onerror="this.src='{{ asset('images/produk/default.jpg') }}'">
+                            
+                            <!-- Status Badge -->
+                            <div class="absolute top-2 left-2">
+                                <span class="bg-green-500 text-white text-xs font-bold py-1 px-2 rounded-full">
+                                    <i class="fas fa-check-circle mr-1"></i>TERSEDIA
+                                </span>
+                            </div>
+                            
                             @if($p->tanggalGaransi && \Carbon\Carbon::parse($p->tanggalGaransi)->isFuture())
-                            <div class="absolute top-0 right-0 bg-green-600 text-white text-xs py-1 px-2 m-2 rounded">
-                                Garansi
+                            <div class="absolute top-2 right-2 bg-green-600 text-white text-xs py-1 px-2 rounded">
+                                <i class="fas fa-shield-alt mr-1"></i>Garansi
                             </div>
                             @endif
                         </div>
@@ -240,6 +339,7 @@
                         <h3 class="text-lg font-semibold mb-2 truncate">{{ $p->deskripsi }}</h3>
                         <div class="flex justify-between items-center">
                             <span class="text-green-700 font-bold">Rp {{ number_format($p->hargaJual, 0, ',', '.') }}</span>
+                            <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                         </div>
                     </div>
                 </div>
@@ -248,81 +348,6 @@
         </div>
         @endif
     </main>
-
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-12">
-        <div class="container mx-auto px-4">
-            <div class="grid md:grid-cols-4 gap-8">
-                <div>
-                    <h3 class="text-xl font-bold mb-4">ReUseMart</h3>
-                    <p class="text-gray-400 mb-4">Platform untuk menjual dan membeli barang bekas berkualitas dengan sistem penitipan.</p>
-                    <div class="flex space-x-4">
-                        <a href="#" class="text-gray-400 hover:text-white">
-                            <i class="fab fa-facebook-square text-xl"></i>
-                        </a>
-                        <a href="#" class="text-gray-400 hover:text-white">
-                            <i class="fab fa-instagram text-xl"></i>
-                        </a>
-                        <a href="#" class="text-gray-400 hover:text-white">
-                            <i class="fab fa-twitter-square text-xl"></i>
-                        </a>
-                        <a href="#" class="text-gray-400 hover:text-white">
-                            <i class="fab fa-youtube text-xl"></i>
-                        </a>
-                    </div>
-                </div>
-
-                <div>
-                    <h3 class="text-lg font-bold mb-4">Navigasi</h3>
-                    <ul class="space-y-2 text-gray-400">
-                        <li><a href="{{ url('/') }}" class="hover:text-white">Beranda</a></li>
-                        <li><a href="{{ url('/#about') }}" class="hover:text-white">Tentang Kami</a></li>
-                        <li><a href="{{ url('/#how-it-works') }}" class="hover:text-white">Cara Kerja</a></li>
-                        <li><a href="{{ url('/#categories') }}" class="hover:text-white">Kategori</a></li>
-                        <li><a href="{{ url('/#benefits') }}" class="hover:text-white">Keuntungan</a></li>
-                        <li><a href="{{ url('/#location') }}" class="hover:text-white">Lokasi</a></li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h3 class="text-lg font-bold mb-4">Layanan</h3>
-                    <ul class="space-y-2 text-gray-400">
-                        <li><a href="#" class="hover:text-white">Penitipan Barang</a></li>
-                        <li><a href="#" class="hover:text-white">Pembelian</a></li>
-                        <li><a href="#" class="hover:text-white">Pengiriman</a></li>
-                        <li><a href="#" class="hover:text-white">Program Reward</a></li>
-                        <li><a href="#" class="hover:text-white">Donasi</a></li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h3 class="text-lg font-bold mb-4">Hubungi Kami</h3>
-                    <ul class="space-y-2 text-gray-400">
-                        <li class="flex items-start">
-                            <i class="fas fa-map-marker-alt mt-1 mr-2"></i>
-                            <span>Jl. Green Eco Park No. 456, Yogyakarta</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-phone-alt mt-1 mr-2"></i>
-                            <span>+62 274 123456</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-envelope mt-1 mr-2"></i>
-                            <span>info@reusemart.com</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-clock mt-1 mr-2"></i>
-                            <span>08:00 - 20:00 WIB (Setiap Hari)</span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="border-t border-gray-700 mt-10 pt-6 text-center text-gray-400">
-                <p>&copy; 2025 ReUseMart. Hak Cipta Dilindungi. Dikembangkan oleh GreenTech Solutions.</p>
-            </div>
-        </div>
-    </footer>
 
     <!-- Modal Login (hanya tampil jika belum login atau bukan pembeli) -->
     @if(!session('user') || session('role') !== 'pembeli')

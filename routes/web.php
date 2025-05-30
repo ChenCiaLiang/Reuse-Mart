@@ -163,6 +163,7 @@ Route::prefix('customer')->group(function () {
         Route::get('/profile', [PembeliController::class, 'profile'])->name('profile');
         Route::get('/history', [PembeliController::class, 'historyTransaksi'])->name('history');
         Route::get('/transaksi/{idTransaksi}', [PembeliController::class, 'detailTransaksi'])->name('transaksi.detail');
+        Route::post('/buy-direct', [TransaksiPenjualanController::class, 'buyDirect'])->name('buy.direct');
 
         // Rating routes - Tambahkan ini
         Route::prefix('rating')->name('rating.')->group(function () {
