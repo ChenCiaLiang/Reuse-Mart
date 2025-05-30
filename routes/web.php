@@ -96,7 +96,7 @@ Route::prefix('pegawai')->middleware('RolePegawai:pegawai')->group(function () {
             Route::get('/{id}/konfirmasi', [MerchandiseController::class, 'konfirmasiForm'])->name('konfirmasi.form');
             Route::post('/{id}/konfirmasi', [MerchandiseController::class, 'konfirmasiPengambilan'])->name('konfirmasi');
         });
-        
+
         // TAMBAHAN BARU: Payment Verification Routes (Fungsionalitas 69-70)
         Route::prefix('verification')->name('verification.')->group(function () {
             Route::get('/', [TransaksiPenjualanController::class, 'indexVerification'])->name('index');
@@ -134,6 +134,10 @@ Route::prefix('pegawai')->middleware('RolePegawai:pegawai')->group(function () {
             Route::delete('/{id}', [TransaksiPenitipanController::class, 'destroy'])->name('destroy');
 
             Route::get('/{id}/print-nota', [TransaksiPenitipanController::class, 'printNota'])->name('print-nota');
+        });
+
+        Route::prefix('penjualan')->name('penjualan.')->group(function () {
+            Route::get('/{id}/print-nota', [TransaksiPenjualanController::class, 'printNota'])->name('print-nota');
         });
     });
 
@@ -201,7 +205,7 @@ Route::prefix('customer')->group(function () {
 
             Route::post('/proceed', [TransaksiPenjualanController::class, 'proceedCheckout'])->name('proceed');
         });
-        
+
         // TAMBAHAN BARU: Payment Routes (Fungsionalitas 68)
         Route::prefix('payment')->name('payment.')->group(function () {
             Route::get('/{idTransaksi}', [TransaksiPenjualanController::class, 'showPayment'])->name('show');

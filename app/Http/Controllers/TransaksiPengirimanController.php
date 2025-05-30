@@ -21,7 +21,7 @@ class TransaksiPengirimanController extends Controller
         // Ambil parameter pencarian
         $search = $request->input('search');
 
-        $pengiriman = TransaksiPenjualan::whereIn('status', ['terjual', 'pengambilan'])
+        $pengiriman = TransaksiPenjualan::whereIn('status', ['terjual', 'pengambilan', 'pengiriman'])
             ->when($search, function ($query) use ($search) {
                 return $query->where(function ($q) use ($search) {
                     $q->where('idTransaksiPenjualan', 'like', '%' . $search . '%')
@@ -42,16 +42,39 @@ class TransaksiPengirimanController extends Controller
 
     public function show($id)
     {
-        // Ambil data produk berdasarkan ID
-        $pengiriman = TransaksiPenjualan::findOrFail($id);
-        $produk = Produk::find($pengiriman->detailTransaksiPenjualan[0]->idProduk);
-        $pengiriman->produk = $produk->deskripsi;
-        $pengiriman->namaPembeli = Pembeli::findOrFail($pengiriman->idPembeli)->nama;
-        $pengiriman->namaPegawai = Pegawai::find($pengiriman->idPegawai)->nama ?? '-';
-        // Ambil gambar-gambar produk dari field gambar
-        $gambarArray = $produk->gambar ? explode(',', $produk->gambar) : ['default.jpg'];
+        $pengiriman = TransaksiPenjualan::with([
+            'detailTransaksiPenjualan.produk',
+            'pembeli',
+            'pegawai'
+        ])->findOrFail($id);
 
-        return view('pegawai.gudang.pengiriman.show', compact('pengiriman', 'gambarArray'));
+        $produkList = [];
+        $gambarArray = [];
+
+        foreach ($pengiriman->detailTransaksiPenjualan as $detail) {
+            $produk = $detail->produk;
+
+            $produkList[] = [
+                'nama' => $produk->deskripsi,
+                'harga' => $produk->hargaJual,
+                'gambar' => $produk->gambar ? explode(',', $produk->gambar) : ['default.jpg'],
+                'berat' => $produk->berat,
+                'garansi' => $produk->tanggalGaransi,
+            ];
+
+            if ($produk->gambar) {
+                $gambarProduk = explode(',', $produk->gambar);
+                $gambarArray = array_merge($gambarArray, $gambarProduk);
+            } else {
+                $gambarArray[] = 'default.jpg';
+            }
+        }
+
+        $pengiriman->produkList = $produkList;
+        $pengiriman->namaPembeli = $pengiriman->pembeli->nama ?? 'N/A';
+        $pengiriman->namaPegawai = $pengiriman->pegawai->nama ?? 'Diambil Sendiri';
+
+        return view('pegawai.gudang.pengiriman.show', compact('pengiriman'));
     }
 
     public function penjadwalanKirimPage($id)
