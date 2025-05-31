@@ -13,6 +13,8 @@ class ProdukController extends Controller
 {
     public function index(Request $request)
     {
+        session()->forget('direct_buy');
+        
         // Ambil parameter pencarian
         $search = $request->input('search');
         $kategori = $request->input('kategori');
@@ -54,6 +56,8 @@ class ProdukController extends Controller
     
     public function indexPopup()
     {
+        session()->forget('direct_buy');
+        
         // Untuk popup, tetap hanya tampilkan produk yang tersedia
         $produk = Produk::where('status', 'Tersedia')
             ->orderBy('created_at', 'desc')
@@ -67,6 +71,8 @@ class ProdukController extends Controller
 
     public function show($id)
     {
+        session()->forget('direct_buy');
+        
         // Ambil data produk berdasarkan ID
         $produk = Produk::findOrFail($id);
 
