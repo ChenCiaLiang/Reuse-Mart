@@ -4,47 +4,26 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class Role
 {
-    public function handle(Request $request, Closure $next, $role)
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     */
+    public function handle(Request $request, Closure $next, string $role): Response
     {
         $user = $request->user();
+        $token = $user->currentAccessToken();
+        $abilities = $token->abilities;
 
-        if (!$user) {
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'Unauthenticated'], 401);
-            }
-            return redirect()->route('loginPage');
+        // Pastikan user sudah login dan memiliki role yang sesuai
+        if (!in_array($role, $abilities)) {
+            return response()->json(['message' => 'Forbidden.'], 403);
         }
 
-        // Cara mendapatkan role berbeda untuk web dan API
-        $roles = '';
-        if (method_exists($user, 'currentAccessToken') && $user->currentAccessToken()) {
-            // API route dengan token
-            $tokenAbilities = $user->currentAccessToken()->abilities;
-            $roles = $tokenAbilities[0] ?? '';
-        }
-
-        foreach ($role as $allowedRole) {
-            if ($roles === $allowedRole) {
-                return $next($request);
-            }
-        }
-
-        if ($request->expectsJson()) {
-            return response()->json(['message' => 'Forbidden'], 403);
-        }
-
-        // Redirect berdasarkan role
-        if ($roles === 'admin') {
-            return redirect('/dashboard');
-        } elseif ($roles === 'customer service') {
-            return redirect()->route('cs.index');
-        } elseif ($roles === 'gudang') {
-            return redirect()->route('gudang.dashboard');
-        }
-
-        return redirect()->route('unAuthorized');
+        return $next($request);
     }
 }

@@ -17,7 +17,6 @@ class TransaksiPenjualan extends Model
     protected $primaryKey = 'idTransaksiPenjualan';
 
     protected $fillable = [
-        'bonus',
         'status',
         'tanggalLaku',
         'tanggalPesan',
@@ -51,7 +50,7 @@ class TransaksiPenjualan extends Model
     {
         return $this->hasOne(Komisi::class, 'idTransaksiPenjualan', 'idTransaksiPenjualan');
     }
-    
+
     /**
      * Get alamat pengiriman sebagai array
      */
@@ -59,7 +58,7 @@ class TransaksiPenjualan extends Model
     {
         return $this->alamatPengiriman ? json_decode($this->alamatPengiriman, true) : null;
     }
-    
+
     /**
      * Set alamat pengiriman dari array
      */

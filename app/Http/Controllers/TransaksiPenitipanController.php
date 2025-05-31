@@ -209,10 +209,10 @@ class TransaksiPenitipanController extends Controller
     public function konfirmasiDiambil($id)
     {
         DB::beginTransaction();
-        
+
         try {
             $transaksi = DB::table('transaksi_penitipan')->where('idTransaksiPenitipan', $id)->first();
-            
+
             if (!$transaksi) {
                 return redirect()->route('gudang.penitipan.index')->with('error', 'Transaksi tidak ditemukan!');
             }
@@ -242,10 +242,16 @@ class TransaksiPenitipanController extends Controller
                     'updated_at' => now()
                 ]);
 
+            DB::table('komisi')
+                ->whereIn('idProduk', $produkIds)
+                ->update([
+                    'status' => 'Diambil Kembali',
+                    'updated_at' => now()
+                ]);
+
             DB::commit();
-            
+
             return redirect()->route('gudang.penitipan.index')->with('success', 'Konfirmasi berhasil! Status transaksi telah diubah menjadi "Diambil".');
-            
         } catch (\Exception $e) {
             DB::rollback();
             return redirect()->route('gudang.penitipan.index')->with('error', 'Gagal mengkonfirmasi pengambilan: ' . $e->getMessage());

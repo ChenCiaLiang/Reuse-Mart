@@ -4,6 +4,7 @@ use App\Http\Controllers\AlamatController;
 use App\Http\Controllers\PegawaiController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DiskusiProdukController;
+use App\Http\Controllers\KomisiController;
 use App\Http\Controllers\OrganisasiController;
 use App\Http\Controllers\PembeliController;
 use App\Http\Controllers\PenitipController;
@@ -14,6 +15,8 @@ use App\Http\Controllers\TransaksiPenitipanController;
 use App\Http\Controllers\TransaksiPenjualanController;
 use App\Http\Controllers\MerchandiseController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/test/{id}', [KomisiController::class, 'getKomisiPenjualan'])->name('getKomisiPenjualan');
 
 Route::middleware('guest')->group(function () {
     Route::get('/', function () {

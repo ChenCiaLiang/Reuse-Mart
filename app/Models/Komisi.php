@@ -16,7 +16,7 @@ class Komisi extends Model
     public $incrementing = false;
 
     protected $fillable = [
-        'idTransaksiPenjualan',
+        'idDetailTransaksiPenjualan',
         'komisiPenitip',
         'komisiHunter',
         'komisiReuse',
@@ -24,9 +24,9 @@ class Komisi extends Model
         'idPenitip'
     ];
 
-    public function transaksiPenjualan(): BelongsTo
+    public function detailTransaksiPenjualan(): BelongsTo
     {
-        return $this->belongsTo(TransaksiPenjualan::class, 'idTransaksiPenjualan', 'idTransaksiPenjualan');
+        return $this->belongsTo(DetailTransaksiPenjualan::class, 'idDetailTransaksiPenjualan', 'idDetailTransaksiPenjualan');
     }
 
     public function pegawai(): BelongsTo

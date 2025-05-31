@@ -23,12 +23,24 @@ class TransaksiPenitipan extends Model
         'statusPenitipan',
         'statusPerpanjangan',
         'pendapatan',
-        'idPenitip'
+        'idPenitip',
+        'idPegawai',
+        'idHunter',
     ];
 
     public function penitip(): BelongsTo
     {
         return $this->belongsTo(Penitip::class, 'idPenitip', 'idPenitip');
+    }
+
+    public function pegawai(): BelongsTo
+    {
+        return $this->belongsTo(Pegawai::class, 'idPegawai', 'idPegawai');
+    }
+
+    public function hunter(): BelongsTo
+    {
+        return $this->belongsTo(Pegawai::class, 'idHunter', 'idPegawai');
     }
 
     public function detailTransaksiPenitipan(): HasMany
