@@ -215,32 +215,4 @@ class TransaksiPengirimanController extends Controller
 
         return redirect()->route('gudang.pengiriman.index')->with('success', 'Produk telah diambil.');
     }
-
-    // public function updateStatusExpired()
-    // {
-    //     $sekarang = Carbon::now();
-    //     $pengiriman = TransaksiPenjualan::where('status', 'pengambilan')
-    //         ->where('tanggalBatasAmbil', '<', $sekarang)
-    //         ->get();
-    //     $detailPengiriman = DetailTransaksiPenjualan::whereIn('idTransaksiPenjualan', $pengiriman->pluck('idTransaksiPenjualan'))->get();
-    //     $produk = Produk::whereIn('idProduk', $detailPengiriman->pluck('idProduk'))->get();
-
-    //     foreach ($pengiriman as $item) {
-    //         $item->update([
-    //             'status' => 'hangus',
-    //         ]);
-    //     }
-
-    //     foreach ($produk as $item) {
-    //         $item->update([
-    //             'status' => 'barang untuk donasi',
-    //         ]);
-    //     }
-
-    //     return response()->json([
-    //         'message' => 'Status transaksi dan produk telah diperbarui.',
-    //         'pengiriman_count' => $pengiriman->count(),
-    //         'produk_count' => $produk->count(),
-    //     ]);
-    // }
 }

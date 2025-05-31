@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id('idTransaksiPenitipan');
             $table->dateTime('tanggalMasukPenitipan');
             $table->dateTime('tanggalAkhirPenitipan');
+            $table->dateTime('tanggalPengambilan');
             $table->dateTime('batasAmbil');
             $table->string('statusPenitipan', 10);
             $table->boolean('statusPerpanjangan');

@@ -133,6 +133,8 @@ Route::prefix('pegawai')->middleware('RolePegawai:pegawai')->group(function () {
             Route::put('/{id}', [TransaksiPenitipanController::class, 'update'])->name('update');
             Route::delete('/{id}', [TransaksiPenitipanController::class, 'destroy'])->name('destroy');
 
+            Route::get('konfirmasiDiambil/{id}', [TransaksiPenitipanController::class, 'konfirmasiDiambil'])->name('konfirmasiDiambil');
+
             Route::get('/{id}/print-nota', [TransaksiPenitipanController::class, 'printNota'])->name('print-nota');
         });
 
@@ -224,6 +226,7 @@ Route::prefix('customer')->group(function () {
             Route::get('/', [TransaksiPenitipanController::class, 'indexPenitip'])->name('index');
             Route::get('/{id}', [TransaksiPenitipanController::class, 'showPenitip'])->name('show');
             Route::get('perpanjangan/{id}', [TransaksiPenitipanController::class, 'perpanjangan'])->name('perpanjangan');
+            Route::get('konfirmasiAmbil/{id}', [TransaksiPenitipanController::class, 'konfirmasiAmbil'])->name('konfirmasiAmbil');
         });
     });
 

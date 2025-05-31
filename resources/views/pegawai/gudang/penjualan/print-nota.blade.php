@@ -175,12 +175,6 @@
             </div>
         </div>
         
-        <!-- Footer Information (Optional) -->
-        <div class="mt-6 text-center text-xs text-gray-600">
-            <div class="mb-1">Terima kasih atas kepercayaan Anda</div>
-            <div>ReUseMart - Solusi Barang Bekas Berkualitas</div>
-        </div>
-        
     </div>
 
     <!-- Print JavaScript -->

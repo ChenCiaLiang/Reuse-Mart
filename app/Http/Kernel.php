@@ -65,7 +65,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'auth.sanctum' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         'Role' => \App\Http\Middleware\Role::class,
-        'RolePegawai' => \App\Http\Middleware\RolePegawai::class,
         // 'add.sanctum.token' => \App\Http\Middleware\AddSanctumToken::class,
     ];
 }

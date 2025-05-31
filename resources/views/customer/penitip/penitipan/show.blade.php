@@ -64,10 +64,17 @@
                 </div>
             </div>
             <div class="flex item-center mt-6">
-                <a href="{{ route('penitip.penitipan.perpanjangan', $penitipan->idTransaksiPenitipan) }}" 
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
-                    <i class="fa-solid fa-clock"></i> Perpanjangan
-                </a>
+                @if($penitipan->statusPerpanjangan == 0 && $penitipan->statusPenitipan == 'Aktif')
+                    <a href="{{ route('penitip.penitipan.perpanjangan', $penitipan->idTransaksiPenitipan) }}" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                        <i class="fa-solid fa-clock"></i> Perpanjangan
+                    </a>
+                @elseIf($penitipan->statusPenitipan == 'Hangus')
+                    <a href="{{ route('penitip.penitipan.konfirmasiAmbil', $penitipan->idTransaksiPenitipan) }}" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                        <i class="fa-solid fa-clock"></i> Konfirmasi Pengambilan Barang
+                    </a>
+                @endIf
             </div>
         </div>
     </main>

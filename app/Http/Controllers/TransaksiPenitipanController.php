@@ -189,6 +189,38 @@ class TransaksiPenitipanController extends Controller
         return redirect()->route('penitip.penitipan.index')->with('success', 'Perpanjangan berhasil dilakukan');
     }
 
+    public function konfirmasiAmbil($id)
+    {
+        $penitipan = TransaksiPenitipan::findOrFail($id);
+
+        if ($penitipan->statusPenitipan != 'Hangus' || !$penitipan) {
+            return redirect()->route('penitip.penitipan.index')->with('error', 'Hanya penitipan hangus yang bisa dikonfirmasi ambil');
+        }
+
+        $penitipan->update([
+            'statusPenitipan' => 'Ambil',
+            'batasAmbil' => Carbon::now()->addDays(7),
+            'tanggalPengambilan' => now(),
+        ]);
+
+        return redirect()->route('penitip.penitipan.index')->with('success', 'Penitipan berhasil dikonfirmasi ambil');
+    }
+
+    public function konfirmasiDiambil($id)
+    {
+        $penitipan = TransaksiPenitipan::findOrFail($id);
+
+        if ($penitipan->statusPenitipan != 'Ambil' || !$penitipan) {
+            return redirect()->route('penitip.penitipan.index')->with('error', 'Hanya penitipan Ambil yang bisa dikonfirmasi telah diambil');
+        }
+
+        $penitipan->update([
+            'statusPenitipan' => 'Diambil',
+        ]);
+
+        return redirect()->route('penitip.penitipan.index')->with('success', 'Penitipan berhasil diambil');
+    }
+
     // Create method
     public function create()
     {
@@ -240,12 +272,12 @@ class TransaksiPenitipanController extends Controller
             if (!$request->hasFile($fotoKey)) {
                 return back()->withErrors([$fotoKey => "Foto untuk produk #" . ($index + 1) . " harus diupload (minimal 2 foto)"])->withInput();
             }
-            
+
             $files = $request->file($fotoKey);
             if (count($files) < 2) {
                 return back()->withErrors([$fotoKey => "Minimal 2 foto untuk produk #" . ($index + 1)])->withInput();
             }
-            
+
             if (count($files) > 3) {
                 return back()->withErrors([$fotoKey => "Maksimal 3 foto untuk produk #" . ($index + 1)])->withInput();
             }
@@ -431,12 +463,12 @@ class TransaksiPenitipanController extends Controller
                 if (!$request->hasFile($fotoKey)) {
                     return back()->withErrors([$fotoKey => "Foto untuk produk baru #" . ($index + 1) . " harus diupload (minimal 2 foto)"])->withInput();
                 }
-                
+
                 $files = $request->file($fotoKey);
                 if (count($files) < 2) {
                     return back()->withErrors([$fotoKey => "Minimal 2 foto untuk produk baru #" . ($index + 1)])->withInput();
                 }
-                
+
                 if (count($files) > 3) {
                     return back()->withErrors([$fotoKey => "Maksimal 3 foto untuk produk baru #" . ($index + 1)])->withInput();
                 }
@@ -473,7 +505,7 @@ class TransaksiPenitipanController extends Controller
                         'tanggalGaransi' => $produkData['tanggalGaransi'] ?? null,
                         'updated_at' => now()
                     ];
-                    
+
                     // Check if there are new photos for this existing product
                     $fotoKey = "foto_produk_existing_{$produkId}";
                     if ($request->hasFile($fotoKey)) {
@@ -490,13 +522,13 @@ class TransaksiPenitipanController extends Controller
                                     }
                                 }
                             }
-                            
+
                             // Upload new photos
                             $uploadedPhotos = $this->uploadPhotosPerProduk($files, 'existing_' . $produkId);
                             $updateData['gambar'] = implode(',', $uploadedPhotos);
                         }
                     }
-                    
+
                     DB::table('produk')->where('idProduk', $produkId)->update($updateData);
                 }
             }

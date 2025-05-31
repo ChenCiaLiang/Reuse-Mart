@@ -180,7 +180,7 @@
                         <option value="">Semua Status</option>
                         <option value="Aktif" {{ request('adv_status') == 'Aktif' ? 'selected' : '' }}>Aktif</option>
                         <option value="Selesai" {{ request('adv_status') == 'Selesai' ? 'selected' : '' }}>Selesai</option>
-                        <option value="Expired" {{ request('adv_status') == 'Expired' ? 'selected' : '' }}>Expired</option>
+                        <option value="Expired" {{ request('adv_status') == '   ' ? 'selected' : '' }}>Expired</option>
                     </select>
                 </div>
             </div>

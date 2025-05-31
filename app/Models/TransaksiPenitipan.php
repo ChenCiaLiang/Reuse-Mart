@@ -18,6 +18,7 @@ class TransaksiPenitipan extends Model
     protected $fillable = [
         'tanggalMasukPenitipan',
         'tanggalAkhirPenitipan',
+        'tanggalPengambilan',
         'batasAmbil',
         'statusPenitipan',
         'statusPerpanjangan',
