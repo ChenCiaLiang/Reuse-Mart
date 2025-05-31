@@ -11,6 +11,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class TransaksiPenjualanController extends Controller
@@ -1460,6 +1461,113 @@ class TransaksiPenjualanController extends Controller
             ]);
             
             return response()->json(['error' => 'Terjadi kesalahan server'], 500);
+        }
+    }
+
+    /**
+     * Auto cancel expired payment transaction (untuk AJAX call)
+     * BARU: Method khusus untuk auto cancel yang dipanggil JavaScript
+     */
+    public function cancelExpiredPayment(Request $request, $idTransaksi)
+    {
+        // Check authentication
+        if (!session('user') || session('role') !== 'pembeli') {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $idPembeli = session('user')['idPembeli'];
+
+        $transaksi = TransaksiPenjualan::where('idTransaksiPenjualan', $idTransaksi)
+            ->where('idPembeli', $idPembeli)
+            ->where('status', 'menunggu_pembayaran')
+            ->first();
+
+        if (!$transaksi) {
+            return response()->json(['error' => 'Transaksi tidak ditemukan atau sudah tidak valid'], 404);
+        }
+
+        // Check jika memang sudah expired
+        $now = \Carbon\Carbon::now();
+        $batasLunas = \Carbon\Carbon::parse($transaksi->tanggalBatasLunas);
+        
+        if ($now->lte($batasLunas)) {
+            return response()->json(['error' => 'Transaksi belum expired'], 400);
+        }
+
+        DB::beginTransaction();
+        try {
+            \Log::info('Auto cancelling expired transaction via AJAX', [
+                'transaction_id' => $idTransaksi,
+                'customer_id' => $idPembeli,
+                'expired_at' => $batasLunas->format('Y-m-d H:i:s'),
+                'cancelled_at' => $now->format('Y-m-d H:i:s')
+            ]);
+
+            // 1. Kembalikan status produk ke tersedia
+            $detailTransaksi = DetailTransaksiPenjualan::where('idTransaksiPenjualan', $idTransaksi)->get();
+            $restoredProductIds = [];
+            
+            foreach ($detailTransaksi as $detail) {
+                $produk = Produk::find($detail->idProduk);
+                if ($produk && $produk->status !== 'Tersedia') {
+                    $produk->update(['status' => 'Tersedia']);
+                    $restoredProductIds[] = $detail->idProduk;
+                }
+            }
+
+            // 2. Kembalikan poin berdasarkan data dari database transaksi
+            $pointsRefunded = 0;
+            if ($transaksi->poinDigunakan > 0) {
+                $pembeli = $transaksi->pembeli;
+                $pembeli->update(['poin' => $pembeli->poin + $transaksi->poinDigunakan]);
+                $pointsRefunded = $transaksi->poinDigunakan;
+                
+                \Log::info('Points refunded due to auto cancel', [
+                    'transaction_id' => $idTransaksi,
+                    'customer_id' => $idPembeli,
+                    'points_refunded' => $pointsRefunded,
+                    'new_total_points' => $pembeli->poin
+                ]);
+            }
+
+            // 3. Update status transaksi
+            $transaksi->update(['status' => 'batal']);
+
+            // 4. Simpan catatan pembatalan
+            session(['catatan_batal_' . $idTransaksi => 'Transaksi dibatalkan otomatis karena waktu pembayaran habis']);
+
+            // 5. Hapus data checkout dari session
+            session()->forget('checkout_data');
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Transaksi berhasil dibatalkan otomatis',
+                'data' => [
+                    'transaction_id' => $idTransaksi,
+                    'restored_products' => count($restoredProductIds),
+                    'product_ids' => $restoredProductIds,
+                    'points_refunded' => $pointsRefunded,
+                    'cancelled_at' => $now->format('Y-m-d H:i:s')
+                ],
+                'redirect_url' => route('pembeli.profile')
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            \Log::error('Error in auto cancel expired payment', [
+                'transaction_id' => $idTransaksi,
+                'customer_id' => $idPembeli,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Gagal membatalkan transaksi: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

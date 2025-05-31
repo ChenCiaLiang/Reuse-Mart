@@ -216,7 +216,8 @@ Route::prefix('customer')->group(function () {
             Route::get('/{idTransaksi}', [TransaksiPenjualanController::class, 'showPayment'])->name('show');
             Route::post('/{idTransaksi}/upload', [TransaksiPenjualanController::class, 'uploadPaymentProof'])->name('upload');
             Route::get('/{idTransaksi}/status', [TransaksiPenjualanController::class, 'getTransactionStatus'])->name('status');
-            Route::post('/{idTransaksi}/cancel-expired', [TransaksiPenjualanController::class, 'cancelExpiredTransactionAPI'])->name('cancel-expired');
+            
+            Route::post('/{idTransaksi}/cancel-expired', [TransaksiPenjualanController::class, 'cancelExpiredPayment'])->name('cancel-expired');
         });
     });
 

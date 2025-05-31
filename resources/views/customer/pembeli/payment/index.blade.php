@@ -1,4 +1,6 @@
-{{-- PERBAIKAN LENGKAP untuk countdown timer yang tidak berjalan --}}
+{{-- UPDATE untuk resources/views/customer/pembeli/payment/index.blade.php --}}
+{{-- TAMBAHKAN SISTEM AUTO CANCEL KETIKA COUNTDOWN HABIS --}}
+
 @php
 function getImageUrl($imagePath, $defaultImage = 'default.jpg') {
     if (empty($imagePath)) {
@@ -17,7 +19,7 @@ function getImageUrl($imagePath, $defaultImage = 'default.jpg') {
     return asset('images/' . $defaultImage);
 }
 
-// PERBAIKAN UTAMA: Perhitungan remaining time yang benar
+// Perhitungan remaining time yang benar
 $remainingSeconds = 0;
 $isExpired = false;
 $totalDuration = 60; // 1 menit = 60 detik
@@ -26,31 +28,23 @@ if ($transaksi->status === 'menunggu_pembayaran') {
     $now = \Carbon\Carbon::now();
     $batasLunas = \Carbon\Carbon::parse($transaksi->tanggalBatasLunas);
     
-    // PERBAIKAN: Gunakan metode yang lebih tepat untuk menghitung selisih waktu
     if ($now->lt($batasLunas)) {
-        // Masih dalam batas waktu - hitung sisa detik yang benar
         $remainingSeconds = $now->diffInSeconds($batasLunas);
         $isExpired = false;
         
-        // Debug: pastikan tidak melebihi total duration
         if ($remainingSeconds > $totalDuration) {
             $remainingSeconds = $totalDuration;
         }
     } else {
-        // Sudah expired
         $remainingSeconds = 0;
         $isExpired = true;
     }
     
-    // Debug log yang lebih detail
-    \Log::info('Payment Timer Debug - FIXED', [
+    // Debug log
+    \Log::info('Payment Timer with Auto Cancel', [
         'transaction_id' => $transaksi->idTransaksiPenjualan,
-        'now_timestamp' => $now->timestamp,
-        'batas_timestamp' => $batasLunas->timestamp,
         'now_formatted' => $now->format('Y-m-d H:i:s'),
         'batas_formatted' => $batasLunas->format('Y-m-d H:i:s'),
-        'raw_diff_seconds' => $now->diffInSeconds($batasLunas),
-        'is_now_before_batas' => $now->lt($batasLunas),
         'calculated_remaining' => $remainingSeconds,
         'is_expired' => $isExpired
     ]);
@@ -85,10 +79,10 @@ if ($transaksi->status === 'menunggu_pembayaran') {
                 </div>
                 @endif
 
-                <!-- PERBAIKAN: Debug info yang lebih detail (hapus setelah testing) -->
+                <!-- Debug info (hapus setelah testing) -->
                 @if($transaksi->status === 'menunggu_pembayaran')
                 <div class="bg-gray-100 border border-gray-300 rounded-lg p-4 mb-6 text-sm">
-                    <h4 class="font-semibold mb-2">Debug Info - FIXED VERSION:</h4>
+                    <h4 class="font-semibold mb-2">Debug Info - WITH AUTO CANCEL:</h4>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <p><strong>Server Time:</strong> {{ \Carbon\Carbon::now()->format('Y-m-d H:i:s') }}</p>
@@ -98,12 +92,8 @@ if ($transaksi->status === 'menunggu_pembayaran') {
                         <div>
                             <p><strong>Remaining Seconds:</strong> {{ $remainingSeconds }}</p>
                             <p><strong>Is Expired:</strong> {{ $isExpired ? 'Yes' : 'No' }}</p>
-                            <p><strong>Total Duration:</strong> {{ $totalDuration }}s</p>
+                            <p><strong>Auto Cancel:</strong> Enabled</p>
                         </div>
-                    </div>
-                    <div class="mt-2 p-2 bg-yellow-100 rounded">
-                        <p><strong>Timestamp Diff:</strong> {{ \Carbon\Carbon::now()->diffInSeconds(\Carbon\Carbon::parse($transaksi->tanggalBatasLunas)) }}s</p>
-                        <p><strong>Now < Batas:</strong> {{ \Carbon\Carbon::now()->lt(\Carbon\Carbon::parse($transaksi->tanggalBatasLunas)) ? 'True' : 'False' }}</p>
                     </div>
                 </div>
                 @endif
@@ -141,7 +131,7 @@ if ($transaksi->status === 'menunggu_pembayaran') {
                 <div class="grid lg:grid-cols-2 gap-8">
                     <!-- Left Column - Payment Info -->
                     <div>
-                        <!-- PERBAIKAN: Timer Section dengan logic yang benar -->
+                        <!-- Timer Section dengan auto cancel -->
                         @if($transaksi->status === 'menunggu_pembayaran' && !$isExpired && $remainingSeconds > 0)
                         <div class="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
                             <div class="flex items-center justify-between mb-4">
@@ -149,9 +139,13 @@ if ($transaksi->status === 'menunggu_pembayaran') {
                                     <h3 class="text-lg font-medium text-red-800">Batas Waktu Pembayaran</h3>
                                     <p class="text-red-600 text-sm">Selesaikan pembayaran sebelum:</p>
                                     <p class="text-red-800 font-semibold">{{ \Carbon\Carbon::parse($transaksi->tanggalBatasLunas)->format('d M Y H:i') }} WIB</p>
+                                    <p class="text-red-600 text-xs mt-1">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        Transaksi akan dibatalkan otomatis jika waktu habis
+                                    </p>
                                 </div>
                                 
-                                <!-- PERBAIKAN: Visual Countdown Timer -->
+                                <!-- Visual Countdown Timer -->
                                 <div class="text-center">
                                     <div class="relative inline-block">
                                         <!-- Circular Progress -->
@@ -206,10 +200,11 @@ if ($transaksi->status === 'menunggu_pembayaran') {
                         <div class="bg-red-50 border border-red-200 rounded-lg p-6 mb-6 text-center">
                             <i class="fas fa-times-circle text-4xl text-red-600 mb-4"></i>
                             <h3 class="text-lg font-semibold text-red-800 mb-2">Waktu Pembayaran Habis</h3>
-                            <p class="text-red-600 mb-4">Batas waktu pembayaran telah berakhir. Transaksi akan segera dibatalkan.</p>
-                            <button onclick="location.reload()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
-                                <i class="fas fa-refresh mr-2"></i>Refresh Halaman
-                            </button>
+                            <p class="text-red-600 mb-4">Transaksi akan dibatalkan otomatis dan produk dikembalikan ke status tersedia.</p>
+                            <div id="autoCancelStatus" class="bg-yellow-100 border border-yellow-300 rounded p-3 text-yellow-800 text-sm">
+                                <i class="fas fa-spinner fa-spin mr-2"></i>
+                                Sedang membatalkan transaksi...
+                            </div>
                         </div>
                         @endif
 
@@ -302,11 +297,6 @@ if ($transaksi->status === 'menunggu_pembayaran') {
                                             <div class="bg-white border border-gray-200 rounded p-3 mt-1">
                                                 <div class="flex items-center mb-1">
                                                     <span class="font-medium text-gray-900">{{ $alamatData['jenis'] ?? 'Alamat' }}</span>
-                                                    @if($transaksi->metodePengiriman === 'kurir')
-                                                        <span class="ml-2 bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded">Pengiriman</span>
-                                                    @else
-                                                        <span class="ml-2 bg-green-100 text-green-700 text-xs px-2 py-1 rounded">Pickup</span>
-                                                    @endif
                                                 </div>
                                                 <p class="text-gray-600 text-sm">{{ $alamatData['alamatLengkap'] ?? 'Alamat tidak tersedia' }}</p>
                                             </div>
@@ -357,11 +347,15 @@ if ($transaksi->status === 'menunggu_pembayaran') {
                             </form>
                         </div>
                         @elseif($transaksi->status === 'menunggu_pembayaran' && ($isExpired || $remainingSeconds <= 0))
-                        <!-- Waktu habis -->
+                        <!-- Waktu habis - akan auto cancel -->
                         <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
                             <i class="fas fa-clock text-4xl text-red-600 mb-4"></i>
                             <h3 class="text-lg font-semibold text-red-800 mb-2">Waktu Pembayaran Habis</h3>
-                            <p class="text-red-600 mb-4">Upload bukti pembayaran tidak dapat dilakukan karena waktu telah habis.</p>
+                            <p class="text-red-600 mb-4">Transaksi sedang dibatalkan otomatis...</p>
+                            <div id="autoCancelStatus" class="bg-yellow-100 border border-yellow-300 rounded p-3 text-yellow-800 text-sm">
+                                <i class="fas fa-spinner fa-spin mr-2"></i>
+                                Membatalkan transaksi dan mengembalikan status produk...
+                            </div>
                         </div>
                         @elseif($transaksi->status === 'menunggu_verifikasi')
                         <!-- Verifikasi Status -->
@@ -386,7 +380,7 @@ if ($transaksi->status === 'menunggu_pembayaran') {
                         <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
                             <i class="fas fa-times-circle text-4xl text-red-600 mb-4"></i>
                             <h3 class="text-lg font-semibold text-red-800 mb-2">Transaksi Dibatalkan</h3>
-                            <p class="text-red-600 mb-4">Waktu pembayaran telah habis atau bukti pembayaran tidak valid.</p>
+                            <p class="text-red-600 mb-4">Transaksi telah dibatalkan dan produk dikembalikan ke status tersedia.</p>
                             <a href="{{ route('produk.index') }}" class="inline-block bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
                                 Belanja Lagi
                             </a>
@@ -487,85 +481,84 @@ if ($transaksi->status === 'menunggu_pembayaran') {
 <div id="loadingOverlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
     <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
         <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-        <span class="text-gray-700">Mengupload...</span>
+        <span class="text-gray-700">Memproses...</span>
     </div>
 </div>
 
 <script>
-console.log('Payment page loaded - FIXED COUNTDOWN VERSION');
+console.log('Payment page loaded - WITH AUTO CANCEL SYSTEM');
 
 // ================================================
-// PERBAIKAN UTAMA: Global Variables dengan validasi ketat
+// TAMBAHAN BARU: Auto Cancel System Variables
 // ================================================
 let countdownTimer = null;
 let isTimerExpired = false;
 let isUploadInProgress = false;
+let isCancelInProgress = false; // BARU: flag untuk prevent multiple cancel calls
 
-// PERBAIKAN: Ambil data dari backend dengan validasi tambahan
+// Data dari backend
 const serverRemainingSeconds = {{ $remainingSeconds ?? 0 }};
 const serverIsExpired = {{ $isExpired ? 'true' : 'false' }};
 const totalDuration = {{ $totalDuration ?? 60 }};
 const transactionStatus = '{{ $transaksi->status }}';
+const transactionId = {{ $transaksi->idTransaksiPenjualan }};
 
-// PERBAIKAN: Validasi data dari server
+// Validasi data
 let remainingSeconds = Math.max(0, Math.floor(serverRemainingSeconds));
 let isInitiallyExpired = serverIsExpired || remainingSeconds <= 0;
 
-console.log('FIXED Timer initialization:', {
+console.log('AUTO CANCEL Timer initialization:', {
     serverRemainingSeconds: serverRemainingSeconds,
     calculatedRemaining: remainingSeconds,
     serverIsExpired: serverIsExpired,
     isInitiallyExpired: isInitiallyExpired,
     totalDuration: totalDuration,
-    status: transactionStatus
+    status: transactionStatus,
+    transactionId: transactionId
 });
 
 // ================================================
-// PERBAIKAN: Countdown Timer dengan logic yang diperbaiki
+// PERBAIKAN: Countdown Timer dengan Auto Cancel
 // ================================================
 @if($transaksi->status === 'menunggu_pembayaran')
 function initializeCountdown() {
-    console.log('FIXED: Initializing countdown...');
+    console.log('AUTO CANCEL: Initializing countdown...');
     
-    // PERBAIKAN: Validasi awal yang lebih ketat
+    // Jika sudah expired dari awal, langsung cancel
     if (isInitiallyExpired || remainingSeconds <= 0 || transactionStatus !== 'menunggu_pembayaran') {
-        console.log('FIXED: Transaction expired or invalid status, stopping timer');
-        handleTimerExpired();
+        console.log('AUTO CANCEL: Transaction expired from start, triggering auto cancel');
+        handleTimerExpiredWithAutoCancel();
         return;
     }
     
-    console.log('FIXED: Starting countdown with', remainingSeconds, 'seconds');
+    console.log('AUTO CANCEL: Starting countdown with', remainingSeconds, 'seconds');
     
-    // Set current counter
     let currentSeconds = remainingSeconds;
-    
-    // PERBAIKAN: Update display immediately
     updateCountdownDisplay(currentSeconds);
     
     // Start countdown interval
     countdownTimer = setInterval(() => {
         currentSeconds--;
-        console.log('FIXED: Countdown tick:', currentSeconds);
+        console.log('AUTO CANCEL: Countdown tick:', currentSeconds);
         
         if (currentSeconds <= 0) {
-            console.log('FIXED: Timer reached zero, expiring...');
-            handleTimerExpired();
+            console.log('AUTO CANCEL: Timer reached zero, triggering auto cancel');
+            handleTimerExpiredWithAutoCancel();
             return;
         }
         
         updateCountdownDisplay(currentSeconds);
     }, 1000);
     
-    console.log('FIXED: Countdown timer started successfully');
+    console.log('AUTO CANCEL: Countdown timer started successfully');
 }
 
 function updateCountdownDisplay(seconds) {
     if (isTimerExpired) {
-        console.log('FIXED: Timer already expired, skipping update');
+        console.log('AUTO CANCEL: Timer already expired, skipping update');
         return;
     }
     
-    // PERBAIKAN: Validasi input
     seconds = Math.max(0, Math.floor(seconds));
     
     const minutes = Math.floor(seconds / 60);
@@ -577,11 +570,11 @@ function updateCountdownDisplay(seconds) {
         countdownElement.innerHTML = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
     }
     
-    // PERBAIKAN: Update circular progress dengan perhitungan yang benar
+    // Update circular progress
     const circle = document.getElementById('timerCircle');
     if (circle) {
         const progress = Math.max(0, Math.min(1, seconds / totalDuration));
-        const circumference = 2 * Math.PI * 45; // radius = 45
+        const circumference = 2 * Math.PI * 45;
         const offset = circumference * (1 - progress);
         circle.style.strokeDashoffset = offset;
         
@@ -600,7 +593,7 @@ function updateCountdownDisplay(seconds) {
     if (statusElement) {
         if (seconds <= 20) {
             statusElement.className = 'mt-4 p-3 bg-red-100 border border-red-300 rounded text-red-800 text-sm';
-            statusElement.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>Waktu pembayaran hampir habis! Segera upload bukti pembayaran.';
+            statusElement.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>Waktu pembayaran hampir habis! Transaksi akan dibatalkan otomatis jika waktu habis.';
         } else if (seconds <= 40) {
             statusElement.className = 'mt-4 p-3 bg-yellow-100 border border-yellow-300 rounded text-yellow-800 text-sm';
             statusElement.innerHTML = '<i class="fas fa-clock mr-2"></i>Waktu pembayaran sedang berjalan...';
@@ -609,58 +602,149 @@ function updateCountdownDisplay(seconds) {
             statusElement.innerHTML = '<i class="fas fa-clock mr-2"></i>Waktu pembayaran sedang berjalan...';
         }
     }
-    
-    console.log('FIXED: Display updated - seconds:', seconds, 'minutes:', minutes);
 }
 
-function handleTimerExpired() {
-    console.log('FIXED: Timer expired!');
+// ================================================
+// TAMBAHAN BARU: Auto Cancel Function
+// ================================================
+function handleTimerExpiredWithAutoCancel() {
+    console.log('AUTO CANCEL: Timer expired, starting auto cancel process');
     isTimerExpired = true;
+    
+    // Prevent multiple cancel calls
+    if (isCancelInProgress) {
+        console.log('AUTO CANCEL: Cancel already in progress, skipping');
+        return;
+    }
+    
+    isCancelInProgress = true;
     
     // Stop timer
     if (countdownTimer) {
         clearInterval(countdownTimer);
         countdownTimer = null;
-        console.log('FIXED: Timer interval cleared');
+        console.log('AUTO CANCEL: Timer interval cleared');
     }
     
-    // Update UI
+    // Update UI to show expiration
+    updateUIForExpiredTransaction();
+    
+    // Show auto cancel notification
+    showAutoCancelNotification();
+    
+    // Call API to cancel transaction
+    autoCancelTransaction();
+}
+
+function updateUIForExpiredTransaction() {
+    console.log('AUTO CANCEL: Updating UI for expired transaction');
+    
+    // Update countdown display
     const countdownElement = document.getElementById('countdown');
     if (countdownElement) {
         countdownElement.innerHTML = '<span class="text-red-600">HABIS</span>';
     }
     
+    // Update circle
     const circle = document.getElementById('timerCircle');
     if (circle) {
         circle.style.strokeDashoffset = '283'; // Fully empty
         circle.style.stroke = '#dc2626';
     }
     
+    // Update status
     const statusElement = document.getElementById('timerStatus');
     if (statusElement) {
         statusElement.className = 'mt-4 p-3 bg-red-100 border border-red-300 rounded text-red-800 text-sm';
-        statusElement.innerHTML = '<i class="fas fa-times-circle mr-2"></i>Waktu pembayaran telah habis. Transaksi akan dibatalkan.';
+        statusElement.innerHTML = '<i class="fas fa-times-circle mr-2"></i>Waktu pembayaran telah habis. Transaksi sedang dibatalkan otomatis...';
     }
     
-    // Disable upload form
+    // Disable upload button
     const uploadBtn = document.getElementById('uploadBtn');
     if (uploadBtn) {
         uploadBtn.disabled = true;
         uploadBtn.innerHTML = '<i class="fas fa-times mr-2"></i>Waktu Habis';
         uploadBtn.className = 'w-full bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg cursor-not-allowed';
     }
-    
-    // Show notification
-    showTimerExpiredNotification();
-    
-    // Auto redirect ke profile setelah 10 detik
-    setTimeout(() => {
-        console.log('FIXED: Auto redirecting to profile');
-        window.location.href = '{{ route("pembeli.profile") }}';
-    }, 10000);
 }
 
-function showTimerExpiredNotification() {
+// GANTI bagian autoCancelTransaction() function di payment/index.blade.php:
+
+function autoCancelTransaction() {
+    console.log('AUTO CANCEL: Calling cancel API for transaction', transactionId);
+    
+    // Update auto cancel status
+    const autoCancelStatus = document.getElementById('autoCancelStatus');
+    if (autoCancelStatus) {
+        autoCancelStatus.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Membatalkan transaksi dan mengembalikan status produk...';
+    }
+    
+    // PERBAIKAN: Gunakan URL manual yang lebih aman
+    const cancelUrl = '/customer/pembeli/payment/' + transactionId + '/cancel-expired';
+    
+    // Call cancel API
+    fetch(cancelUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        console.log('AUTO CANCEL: API response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('AUTO CANCEL: API response data:', data);
+        
+        if (data.success) {
+            // Update status to show success
+            if (autoCancelStatus) {
+                autoCancelStatus.className = 'bg-green-100 border border-green-300 rounded p-3 text-green-800 text-sm';
+                autoCancelStatus.innerHTML = `
+                    <i class="fas fa-check-circle mr-2"></i>
+                    Transaksi berhasil dibatalkan. 
+                    ${data.data.restored_products} produk dikembalikan, 
+                    ${data.data.points_refunded} poin dikembalikan.
+                `;
+            }
+            
+            showNotification('Transaksi dibatalkan otomatis karena waktu pembayaran habis', 'info');
+            
+            // Redirect after 5 seconds
+            setTimeout(() => {
+                console.log('AUTO CANCEL: Redirecting to profile');
+                window.location.href = data.redirect_url || '{{ route("pembeli.profile") }}';
+            }, 5000);
+            
+        } else {
+            console.error('AUTO CANCEL: API returned error:', data.error);
+            
+            if (autoCancelStatus) {
+                autoCancelStatus.className = 'bg-red-100 border border-red-300 rounded p-3 text-red-800 text-sm';
+                autoCancelStatus.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>Gagal membatalkan transaksi otomatis. Silakan refresh halaman.';
+            }
+            
+            showNotification('Gagal membatalkan transaksi otomatis', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('AUTO CANCEL: API call failed:', error);
+        
+        if (autoCancelStatus) {
+            autoCancelStatus.className = 'bg-red-100 border border-red-300 rounded p-3 text-red-800 text-sm';
+            autoCancelStatus.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>Koneksi bermasalah. Silakan refresh halaman.';
+        }
+        
+        showNotification('Koneksi bermasalah saat membatalkan transaksi', 'error');
+    })
+    .finally(() => {
+        isCancelInProgress = false;
+    });
+}
+
+function showAutoCancelNotification() {
     const notification = document.createElement('div');
     notification.className = 'fixed top-4 right-4 z-50 p-6 bg-red-500 text-white rounded-lg shadow-lg max-w-sm';
     notification.innerHTML = `
@@ -668,10 +752,8 @@ function showTimerExpiredNotification() {
             <i class="fas fa-exclamation-triangle text-2xl mr-3 mt-1"></i>
             <div class="flex-grow">
                 <h4 class="font-bold mb-2">Waktu Pembayaran Habis</h4>
-                <p class="text-sm mb-3">Transaksi akan dibatalkan otomatis. Anda akan diarahkan kembali ke profil dalam 10 detik.</p>
-                <button onclick="window.location.href='{{ route("pembeli.profile") }}'" class="bg-white text-red-600 px-3 py-1 rounded text-sm font-medium hover:bg-gray-100">
-                    <i class="fas fa-arrow-left mr-1"></i> Kembali Sekarang
-                </button>
+                <p class="text-sm mb-3">Transaksi sedang dibatalkan otomatis. Produk akan dikembalikan ke status tersedia dan poin dikembalikan ke akun Anda.</p>
+                <p class="text-xs">Anda akan diarahkan kembali ke profil setelah proses selesai.</p>
             </div>
             <button onclick="this.parentElement.parentElement.remove()" class="text-white hover:text-gray-200 ml-2">
                 <i class="fas fa-times"></i>
@@ -682,21 +764,28 @@ function showTimerExpiredNotification() {
     document.body.appendChild(notification);
 }
 
-// PERBAIKAN: Initialize countdown saat DOM ready dengan pengecekan tambahan
+// Initialize countdown saat DOM ready
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('FIXED: DOM loaded, checking timer conditions...');
-    console.log('FIXED: Status:', transactionStatus, 'Remaining:', remainingSeconds, 'Expired:', isInitiallyExpired);
+    console.log('AUTO CANCEL: DOM loaded, checking timer conditions...');
     
-    if (transactionStatus === 'menunggu_pembayaran' && !isInitiallyExpired && remainingSeconds > 0) {
-        console.log('FIXED: Conditions met, starting timer...');
-        initializeCountdown();
+    if (transactionStatus === 'menunggu_pembayaran') {
+        // Jika sudah expired dari backend, langsung trigger auto cancel
+        if (isInitiallyExpired || remainingSeconds <= 0) {
+            console.log('AUTO CANCEL: Transaction already expired, triggering immediate cancel');
+            setTimeout(() => {
+                handleTimerExpiredWithAutoCancel();
+            }, 1000); // Delay 1 detik untuk UI loading
+        } else {
+            console.log('AUTO CANCEL: Starting normal countdown');
+            initializeCountdown();
+        }
     } else {
-        console.log('FIXED: Timer conditions not met, not starting timer');
+        console.log('AUTO CANCEL: Transaction not in waiting payment status');
     }
 });
 
 @else
-console.log('FIXED: Timer not initialized - status:', transactionStatus);
+console.log('AUTO CANCEL: Timer not initialized - status:', transactionStatus);
 
 // Jika status bukan menunggu_pembayaran dan batal, auto redirect
 @if($transaksi->status === 'batal')
@@ -766,10 +855,11 @@ function handleUpload() {
         if (data.success) {
             showNotification('Bukti pembayaran berhasil diupload!', 'success');
             
-            // Stop countdown timer
+            // Stop countdown timer karena pembayaran sudah diupload
             if (countdownTimer) {
                 clearInterval(countdownTimer);
                 countdownTimer = null;
+                console.log('AUTO CANCEL: Timer stopped due to successful upload');
             }
             
             setTimeout(() => {
@@ -917,7 +1007,7 @@ function showNotification(message, type = 'info') {
 window.addEventListener('beforeunload', function() {
     if (countdownTimer) {
         clearInterval(countdownTimer);
-        console.log('FIXED: Timer cleaned up on page unload');
+        console.log('AUTO CANCEL: Timer cleaned up on page unload');
     }
 });
 </script>
