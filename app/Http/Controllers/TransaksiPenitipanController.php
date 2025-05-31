@@ -68,7 +68,7 @@ class TransaksiPenitipanController extends Controller
         ));
     }
 
-    // Index method - FIXED
+    // Index method - UPDATED untuk status baru
     public function indexGudang(Request $request)
     {
         $query = DB::table('transaksi_penitipan as tp')
@@ -205,20 +205,51 @@ class TransaksiPenitipanController extends Controller
         return redirect()->route('penitip.penitipan.index')->with('success', 'Penitipan berhasil dikonfirmasi ambil');
     }
 
+    // UPDATED method untuk konfirmasi diambil dari gudang
     public function konfirmasiDiambil($id)
     {
-        $penitipan = TransaksiPenitipan::findOrFail($id);
+        DB::beginTransaction();
+        
+        try {
+            $transaksi = DB::table('transaksi_penitipan')->where('idTransaksiPenitipan', $id)->first();
+            
+            if (!$transaksi) {
+                return redirect()->route('gudang.penitipan.index')->with('error', 'Transaksi tidak ditemukan!');
+            }
 
-        if ($penitipan->statusPenitipan != 'Ambil' || !$penitipan) {
-            return redirect()->route('penitip.penitipan.index')->with('error', 'Hanya penitipan Ambil yang bisa dikonfirmasi telah diambil');
+            if ($transaksi->statusPenitipan != 'Ambil') {
+                return redirect()->route('gudang.penitipan.index')->with('error', 'Hanya transaksi dengan status "Ambil" yang bisa dikonfirmasi diambil!');
+            }
+
+            // Update status transaksi menjadi "Diambil"
+            DB::table('transaksi_penitipan')
+                ->where('idTransaksiPenitipan', $id)
+                ->update([
+                    'statusPenitipan' => 'Diambil',
+                    'updated_at' => now(),
+                    'tanggalPengambilan' => now(),
+                ]);
+
+            // Update status produk yang terkait menjadi "Diambil Kembali"
+            $produkIds = DB::table('detail_transaksi_penitipan')
+                ->where('idTransaksiPenitipan', $id)
+                ->pluck('idProduk');
+
+            DB::table('produk')
+                ->whereIn('idProduk', $produkIds)
+                ->update([
+                    'status' => 'Diambil Kembali',
+                    'updated_at' => now()
+                ]);
+
+            DB::commit();
+            
+            return redirect()->route('gudang.penitipan.index')->with('success', 'Konfirmasi berhasil! Status transaksi telah diubah menjadi "Diambil".');
+            
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->route('gudang.penitipan.index')->with('error', 'Gagal mengkonfirmasi pengambilan: ' . $e->getMessage());
         }
-
-        $penitipan->update([
-            'statusPenitipan' => 'Diambil',
-            'tanggalPengambilan' => now(),
-        ]);
-
-        return redirect()->route('penitip.penitipan.index')->with('success', 'Penitipan berhasil diambil');
     }
 
     // Create method
@@ -435,7 +466,7 @@ class TransaksiPenitipanController extends Controller
             'tanggalMasukPenitipan' => 'required|date',
             'tanggalAkhirPenitipan' => 'required|date|after:tanggalMasukPenitipan',
             'batasAmbil' => 'required|date',
-            'statusPenitipan' => 'required|in:Aktif,Selesai,Expired',
+            'statusPenitipan' => 'required|in:Aktif,Selesai,Hangus,Ambil,Diambil',
             'statusPerpanjangan' => 'required|boolean',
             'pendapatan' => 'required|numeric|min:0',
             'idPenitip' => 'required|exists:penitip,idPenitip',
@@ -622,7 +653,7 @@ class TransaksiPenitipanController extends Controller
         }
     }
 
-    // Apply filters method
+    // Apply filters method - UPDATED untuk status baru
     private function applyFilters($query, $request)
     {
         if ($request->filled('search')) {
@@ -676,8 +707,8 @@ class TransaksiPenitipanController extends Controller
                 $query->where('tp.statusPerpanjangan', $request->adv_perpanjangan);
             }
 
-            if ($request->filled('adv_expired_only')) {
-                switch ($request->adv_expired_only) {
+            if ($request->filled('adv_filter_khusus')) {
+                switch ($request->adv_filter_khusus) {
                     case 'akan_expired':
                         $query->whereBetween('tp.batasAmbil', [Carbon::now(), Carbon::now()->addDays(7)])
                             ->where('tp.statusPenitipan', 'Aktif');

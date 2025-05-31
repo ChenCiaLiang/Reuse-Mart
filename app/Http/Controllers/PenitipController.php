@@ -31,7 +31,7 @@ class PenitipController extends Controller
 
     public function create()
     {
-        return view('cs.penitip.create');
+        return view('pegawai.cs.penitip.create');
     }
 
     public function store(Request $request)
@@ -91,13 +91,13 @@ class PenitipController extends Controller
     public function show($id)
     {
         $penitip = Penitip::findOrFail($id);
-        return view('cs.penitip.show', compact('penitip'));
+        return view('pegawai.cs.penitip.show', compact('penitip'));
     }
 
     public function edit($id)
     {
         $penitip = Penitip::findOrFail($id);
-        return view('cs.penitip.edit', compact('penitip'));
+        return view('pegawai.cs.penitip.edit', compact('penitip'));
     }
 
     public function update(Request $request, $id)

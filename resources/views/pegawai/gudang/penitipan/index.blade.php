@@ -39,7 +39,7 @@
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
         <div class="bg-white rounded-lg shadow-sm p-6">
             <div class="flex items-center">
                 <div class="p-3 rounded-full bg-blue-100 text-blue-600">
@@ -70,12 +70,20 @@
                     <i class="fa-solid fa-clock text-xl"></i>
                 </div>
                 <div class="ml-4">
-                    <p class="text-sm font-medium text-gray-600">Akan Expired</p>
-                    <p class="text-2xl font-semibold text-gray-900">
-                        {{ $transaksi->filter(function($item) {
-                            return \Carbon\Carbon::parse($item->batasAmbil)->isBetween(now(), now()->addDays(7)) && $item->statusPenitipan == 'Aktif';
-                        })->count() }}
-                    </p>
+                    <p class="text-sm font-medium text-gray-600">Hangus</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ $transaksi->where('statusPenitipan', 'Hangus')->count() }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-orange-100 text-orange-600">
+                    <i class="fa-solid fa-hand-holding text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Perlu Diambil</p>
+                    <p class="text-2xl font-semibold text-gray-900">{{ $transaksi->where('statusPenitipan', 'Ambil')->count() }}</p>
                 </div>
             </div>
         </div>
@@ -111,7 +119,9 @@
                     <option value="">Semua Status</option>
                     <option value="Aktif" {{ request('status') == 'Aktif' ? 'selected' : '' }}>Aktif</option>
                     <option value="Selesai" {{ request('status') == 'Selesai' ? 'selected' : '' }}>Selesai</option>
-                    <option value="Expired" {{ request('status') == 'Expired' ? 'selected' : '' }}>Expired</option>
+                    <option value="Hangus" {{ request('status') == 'Hangus' ? 'selected' : '' }}>Hangus</option>
+                    <option value="Ambil" {{ request('status') == 'Ambil' ? 'selected' : '' }}>Ambil</option>
+                    <option value="Diambil" {{ request('status') == 'Diambil' ? 'selected' : '' }}>Diambil</option>
                 </select>
             </div>
             <div class="flex space-x-2">
@@ -180,7 +190,9 @@
                         <option value="">Semua Status</option>
                         <option value="Aktif" {{ request('adv_status') == 'Aktif' ? 'selected' : '' }}>Aktif</option>
                         <option value="Selesai" {{ request('adv_status') == 'Selesai' ? 'selected' : '' }}>Selesai</option>
-                        <option value="Expired" {{ request('adv_status') == '   ' ? 'selected' : '' }}>Expired</option>
+                        <option value="Hangus" {{ request('adv_status') == 'Hangus' ? 'selected' : '' }}>Hangus</option>
+                        <option value="Ambil" {{ request('adv_status') == 'Ambil' ? 'selected' : '' }}>Ambil</option>
+                        <option value="Diambil" {{ request('adv_status') == 'Diambil' ? 'selected' : '' }}>Diambil</option>
                     </select>
                 </div>
             </div>
@@ -208,12 +220,12 @@
                     </select>
                 </div>
                 <div>
-                    <label for="adv_expired_only" class="block text-sm font-medium text-gray-700 mb-2">Filter Khusus</label>
-                    <select name="adv_expired_only" id="adv_expired_only" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    <label for="adv_filter_khusus" class="block text-sm font-medium text-gray-700 mb-2">Filter Khusus</label>
+                    <select name="adv_filter_khusus" id="adv_filter_khusus" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
                         <option value="">Semua</option>
-                        <option value="akan_expired" {{ request('adv_expired_only') == 'akan_expired' ? 'selected' : '' }}>Akan Expired (7 hari)</option>
-                        <option value="sudah_expired" {{ request('adv_expired_only') == 'sudah_expired' ? 'selected' : '' }}>Sudah Expired</option>
-                        <option value="hari_ini" {{ request('adv_expired_only') == 'hari_ini' ? 'selected' : '' }}>Dibuat Hari Ini</option>
+                        <option value="akan_expired" {{ request('adv_filter_khusus') == 'akan_expired' ? 'selected' : '' }}>Akan Expired (7 hari)</option>
+                        <option value="sudah_expired" {{ request('adv_filter_khusus') == 'sudah_expired' ? 'selected' : '' }}>Sudah Expired</option>
+                        <option value="hari_ini" {{ request('adv_filter_khusus') == 'hari_ini' ? 'selected' : '' }}>Dibuat Hari Ini</option>
                     </select>
                 </div>
             </div>
@@ -270,19 +282,6 @@
         <div class="px-6 py-4 border-b border-gray-200">
             <div class="flex justify-between items-center">
                 <h3 class="text-lg font-medium text-gray-900">Daftar Transaksi</h3>
-                <div class="flex items-center space-x-2">
-                    <!-- Export Buttons -->
-                    <button onclick="exportData('excel')" 
-                            class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-xs flex items-center space-x-1">
-                        <i class="fa-solid fa-file-excel"></i>
-                        <span>Excel</span>
-                    </button>
-                    <button onclick="exportData('pdf')" 
-                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-xs flex items-center space-x-1">
-                        <i class="fa-solid fa-file-pdf"></i>
-                        <span>PDF</span>
-                    </button>
-                </div>
             </div>
         </div>
         
@@ -339,7 +338,10 @@
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                             @if($item->statusPenitipan == 'Aktif') bg-green-100 text-green-800
                                             @elseif($item->statusPenitipan == 'Selesai') bg-blue-100 text-blue-800
-                                            @else bg-red-100 text-red-800 @endif">
+                                            @elseif($item->statusPenitipan == 'Hangus') bg-red-100 text-red-800
+                                            @elseif($item->statusPenitipan == 'Ambil') bg-orange-100 text-orange-800
+                                            @elseif($item->statusPenitipan == 'Diambil') bg-purple-100 text-purple-800
+                                            @else bg-gray-100 text-gray-800 @endif">
                                             {{ $item->statusPenitipan }}
                                         </span>
                                         @if($item->statusPerpanjangan)
@@ -362,6 +364,18 @@
                                            class="text-blue-600 hover:text-blue-900" title="Edit">
                                             <i class="fa-solid fa-edit"></i>
                                         </a>
+                                        
+                                        @if($item->statusPenitipan == 'Ambil')
+                                            <a href="{{ route('gudang.penitipan.konfirmasiDiambil', $item->idTransaksiPenitipan) }}">
+                                                <button type="submit" 
+                                                        class="text-purple-600 hover:text-purple-900" 
+                                                        title="Konfirmasi Diambil"
+                                                        onclick="return confirm('Konfirmasi bahwa barang telah diambil oleh penitip?')">
+                                                    <i class="fa-solid fa-check-circle"></i>
+                                                </button>
+                                            </a>
+                                        @endif
+                                        
                                         <form action="{{ route('gudang.penitipan.destroy', $item->idTransaksiPenitipan) }}" 
                                               method="POST" class="inline">
                                             @csrf
@@ -465,15 +479,6 @@
                 input.value = '';
             }
         });
-    }
-
-    // Export Data
-    function exportData(format) {
-        const params = new URLSearchParams(window.location.search);
-        params.set('export', format);
-        
-        // For now, just show alert - implement actual export later
-        alert('Export ' + format.toUpperCase() + ' feature will be implemented later');
     }
 
     // Auto-show advanced search if advanced parameters exist

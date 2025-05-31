@@ -1,6 +1,9 @@
 @extends('layouts.customer')
 
 @section('content')
+<!-- CSRF Token untuk JavaScript -->
+<meta name="csrf-token" content="{{ csrf_token() }}">
+
 <div class="bg-gray-100 min-h-screen py-12">
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="bg-white rounded-lg shadow overflow-hidden">
@@ -72,13 +75,15 @@
                                 </div>
 
                                 <!-- Rating Button -->
-                                <button onclick="openRatingModal({{ $produk->idProduk }}, '{{ $produk->deskripsi }}')" 
+                                 @if($produk->ratingProduk == 0)
+                                    <button onclick="openRatingModal({{ $produk->idProduk }}, '{{ addslashes($produk->deskripsi) }}')" 
                                         class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-md transition-colors">
-                                    <svg class="w-4 h-4 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                    </svg>
-                                    {{ $produk->ratingProduk > 0 ? 'Update Rating' : 'Beri Rating' }}
-                                </button>
+                                        <svg class="w-4 h-4 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                        </svg>
+                                        Beri Rating
+                                    </button>
+                                @endIf
 
                                 <p class="text-xs text-gray-400 mt-2 text-center">
                                     Dibeli: {{ \Carbon\Carbon::parse($produk->tanggalLunas)->format('d M Y') }}
@@ -168,7 +173,15 @@ let selectedRating = 0;
 let currentProductId = null;
 
 function openRatingModal(productId, productName) {
-    currentProductId = productId;
+    // Pastikan productId adalah integer
+    currentProductId = parseInt(productId);
+    
+    console.log('Opening modal for product:', {
+        productId: currentProductId,
+        productName: productName,
+        type: typeof currentProductId
+    });
+    
     document.getElementById('modalProductName').textContent = productName;
     document.getElementById('ratingModal').classList.remove('hidden');
     resetRating();
@@ -181,7 +194,6 @@ function closeRatingModal() {
 
 function resetRating() {
     selectedRating = 0;
-    currentProductId = null;
     document.getElementById('ratingText').textContent = 'Pilih rating Anda';
     document.getElementById('submitRatingBtn').disabled = true;
     
@@ -193,7 +205,15 @@ function resetRating() {
 }
 
 function selectRating(rating) {
-    selectedRating = rating;
+    // Pastikan rating adalah number dengan 2 decimal places untuk double(8,2)
+    selectedRating = parseFloat(rating);
+    
+    console.log('Selected rating:', {
+        rating: selectedRating,
+        type: typeof selectedRating,
+        formatted: selectedRating.toFixed(2)
+    });
+    
     document.getElementById('submitRatingBtn').disabled = false;
     
     const ratingTexts = {
@@ -220,48 +240,132 @@ function selectRating(rating) {
 }
 
 function submitRating() {
+    // Validasi data dengan tipe yang tepat
     if (selectedRating === 0 || !currentProductId) {
         alert('Pilih rating terlebih dahulu!');
         return;
     }
     
+    // Konversi ke tipe data yang sesuai dengan database
+    const productIdInt = parseInt(currentProductId);     // int untuk idProduk
+    const ratingDouble = parseFloat(selectedRating);     // double(8,2) untuk rating
+    
+    // Validasi tipe data
+    if (isNaN(productIdInt) || productIdInt <= 0) {
+        alert('ID Produk tidak valid!');
+        console.error('Invalid product ID:', currentProductId);
+        return;
+    }
+    
+    if (isNaN(ratingDouble) || ratingDouble < 1 || ratingDouble > 5) {
+        alert('Rating tidak valid!');
+        console.error('Invalid rating:', selectedRating);
+        return;
+    }
+    
+    console.log('Submitting rating with correct types:', {
+        idProduk: productIdInt,
+        rating: ratingDouble,
+        types: {
+            idProduk: typeof productIdInt,
+            rating: typeof ratingDouble
+        },
+        formatted: {
+            idProduk: productIdInt,
+            rating: ratingDouble.toFixed(2) // Format untuk double(8,2)
+        }
+    });
+    
     // Show loading
     document.getElementById('loadingOverlay').classList.remove('hidden');
     
-    // Prepare data
+    // Get CSRF token
+    const token = document.querySelector('meta[name="csrf-token"]');
+    if (!token) {
+        alert('CSRF token tidak ditemukan!');
+        document.getElementById('loadingOverlay').classList.add('hidden');
+        return;
+    }
+    
+    // Prepare data dengan tipe yang benar
     const formData = new FormData();
-    formData.append('idProduk', currentProductId);
-    formData.append('rating', selectedRating);
-    formData.append('_token', '{{ csrf_token() }}');
+    formData.append('idProduk', productIdInt.toString());           // Kirim sebagai string
+    formData.append('rating', ratingDouble.toFixed(2));            // Format double(8,2)
+    formData.append('_token', token.getAttribute('content'));
+    
+    // Log data yang akan dikirim
+    console.log('FormData contents:', {
+        idProduk: formData.get('idProduk'),
+        rating: formData.get('rating'),
+        token: formData.get('_token') ? 'present' : 'missing'
+    });
     
     // Submit rating
     fetch('{{ route("pembeli.rating.store") }}', {
         method: 'POST',
         body: formData,
         headers: {
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', {
+            contentType: response.headers.get('content-type'),
+            status: response.status,
+            ok: response.ok
+        });
+        
+        // Handle response
+        return response.text().then(text => {
+            console.log('Response text (first 200 chars):', text.substring(0, 200));
+            
+            // Check if HTML error page
+            if (text.trim().startsWith('<')) {
+                console.error('Received HTML response (likely error page)');
+                throw new Error('Server error - check Laravel logs');
+            }
+            
+            // Parse JSON
+            try {
+                const data = JSON.parse(text);
+                console.log('Parsed response:', data);
+                return data;
+            } catch (e) {
+                console.error('JSON parse error:', e);
+                throw new Error('Invalid JSON response: ' + text.substring(0, 100));
+            }
+        });
+    })
     .then(data => {
         // Hide loading
         document.getElementById('loadingOverlay').classList.add('hidden');
         
         if (data.success) {
-            // Show success message and reload page
-            alert(data.message);
+            alert(data.message || 'Rating berhasil disimpan!');
             location.reload();
         } else {
-            alert(data.message || 'Terjadi kesalahan saat menyimpan rating');
+            // Handle validation errors
+            let errorMessage = data.message || 'Terjadi kesalahan saat menyimpan rating';
+            
+            if (data.errors) {
+                const errorList = Object.values(data.errors).flat();
+                errorMessage += '\n\nDetail error:\n' + errorList.join('\n');
+            }
+            
+            alert(errorMessage);
         }
         
         closeRatingModal();
     })
     .catch(error => {
+        console.error('Fetch error:', error);
+        
         // Hide loading
         document.getElementById('loadingOverlay').classList.add('hidden');
-        console.error('Error:', error);
-        alert('Terjadi kesalahan saat menyimpan rating');
+        
+        alert('Terjadi kesalahan: ' + error.message);
         closeRatingModal();
     });
 }

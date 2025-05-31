@@ -53,7 +53,7 @@
                     <dd class="mt-1 text-gray-900">{{ $penitip->alamat }}</dd>
                 </div>
                 
-                <div>
+                {{--<div>
                     <dt class="text-sm font-medium text-gray-500">Tanggal Ditambahkan</dt>
                     <dd class="mt-1 text-gray-900">{{ $penitip->created_at->format('d F Y H:i') }}</dd>
                 </div>
@@ -62,6 +62,7 @@
                     <dt class="text-sm font-medium text-gray-500">Terakhir Diperbarui</dt>
                     <dd class="mt-1 text-gray-900">{{ $penitip->updated_at->format('d F Y H:i') }}</dd>
                 </div>
+                --}}
             </dl>
         </div>
         
