@@ -376,34 +376,67 @@ $totalDuration = 60;
                         </div>
                         @endif
 
-                        <!-- Order Summary -->
+                        <!-- Order Summary - UPDATED untuk menggunakan data dari database -->
                         <div class="bg-gray-50 rounded-lg p-6 mt-6">
                             <h4 class="font-semibold text-gray-800 mb-4">Ringkasan Pesanan</h4>
                             
-                            @if(isset($checkoutData) && !empty($checkoutData))
+                            @php
+                            // PERBAIKAN: Gunakan data dari database transaksi sebagai prioritas utama
+                            $subtotalFromItems = $transaksi->detailTransaksiPenjualan->sum(function($detail) {
+                                return $detail->produk->hargaJual ?? 0;
+                            });
+                            
+                            // Hitung ongkir berdasarkan metode pengiriman dan subtotal
+                            $ongkirCalculated = 0;
+                            if($transaksi->metodePengiriman === 'kurir') {
+                                $ongkirCalculated = $subtotalFromItems >= 1500000 ? 0 : 100000;
+                            }
+                            
+                            // Gunakan data checkout jika ada, atau hitung dari transaksi
+                            $subtotal = $checkoutData['subtotal'] ?? $subtotalFromItems;
+                            $ongkir = $checkoutData['ongkir'] ?? $ongkirCalculated;
+                            $diskonPoin = $transaksi->poinDigunakan * 10; // Dari database
+                            $totalAkhir = $checkoutData['total_akhir'] ?? ($subtotal + $ongkir - $diskonPoin);
+                            @endphp
+                            
                             <div class="space-y-2 text-sm">
                                 <div class="flex justify-between">
                                     <span>Subtotal</span>
-                                    <span>Rp {{ number_format($checkoutData['subtotal'] ?? 0, 0, ',', '.') }}</span>
+                                    <span>Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span>Ongkos Kirim</span>
-                                    <span>{{ ($checkoutData['ongkir'] ?? 0) == 0 ? 'GRATIS' : 'Rp ' . number_format($checkoutData['ongkir'], 0, ',', '.') }}</span>
+                                    <span>{{ $ongkir == 0 ? 'GRATIS' : 'Rp ' . number_format($ongkir, 0, ',', '.') }}</span>
                                 </div>
-                                @if(($checkoutData['diskon_poin'] ?? 0) > 0)
+                                
+                                {{-- BARU: Tampilkan diskon poin dari database --}}
+                                @if($transaksi->poinDigunakan > 0)
                                 <div class="flex justify-between text-yellow-600">
-                                    <span>Diskon Poin</span>
-                                    <span>- Rp {{ number_format($checkoutData['diskon_poin'], 0, ',', '.') }}</span>
+                                    <span>Diskon Poin ({{ number_format($transaksi->poinDigunakan) }} poin)</span>
+                                    <span>- Rp {{ number_format($diskonPoin, 0, ',', '.') }}</span>
                                 </div>
                                 @endif
+                                
                                 <hr class="my-2">
                                 <div class="flex justify-between text-lg font-bold">
                                     <span>Total</span>
-                                    <span class="text-blue-600">Rp {{ number_format($checkoutData['total_akhir'] ?? 0, 0, ',', '.') }}</span>
+                                    <span class="text-blue-600">Rp {{ number_format($totalAkhir, 0, ',', '.') }}</span>
                                 </div>
+                                
+                                {{-- BARU: Tampilkan poin yang akan didapat dari database --}}
+                                @if($transaksi->poinDidapat > 0)
+                                <div class="bg-green-100 border border-green-200 rounded p-3 mt-3">
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-green-700">Poin yang akan didapat</span>
+                                        <span class="font-semibold text-green-600">{{ number_format($transaksi->poinDidapat) }} poin</span>
+                                    </div>
+                                    <p class="text-xs text-green-600 mt-1">
+                                        *Poin akan diberikan setelah pembayaran diverifikasi
+                                    </p>
+                                </div>
+                                @endif
                             </div>
-                            @endif
-                        </div>
+                        </div>                    
                     </div>
                 </div>
 

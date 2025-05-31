@@ -104,7 +104,9 @@
                         </div>
                     </div>
 
-                    <!-- Right Column - Ringkasan Pembayaran -->
+                    {{-- Update bagian Ringkasan Pembayaran di resources/views/customer/pembeli/transaksi/detail.blade.php --}}
+
+                    <!-- Right Column - Ringkasan Pembayaran - UPDATED dengan info poin -->
                     <div>
                         <div class="bg-gray-50 rounded-lg p-4">
                             <h3 class="text-lg font-semibold text-gray-800 mb-4">Ringkasan Pembayaran</h3>
@@ -120,7 +122,10 @@
                                 $ongkir = $subtotal >= 1500000 ? 0 : 100000;
                             }
                             
-                            $total = $subtotal + $ongkir;
+                            // BARU: Hitung diskon poin dari database
+                            $diskonPoin = $transaksi->poinDigunakan * 10;
+                            
+                            $total = $subtotal + $ongkir - $diskonPoin;
                             @endphp
                             
                             <div class="space-y-2 text-sm">
@@ -134,14 +139,66 @@
                                     <span>{{ $ongkir == 0 ? 'GRATIS' : 'Rp ' . number_format($ongkir, 0, ',', '.') }}</span>
                                 </div>
                                 
+                                {{-- BARU: Tampilkan penggunaan poin jika ada --}}
+                                @if($transaksi->poinDigunakan > 0)
+                                <div class="flex justify-between text-yellow-600">
+                                    <span class="text-gray-600">Diskon Poin ({{ number_format($transaksi->poinDigunakan) }} poin)</span>
+                                    <span>- Rp {{ number_format($diskonPoin, 0, ',', '.') }}</span>
+                                </div>
+                                @endif
+                                
                                 <hr class="my-2">
                                 <div class="flex justify-between text-lg font-bold">
                                     <span>Total</span>
                                     <span class="text-green-600">Rp {{ number_format($total, 0, ',', '.') }}</span>
                                 </div>
                             </div>
+                            
+                            {{-- BARU: Info Poin Section --}}
+                            @if($transaksi->poinDidapat > 0 || $transaksi->poinDigunakan > 0)
+                            <div class="mt-4 pt-4 border-t border-gray-200">
+                                <h4 class="font-medium text-gray-700 mb-3">Informasi Poin</h4>
+                                
+                                @if($transaksi->poinDigunakan > 0)
+                                <div class="flex items-center justify-between text-sm mb-2">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-minus-circle text-yellow-500 mr-2"></i>
+                                        <span class="text-gray-600">Poin Digunakan</span>
+                                    </div>
+                                    <span class="font-medium text-yellow-600">{{ number_format($transaksi->poinDigunakan) }} poin</span>
+                                </div>
+                                @endif
+                                
+                                @if($transaksi->poinDidapat > 0)
+                                <div class="flex items-center justify-between text-sm">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-plus-circle text-green-500 mr-2"></i>
+                                        <span class="text-gray-600">Poin Didapat</span>
+                                    </div>
+                                    <span class="font-medium text-green-600">{{ number_format($transaksi->poinDidapat) }} poin</span>
+                                </div>
+                                
+                                {{-- Status poin --}}
+                                <div class="mt-2">
+                                    @if(in_array($transaksi->status, ['disiapkan', 'kirim', 'diambil', 'terjual']))
+                                        <span class="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                                            <i class="fas fa-check mr-1"></i>Poin sudah diberikan
+                                        </span>
+                                    @elseif($transaksi->status === 'batal')
+                                        <span class="inline-block bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">
+                                            <i class="fas fa-times mr-1"></i>Poin tidak diberikan
+                                        </span>
+                                    @else
+                                        <span class="inline-block bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
+                                            <i class="fas fa-clock mr-1"></i>Menunggu selesai transaksi
+                                        </span>
+                                    @endif
+                                </div>
+                                @endif
+                            </div>
+                            @endif
                         </div>
-                    </div>
+                    </div>                
                 </div>
 
                 <!-- Item Pesanan -->

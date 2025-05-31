@@ -601,7 +601,7 @@ class TransaksiPenjualanController extends Controller
 
     /**
      * Melakukan Checkout - Menambah data transaksi di database (Fungsionalitas 63)
-     * UPDATED: Menambahkan penyimpanan alamat pengiriman
+     * UPDATED: Menambahkan penyimpanan poin yang digunakan ke database
      */
     public function proceedCheckout(Request $request)
     {
@@ -689,14 +689,21 @@ class TransaksiPenjualanController extends Controller
             $poinDigunakan = floor($diskonPoin / 10);
             $totalAkhir = $totalSebelumDiskon - $diskonPoin;
 
+            // Hitung poin yang akan didapat (Fungsionalitas 62) - HITUNG DI AWAL
+            $poinDidapat = floor($totalAkhir / 10000);
+            if ($totalAkhir > 500000) {
+                $bonusPoin = floor($poinDidapat * 0.2);
+                $poinDidapat += $bonusPoin;
+            }
+
             // Generate nomor transaksi (Fungsionalitas 64)
             $nomorTransaksi = $this->generateTransactionNumber();
-            // Buat transaksi penjualan (Fungsionalitas 63) - UPDATED dengan alamat
+            
+            // Buat transaksi penjualan (Fungsionalitas 63) - UPDATED dengan poin
             $tanggalPesan = Carbon::now();
             $tanggalBatasLunas = $tanggalPesan->copy()->addMinutes(1); // 1 menit timeout
 
             $transaksi = TransaksiPenjualan::create([
-                'bonus' => 0.00,
                 'status' => 'menunggu_pembayaran',
                 'tanggalLaku' => null,
                 'tanggalPesan' => $tanggalPesan,
@@ -708,8 +715,10 @@ class TransaksiPenjualanController extends Controller
                 'alamat' => $request->idAlamat,
                 'idPembeli' => $idPembeli,
                 'idPegawai' => null,
-                'alamatPengiriman' => $alamatPengiriman, // TAMBAHAN BARU
-                'metodePengiriman' => $metodePengiriman, // TAMBAHAN BARU
+                'alamatPengiriman' => $alamatPengiriman,
+                'metodePengiriman' => $metodePengiriman,
+                'poinDidapat' => $poinDidapat, // BARU: Simpan poin yang akan didapat
+                'poinDigunakan' => $poinDigunakan, // BARU: Simpan poin yang digunakan
             ]);
 
             // Simpan detail transaksi dan update status produk (Fungsionalitas 66)
@@ -738,9 +747,10 @@ class TransaksiPenjualanController extends Controller
                     'diskon_poin' => $diskonPoin,
                     'total_akhir' => $totalAkhir,
                     'metode_pengiriman' => $metodePengiriman,
-                    'alamat_pengiriman' => $alamatPengiriman, // TAMBAHAN BARU
+                    'alamat_pengiriman' => $alamatPengiriman,
                     'idAlamat' => $request->idAlamat,
                     'poin_digunakan' => $poinDigunakan,
+                    'poin_didapat' => $poinDidapat, // BARU: Simpan ke session juga
                 ]
             ]);
 
@@ -1071,25 +1081,24 @@ class TransaksiPenjualanController extends Controller
 
     /**
      * Hitung dan berikan poin ke pembeli (Fungsionalitas 62)
+     * UPDATED: Menggunakan data poin dari database transaksi
      */
     private function calculateAndAwardPoints($transaksi)
     {
-        $checkoutData = session('checkout_data', []);
-        $totalAkhir = $checkoutData['total_akhir'] ?? 0;
+        // PERBAIKAN: Ambil poin dari database transaksi, bukan dari session
+            $poinDidapat = $transaksi->poinDidapat;
 
-        if ($totalAkhir > 0) {
-            // Hitung poin yang didapat: 1 poin = Rp 10.000
-            $poinDapat = floor($totalAkhir / 10000);
-
-            // Bonus 20% jika pembelian > Rp 500.000
-            if ($totalAkhir > 500000) {
-                $bonusPoin = floor($poinDapat * 0.2);
-                $poinDapat += $bonusPoin;
-            }
-
+        if ($poinDidapat > 0) {
             // Tambahkan poin ke pembeli
             $pembeli = $transaksi->pembeli;
-            $pembeli->update(['poin' => $pembeli->poin + $poinDapat]);
+            $pembeli->update(['poin' => $pembeli->poin + $poinDidapat]);
+            
+            \Log::info('Points awarded to customer', [
+                'transaction_id' => $transaksi->idTransaksiPenjualan,
+                'customer_id' => $pembeli->idPembeli,
+                'points_awarded' => $poinDidapat,
+                'new_total_points' => $pembeli->poin
+            ]);
         }
     }
 
@@ -1103,6 +1112,7 @@ class TransaksiPenjualanController extends Controller
 
     /**
      * Cancel transaksi dan kembalikan semua perubahan
+     * UPDATED: Menggunakan data poin dari database transaksi
      */
     private function cancelTransaction($transaksi, $reason = 'Transaksi dibatalkan')
     {
@@ -1117,14 +1127,21 @@ class TransaksiPenjualanController extends Controller
                 }
             }
 
-            // Kembalikan poin jika ada yang digunakan
-            $checkoutData = session('checkout_data', []);
-            if (isset($checkoutData['poin_digunakan']) && $checkoutData['poin_digunakan'] > 0) {
+            // PERBAIKAN: Kembalikan poin berdasarkan data dari database transaksi, bukan session
+            if ($transaksi->poinDigunakan > 0) {
                 $pembeli = $transaksi->pembeli;
-                $pembeli->update(['poin' => $pembeli->poin + $checkoutData['poin_digunakan']]);
+                $pembeli->update(['poin' => $pembeli->poin + $transaksi->poinDigunakan]);
+                
+                \Log::info('Points refunded to customer due to cancellation', [
+                    'transaction_id' => $transaksi->idTransaksiPenjualan,
+                    'customer_id' => $pembeli->idPembeli,
+                    'points_refunded' => $transaksi->poinDigunakan,
+                    'new_total_points' => $pembeli->poin,
+                    'reason' => $reason
+                ]);
             }
 
-            // Update status transaksi - gunakan kolom yang ada
+            // Update status transaksi
             $transaksi->update([
                 'status' => 'batal'
             ]);

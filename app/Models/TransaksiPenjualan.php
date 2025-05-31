@@ -29,6 +29,13 @@ class TransaksiPenjualan extends Model
         'idPegawai', //KURIR
         'alamatPengiriman', // TAMBAHAN BARU
         'metodePengiriman', // TAMBAHAN BARU
+        'poinDidapat', // TAMBAHAN BARU - Poin yang didapat dari transaksi
+        'poinDigunakan', // TAMBAHAN BARU - Poin yang digunakan untuk transaksi
+    ];
+
+    protected $casts = [
+        'poinDidapat' => 'integer',
+        'poinDigunakan' => 'integer',
     ];
 
     public function pembeli(): BelongsTo
@@ -71,5 +78,21 @@ class TransaksiPenjualan extends Model
                 'idAlamat' => $alamat->idAlamat
             ]);
         }
+    }
+
+    /**
+     * Get total diskon poin dalam rupiah
+     */
+    public function getDiskonPoinRupiahAttribute()
+    {
+        return $this->poinDigunakan * 10; // 1 poin = Rp 10
+    }
+
+    /**
+     * Get nilai poin yang didapat dalam rupiah (untuk referensi)
+     */
+    public function getNilaiPoinDidapatAttribute()
+    {
+        return $this->poinDidapat * 10; // 1 poin = Rp 10
     }
 }
