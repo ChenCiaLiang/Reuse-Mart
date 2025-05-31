@@ -200,7 +200,6 @@ class TransaksiPenitipanController extends Controller
         $penitipan->update([
             'statusPenitipan' => 'Ambil',
             'batasAmbil' => Carbon::now()->addDays(7),
-            'tanggalPengambilan' => now(),
         ]);
 
         return redirect()->route('penitip.penitipan.index')->with('success', 'Penitipan berhasil dikonfirmasi ambil');
@@ -216,6 +215,7 @@ class TransaksiPenitipanController extends Controller
 
         $penitipan->update([
             'statusPenitipan' => 'Diambil',
+            'tanggalPengambilan' => now(),
         ]);
 
         return redirect()->route('penitip.penitipan.index')->with('success', 'Penitipan berhasil diambil');
