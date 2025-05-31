@@ -1111,23 +1111,32 @@ class TransaksiPenjualanController extends Controller
     }
 
     /**
-     * Cancel transaksi dan kembalikan semua perubahan
-     * UPDATED: Menggunakan data poin dari database transaksi
+     * Cancel transaksi dan kembalikan semua perubahan - UPDATED
+     * PERBAIKAN: Menambahkan option untuk hard delete transaksi
      */
-    private function cancelTransaction($transaksi, $reason = 'Transaksi dibatalkan')
+    private function cancelTransaction($transaksi, $reason = 'Transaksi dibatalkan', $hardDelete = false)
     {
         DB::beginTransaction();
         try {
-            // Kembalikan status produk ke tersedia
+            \Log::info('Cancelling transaction', [
+                'transaction_id' => $transaksi->idTransaksiPenjualan,
+                'reason' => $reason,
+                'hard_delete' => $hardDelete
+            ]);
+
+            // 1. Kembalikan status produk ke tersedia
             $detailTransaksi = DetailTransaksiPenjualan::where('idTransaksiPenjualan', $transaksi->idTransaksiPenjualan)->get();
+            $restoredProducts = [];
+            
             foreach ($detailTransaksi as $detail) {
                 $produk = Produk::find($detail->idProduk);
                 if ($produk) {
                     $produk->update(['status' => 'Tersedia']);
+                    $restoredProducts[] = $detail->idProduk;
                 }
             }
 
-            // PERBAIKAN: Kembalikan poin berdasarkan data dari database transaksi, bukan session
+            // 2. Kembalikan poin berdasarkan data dari database transaksi
             if ($transaksi->poinDigunakan > 0) {
                 $pembeli = $transaksi->pembeli;
                 $pembeli->update(['poin' => $pembeli->poin + $transaksi->poinDigunakan]);
@@ -1141,26 +1150,48 @@ class TransaksiPenjualanController extends Controller
                 ]);
             }
 
-            // Update status transaksi
-            $transaksi->update([
-                'status' => 'batal'
-            ]);
-
-            // Simpan catatan pembatalan di session
-            session(['catatan_batal_' . $transaksi->idTransaksiPenjualan => $reason]);
+            if ($hardDelete) {
+                // HARD DELETE: Hapus transaksi dari database
+                DetailTransaksiPenjualan::where('idTransaksiPenjualan', $transaksi->idTransaksiPenjualan)->delete();
+                $transaksi->delete();
+                
+                \Log::info('Transaction hard deleted', [
+                    'transaction_id' => $transaksi->idTransaksiPenjualan,
+                    'reason' => $reason
+                ]);
+            } else {
+                // SOFT DELETE: Update status menjadi batal
+                $transaksi->update(['status' => 'batal']);
+                
+                // Simpan catatan pembatalan di session
+                session(['catatan_batal_' . $transaksi->idTransaksiPenjualan => $reason]);
+            }
 
             // Hapus data checkout dari session
-            session()->forget('checkout_data');
+            session()->forget([
+                'checkout_data',
+                'bukti_pembayaran_' . $transaksi->idTransaksiPenjualan
+            ]);
 
             DB::commit();
+            
+            \Log::info('Transaction cancellation completed', [
+                'transaction_id' => $transaksi->idTransaksiPenjualan,
+                'restored_products' => count($restoredProducts),
+                'hard_deleted' => $hardDelete
+            ]);
+            
             return true;
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error canceling transaction: ' . $e->getMessage());
+            \Log::error('Error canceling transaction: ' . $e->getMessage(), [
+                'transaction_id' => $transaksi->idTransaksiPenjualan,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return false;
         }
     }
-
     /**
      * Check dan cancel transaksi yang expired (untuk dijalankan via cron/scheduler)
      */
@@ -1296,5 +1327,139 @@ class TransaksiPenjualanController extends Controller
         $filename = 'Nota_penjualan_' . $noNota . '.pdf';
 
         return $pdf->download($filename);
+    }
+
+    /**
+     * API endpoint untuk cancel transaksi yang expired dari frontend
+     * TAMBAHAN BARU: Method untuk auto-cancel ketika countdown habis
+     */
+    public function cancelExpiredTransactionAPI($idTransaksi)
+    {
+        try {
+            // Check authentication
+            if (!session('user') || session('role') !== 'pembeli') {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+
+            $idPembeli = session('user')['idPembeli'];
+
+            // Cari transaksi yang sesuai
+            $transaksi = TransaksiPenjualan::where('idTransaksiPenjualan', $idTransaksi)
+                ->where('idPembeli', $idPembeli)
+                ->where('status', 'menunggu_pembayaran')
+                ->first();
+
+            if (!transaksi) {
+                return response()->json(['error' => 'Transaksi tidak ditemukan atau sudah tidak valid'], 404);
+            }
+
+            // Cek apakah memang sudah expired
+            $now = \Carbon\Carbon::now();
+            $batasLunas = \Carbon\Carbon::parse($transaksi->tanggalBatasLunas);
+            
+            if ($now->lt($batasLunas)) {
+                // Masih dalam batas waktu, tidak perlu cancel
+                return response()->json(['error' => 'Transaksi belum expired'], 400);
+            }
+
+            \Log::info('Auto-cancelling expired transaction from frontend', [
+                'transaction_id' => $idTransaksi,
+                'customer_id' => $idPembeli,
+                'expired_at' => $batasLunas->format('Y-m-d H:i:s'),
+                'cancelled_at' => $now->format('Y-m-d H:i:s')
+            ]);
+
+            DB::beginTransaction();
+            try {
+                // 1. Kembalikan status produk ke 'Tersedia'
+                $detailTransaksi = DetailTransaksiPenjualan::where('idTransaksiPenjualan', $idTransaksi)->get();
+                $restoredProducts = [];
+                
+                foreach ($detailTransaksi as $detail) {
+                    $produk = Produk::find($detail->idProduk);
+                    if ($produk && $produk->status !== 'Tersedia') {
+                        $produk->update(['status' => 'Tersedia']);
+                        $restoredProducts[] = $detail->idProduk;
+                        
+                        \Log::info('Product status restored to Tersedia', [
+                            'product_id' => $detail->idProduk,
+                            'transaction_id' => $idTransaksi
+                        ]);
+                    }
+                }
+
+                // 2. Kembalikan poin yang sudah digunakan ke pembeli
+                if ($transaksi->poinDigunakan > 0) {
+                    $pembeli = $transaksi->pembeli;
+                    $pembeli->update(['poin' => $pembeli->poin + $transaksi->poinDigunakan]);
+                    
+                    \Log::info('Points refunded due to auto-cancellation', [
+                        'transaction_id' => $idTransaksi,
+                        'customer_id' => $pembeli->idPembeli,
+                        'points_refunded' => $transaksi->poinDigunakan,
+                        'new_total_points' => $pembeli->poin
+                    ]);
+                }
+
+                // 3. OPTION A: Update status menjadi 'batal' (SOFT DELETE)
+                $transaksi->update([
+                    'status' => 'batal'
+                ]);
+
+                // 4. OPTION B: HARD DELETE - Hapus transaksi dari database (uncomment jika ingin hard delete)
+                /*
+                // Hapus detail transaksi terlebih dahulu
+                DetailTransaksiPenjualan::where('idTransaksiPenjualan', $idTransaksi)->delete();
+                
+                // Hapus transaksi utama
+                $transaksi->delete();
+                
+                \Log::info('Transaction hard deleted from database', [
+                    'transaction_id' => $idTransaksi,
+                    'customer_id' => $idPembeli
+                ]);
+                */
+
+                // 5. Bersihkan session data terkait
+                session()->forget([
+                    'checkout_data',
+                    'cart',
+                    'direct_buy',
+                    'checkout_shipping_method',
+                    'checkout_shipping_address', 
+                    'checkout_points_used',
+                    'bukti_pembayaran_' . $idTransaksi
+                ]);
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Transaksi berhasil dibatalkan karena waktu pembayaran habis',
+                    'cancelled_at' => $now->format('Y-m-d H:i:s'),
+                    'restored_products' => count($restoredProducts),
+                    'points_refunded' => $transaksi->poinDigunakan,
+                    'redirect_url' => route('pembeli.profile')
+                ]);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                \Log::error('Error in auto-cancelling transaction', [
+                    'transaction_id' => $idTransaksi,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                
+                return response()->json(['error' => 'Gagal membatalkan transaksi'], 500);
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Error in cancelExpiredTransactionAPI', [
+                'transaction_id' => $idTransaksi,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json(['error' => 'Terjadi kesalahan server'], 500);
+        }
     }
 }

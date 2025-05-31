@@ -27,13 +27,13 @@ class CleanupExpiredTransactions extends Command
     protected $description = 'Cancel expired payment transactions and restore product status';
 
     /**
-     * Execute the console command.
+     * Execute the console command - UPDATED untuk hard delete
      */
     public function handle()
     {
         $this->info('Starting cleanup of expired transactions...');
         
-        // Find expired transactions that are still waiting for payment
+        // Find expired transactions yang masih menunggu pembayaran
         $expiredTransactions = TransaksiPenjualan::where('status', 'menunggu_pembayaran')
             ->where('tanggalBatasLunas', '<', Carbon::now())
             ->get();
@@ -43,11 +43,10 @@ class CleanupExpiredTransactions extends Command
             return 0;
         }
         
-        $this->info("Found {$expiredTransactions->count()} expired transactions to cancel...");
+        $this->info("Found {$expiredTransactions->count()} expired transactions to clean up...");
         
-        $cancelledCount = 0;
+        $cleanedCount = 0;
         $restoredProducts = [];
-        $returnedPoints = 0;
         
         foreach ($expiredTransactions as $transaksi) {
             DB::beginTransaction();
@@ -66,22 +65,26 @@ class CleanupExpiredTransactions extends Command
                     }
                 }
                 
-                // 2. Return points if any were used (approximate calculation based on common patterns)
-                // Since we don't store used points in DB, we'll skip this part in the command
-                // but the real-time cancellation in the controller will handle it properly
+                // 2. Refund points
+                if ($transaksi->poinDigunakan > 0) {
+                    $pembeli = $transaksi->pembeli;
+                    $pembeli->update(['poin' => $pembeli->poin + $transaksi->poinDigunakan]);
+                    $this->line("  - Refunded {$transaksi->poinDigunakan} points to customer {$pembeli->idPembeli}");
+                }
                 
-                // 3. Update transaction status
-                $transaksi->update(['status' => 'batal']);
+                // 3. HARD DELETE expired transactions
+                DetailTransaksiPenjualan::where('idTransaksiPenjualan', $transaksi->idTransaksiPenjualan)->delete();
+                $transaksi->delete();
                 
                 DB::commit();
-                $cancelledCount++;
+                $cleanedCount++;
                 
-                $this->line("  ✓ Transaction {$transaksi->idTransaksiPenjualan} cancelled successfully");
+                $this->line("  ✓ Transaction {$transaksi->idTransaksiPenjualan} deleted successfully");
                 
             } catch (\Exception $e) {
                 DB::rollBack();
-                $this->error("  ✗ Failed to cancel transaction {$transaksi->idTransaksiPenjualan}: {$e->getMessage()}");
-                \Log::error('Failed to cancel expired transaction', [
+                $this->error("  ✗ Failed to delete transaction {$transaksi->idTransaksiPenjualan}: {$e->getMessage()}");
+                \Log::error('Failed to delete expired transaction', [
                     'transaction_id' => $transaksi->idTransaksiPenjualan,
                     'error' => $e->getMessage()
                 ]);
@@ -89,17 +92,17 @@ class CleanupExpiredTransactions extends Command
         }
         
         $this->info("\nCleanup completed:");
-        $this->info("- Cancelled transactions: {$cancelledCount}");
+        $this->info("- Deleted transactions: {$cleanedCount}");
         $this->info("- Restored products: " . count($restoredProducts));
         
         if (!empty($restoredProducts)) {
-            $this->info("- Restored product IDs: " . implode(', ', $restoredProducts));
+            $this->info("- Restored product IDs: " . implode(', ', array_unique($restoredProducts)));
         }
         
         \Log::info('Expired transactions cleanup completed', [
-            'cancelled_count' => $cancelledCount,
-            'restored_products' => count($restoredProducts),
-            'product_ids' => $restoredProducts
+            'deleted_count' => $cleanedCount,
+            'restored_products' => count(array_unique($restoredProducts)),
+            'product_ids' => array_unique($restoredProducts)
         ]);
         
         return 0;

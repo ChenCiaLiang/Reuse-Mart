@@ -1,4 +1,4 @@
-{{-- PERBAIKAN untuk masalah countdown yang langsung habis --}}
+{{-- PERBAIKAN LENGKAP untuk countdown timer yang tidak berjalan --}}
 @php
 function getImageUrl($imagePath, $defaultImage = 'default.jpg') {
     if (empty($imagePath)) {
@@ -17,38 +17,44 @@ function getImageUrl($imagePath, $defaultImage = 'default.jpg') {
     return asset('images/' . $defaultImage);
 }
 
-// PERBAIKAN: Hitung remaining time dengan lebih akurat
+// PERBAIKAN UTAMA: Perhitungan remaining time yang benar
 $remainingSeconds = 0;
 $isExpired = false;
+$totalDuration = 60; // 1 menit = 60 detik
 
 if ($transaksi->status === 'menunggu_pembayaran') {
     $now = \Carbon\Carbon::now();
     $batasLunas = \Carbon\Carbon::parse($transaksi->tanggalBatasLunas);
     
-    // Gunakan diffInSeconds dengan parameter false untuk mendapatkan nilai negatif jika sudah lewat
-    $diffSeconds = $batasLunas->diffInSeconds($now, false);
-    
+    // PERBAIKAN: Gunakan metode yang lebih tepat untuk menghitung selisih waktu
     if ($now->lt($batasLunas)) {
-        // Masih dalam batas waktu
-        $remainingSeconds = $diffSeconds;
+        // Masih dalam batas waktu - hitung sisa detik yang benar
+        $remainingSeconds = $now->diffInSeconds($batasLunas);
+        $isExpired = false;
+        
+        // Debug: pastikan tidak melebihi total duration
+        if ($remainingSeconds > $totalDuration) {
+            $remainingSeconds = $totalDuration;
+        }
     } else {
         // Sudah expired
         $remainingSeconds = 0;
         $isExpired = true;
     }
     
-    // Debug log (bisa dihapus setelah testing)
-    \Log::info('Timer calculation', [
-        'now' => $now->format('Y-m-d H:i:s'),
-        'batas' => $batasLunas->format('Y-m-d H:i:s'),
-        'diff_seconds' => $diffSeconds,
-        'remaining' => $remainingSeconds,
+    // Debug log yang lebih detail
+    \Log::info('Payment Timer Debug - FIXED', [
+        'transaction_id' => $transaksi->idTransaksiPenjualan,
+        'now_timestamp' => $now->timestamp,
+        'batas_timestamp' => $batasLunas->timestamp,
+        'now_formatted' => $now->format('Y-m-d H:i:s'),
+        'batas_formatted' => $batasLunas->format('Y-m-d H:i:s'),
+        'raw_diff_seconds' => $now->diffInSeconds($batasLunas),
+        'is_now_before_batas' => $now->lt($batasLunas),
+        'calculated_remaining' => $remainingSeconds,
         'is_expired' => $isExpired
     ]);
 }
-
-// Total duration tetap 60 detik (1 menit)
-$totalDuration = 60;
 @endphp
 
 @extends('layouts.customer')
@@ -79,14 +85,26 @@ $totalDuration = 60;
                 </div>
                 @endif
 
-                <!-- PERBAIKAN: Debug info (hapus setelah testing) -->
+                <!-- PERBAIKAN: Debug info yang lebih detail (hapus setelah testing) -->
                 @if($transaksi->status === 'menunggu_pembayaran')
                 <div class="bg-gray-100 border border-gray-300 rounded-lg p-4 mb-6 text-sm">
-                    <h4 class="font-semibold mb-2">Debug Info (akan dihapus):</h4>
-                    <p><strong>Server Time:</strong> {{ \Carbon\Carbon::now()->format('Y-m-d H:i:s') }}</p>
-                    <p><strong>Batas Lunas:</strong> {{ $transaksi->tanggalBatasLunas }}</p>
-                    <p><strong>Remaining Seconds:</strong> {{ $remainingSeconds }}</p>
-                    <p><strong>Status:</strong> {{ $transaksi->status }}</p>
+                    <h4 class="font-semibold mb-2">Debug Info - FIXED VERSION:</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p><strong>Server Time:</strong> {{ \Carbon\Carbon::now()->format('Y-m-d H:i:s') }}</p>
+                            <p><strong>Batas Lunas:</strong> {{ $transaksi->tanggalBatasLunas }}</p>
+                            <p><strong>Status:</strong> {{ $transaksi->status }}</p>
+                        </div>
+                        <div>
+                            <p><strong>Remaining Seconds:</strong> {{ $remainingSeconds }}</p>
+                            <p><strong>Is Expired:</strong> {{ $isExpired ? 'Yes' : 'No' }}</p>
+                            <p><strong>Total Duration:</strong> {{ $totalDuration }}s</p>
+                        </div>
+                    </div>
+                    <div class="mt-2 p-2 bg-yellow-100 rounded">
+                        <p><strong>Timestamp Diff:</strong> {{ \Carbon\Carbon::now()->diffInSeconds(\Carbon\Carbon::parse($transaksi->tanggalBatasLunas)) }}s</p>
+                        <p><strong>Now < Batas:</strong> {{ \Carbon\Carbon::now()->lt(\Carbon\Carbon::parse($transaksi->tanggalBatasLunas)) ? 'True' : 'False' }}</p>
+                    </div>
                 </div>
                 @endif
                 
@@ -123,8 +141,8 @@ $totalDuration = 60;
                 <div class="grid lg:grid-cols-2 gap-8">
                     <!-- Left Column - Payment Info -->
                     <div>
-                        <!-- PERBAIKAN: Visual Timer Section -->
-                        @if($transaksi->status === 'menunggu_pembayaran' && $remainingSeconds > 0)
+                        <!-- PERBAIKAN: Timer Section dengan logic yang benar -->
+                        @if($transaksi->status === 'menunggu_pembayaran' && !$isExpired && $remainingSeconds > 0)
                         <div class="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
                             <div class="flex items-center justify-between mb-4">
                                 <div>
@@ -177,13 +195,13 @@ $totalDuration = 60;
                                 </div>
                             </div>
                             
-                            <!-- PERBAIKAN: Status indicator -->
+                            <!-- Status indicator -->
                             <div id="timerStatus" class="mt-4 p-3 bg-green-100 border border-green-300 rounded text-green-800 text-sm">
                                 <i class="fas fa-clock mr-2"></i>
                                 Waktu pembayaran sedang berjalan...
                             </div>
                         </div>
-                        @elseif($transaksi->status === 'menunggu_pembayaran' && $remainingSeconds <= 0)
+                        @elseif($transaksi->status === 'menunggu_pembayaran' && ($isExpired || $remainingSeconds <= 0))
                         <!-- Timer sudah habis -->
                         <div class="bg-red-50 border border-red-200 rounded-lg p-6 mb-6 text-center">
                             <i class="fas fa-times-circle text-4xl text-red-600 mb-4"></i>
@@ -246,7 +264,7 @@ $totalDuration = 60;
                             </div>
                         </div>
 
-                        <!-- Alamat Pengiriman Section - TAMBAHAN BARU -->
+                        <!-- Alamat Pengiriman Section -->
                         <div class="bg-gray-50 rounded-lg p-4 mt-4">
                             <h4 class="font-semibold text-gray-800 mb-3">Detail Pengiriman</h4>
                             
@@ -303,12 +321,11 @@ $totalDuration = 60;
 
                     <!-- Right Column - Upload Form atau Status -->
                     <div>
-                        @if($transaksi->status === 'menunggu_pembayaran' && $remainingSeconds > 0)
-                        <!-- PERBAIKAN: Upload Form -->
+                        @if($transaksi->status === 'menunggu_pembayaran' && !$isExpired && $remainingSeconds > 0)
+                        <!-- Upload Form -->
                         <div class="bg-white border border-gray-200 rounded-lg p-6">
                             <h3 class="text-lg font-semibold text-gray-800 mb-4">Upload Bukti Pembayaran</h3>
                             
-                            <!-- PERBAIKAN: Form dengan proper handling -->
                             <form id="paymentForm" enctype="multipart/form-data" onsubmit="return false;">
                                 @csrf
                                 <div class="mb-4">
@@ -339,7 +356,7 @@ $totalDuration = 60;
                                 </button>
                             </form>
                         </div>
-                        @elseif($transaksi->status === 'menunggu_pembayaran' && $remainingSeconds <= 0)
+                        @elseif($transaksi->status === 'menunggu_pembayaran' && ($isExpired || $remainingSeconds <= 0))
                         <!-- Waktu habis -->
                         <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
                             <i class="fas fa-clock text-4xl text-red-600 mb-4"></i>
@@ -376,26 +393,23 @@ $totalDuration = 60;
                         </div>
                         @endif
 
-                        <!-- Order Summary - UPDATED untuk menggunakan data dari database -->
+                        <!-- Order Summary -->
                         <div class="bg-gray-50 rounded-lg p-6 mt-6">
                             <h4 class="font-semibold text-gray-800 mb-4">Ringkasan Pesanan</h4>
                             
                             @php
-                            // PERBAIKAN: Gunakan data dari database transaksi sebagai prioritas utama
                             $subtotalFromItems = $transaksi->detailTransaksiPenjualan->sum(function($detail) {
                                 return $detail->produk->hargaJual ?? 0;
                             });
                             
-                            // Hitung ongkir berdasarkan metode pengiriman dan subtotal
                             $ongkirCalculated = 0;
                             if($transaksi->metodePengiriman === 'kurir') {
                                 $ongkirCalculated = $subtotalFromItems >= 1500000 ? 0 : 100000;
                             }
                             
-                            // Gunakan data checkout jika ada, atau hitung dari transaksi
                             $subtotal = $checkoutData['subtotal'] ?? $subtotalFromItems;
                             $ongkir = $checkoutData['ongkir'] ?? $ongkirCalculated;
-                            $diskonPoin = $transaksi->poinDigunakan * 10; // Dari database
+                            $diskonPoin = $transaksi->poinDigunakan * 10;
                             $totalAkhir = $checkoutData['total_akhir'] ?? ($subtotal + $ongkir - $diskonPoin);
                             @endphp
                             
@@ -409,7 +423,6 @@ $totalDuration = 60;
                                     <span>{{ $ongkir == 0 ? 'GRATIS' : 'Rp ' . number_format($ongkir, 0, ',', '.') }}</span>
                                 </div>
                                 
-                                {{-- BARU: Tampilkan diskon poin dari database --}}
                                 @if($transaksi->poinDigunakan > 0)
                                 <div class="flex justify-between text-yellow-600">
                                     <span>Diskon Poin ({{ number_format($transaksi->poinDigunakan) }} poin)</span>
@@ -423,7 +436,6 @@ $totalDuration = 60;
                                     <span class="text-blue-600">Rp {{ number_format($totalAkhir, 0, ',', '.') }}</span>
                                 </div>
                                 
-                                {{-- BARU: Tampilkan poin yang akan didapat dari database --}}
                                 @if($transaksi->poinDidapat > 0)
                                 <div class="bg-green-100 border border-green-200 rounded p-3 mt-3">
                                     <div class="flex items-center justify-between text-sm">
@@ -480,73 +492,81 @@ $totalDuration = 60;
 </div>
 
 <script>
-console.log('Payment page loaded - FIXED timer version');
+console.log('Payment page loaded - FIXED COUNTDOWN VERSION');
 
 // ================================================
-// PERBAIKAN: Global Variables dengan data backend yang akurat
+// PERBAIKAN UTAMA: Global Variables dengan validasi ketat
 // ================================================
 let countdownTimer = null;
 let isTimerExpired = false;
 let isUploadInProgress = false;
 
-// PERBAIKAN: Data dari backend dengan perhitungan yang tepat
-const remainingSeconds = {{ $remainingSeconds ?? 0 }};
-const isInitiallyExpired = {{ $isExpired ? 'true' : 'false' }};
+// PERBAIKAN: Ambil data dari backend dengan validasi tambahan
+const serverRemainingSeconds = {{ $remainingSeconds ?? 0 }};
+const serverIsExpired = {{ $isExpired ? 'true' : 'false' }};
 const totalDuration = {{ $totalDuration ?? 60 }};
 const transactionStatus = '{{ $transaksi->status }}';
 
-console.log('Timer initialization:', {
-    remainingSeconds: remainingSeconds,
+// PERBAIKAN: Validasi data dari server
+let remainingSeconds = Math.max(0, Math.floor(serverRemainingSeconds));
+let isInitiallyExpired = serverIsExpired || remainingSeconds <= 0;
+
+console.log('FIXED Timer initialization:', {
+    serverRemainingSeconds: serverRemainingSeconds,
+    calculatedRemaining: remainingSeconds,
+    serverIsExpired: serverIsExpired,
     isInitiallyExpired: isInitiallyExpired,
     totalDuration: totalDuration,
     status: transactionStatus
 });
 
 // ================================================
-// PERBAIKAN: Countdown Timer dengan validasi lebih ketat
+// PERBAIKAN: Countdown Timer dengan logic yang diperbaiki
 // ================================================
 @if($transaksi->status === 'menunggu_pembayaran')
 function initializeCountdown() {
-    console.log('Initializing countdown...');
+    console.log('FIXED: Initializing countdown...');
     
-    // Jika sudah expired dari backend, langsung handle
-    if (isInitiallyExpired || remainingSeconds <= 0) {
-        console.log('Transaction already expired from backend');
+    // PERBAIKAN: Validasi awal yang lebih ketat
+    if (isInitiallyExpired || remainingSeconds <= 0 || transactionStatus !== 'menunggu_pembayaran') {
+        console.log('FIXED: Transaction expired or invalid status, stopping timer');
         handleTimerExpired();
         return;
     }
     
-    // Set initial values
-    let currentSeconds = Math.max(0, Math.floor(remainingSeconds));
-    console.log('Starting countdown with', currentSeconds, 'seconds');
+    console.log('FIXED: Starting countdown with', remainingSeconds, 'seconds');
     
-    // Jika currentSeconds masih 0 atau negatif, langsung expired
-    if (currentSeconds <= 0) {
-        console.log('No time remaining, expiring immediately');
-        handleTimerExpired();
-        return;
-    }
+    // Set current counter
+    let currentSeconds = remainingSeconds;
     
-    // Initial update
+    // PERBAIKAN: Update display immediately
     updateCountdownDisplay(currentSeconds);
     
-    // Update setiap detik
+    // Start countdown interval
     countdownTimer = setInterval(() => {
         currentSeconds--;
-        console.log('Countdown tick:', currentSeconds);
+        console.log('FIXED: Countdown tick:', currentSeconds);
         
         if (currentSeconds <= 0) {
-            console.log('Timer reached zero, expiring...');
+            console.log('FIXED: Timer reached zero, expiring...');
             handleTimerExpired();
             return;
         }
         
         updateCountdownDisplay(currentSeconds);
     }, 1000);
+    
+    console.log('FIXED: Countdown timer started successfully');
 }
 
 function updateCountdownDisplay(seconds) {
-    if (isTimerExpired) return;
+    if (isTimerExpired) {
+        console.log('FIXED: Timer already expired, skipping update');
+        return;
+    }
+    
+    // PERBAIKAN: Validasi input
+    seconds = Math.max(0, Math.floor(seconds));
     
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -557,7 +577,7 @@ function updateCountdownDisplay(seconds) {
         countdownElement.innerHTML = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
     }
     
-    // Update circular progress - PERBAIKAN: Gunakan totalDuration yang benar
+    // PERBAIKAN: Update circular progress dengan perhitungan yang benar
     const circle = document.getElementById('timerCircle');
     if (circle) {
         const progress = Math.max(0, Math.min(1, seconds / totalDuration));
@@ -589,16 +609,19 @@ function updateCountdownDisplay(seconds) {
             statusElement.innerHTML = '<i class="fas fa-clock mr-2"></i>Waktu pembayaran sedang berjalan...';
         }
     }
+    
+    console.log('FIXED: Display updated - seconds:', seconds, 'minutes:', minutes);
 }
 
 function handleTimerExpired() {
-    console.log('Timer expired!');
+    console.log('FIXED: Timer expired!');
     isTimerExpired = true;
     
     // Stop timer
     if (countdownTimer) {
         clearInterval(countdownTimer);
         countdownTimer = null;
+        console.log('FIXED: Timer interval cleared');
     }
     
     // Update UI
@@ -627,11 +650,12 @@ function handleTimerExpired() {
         uploadBtn.className = 'w-full bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg cursor-not-allowed';
     }
     
-    // Show notification dan auto redirect setelah 5 detik
+    // Show notification
     showTimerExpiredNotification();
     
     // Auto redirect ke profile setelah 10 detik
     setTimeout(() => {
+        console.log('FIXED: Auto redirecting to profile');
         window.location.href = '{{ route("pembeli.profile") }}';
     }, 10000);
 }
@@ -658,18 +682,23 @@ function showTimerExpiredNotification() {
     document.body.appendChild(notification);
 }
 
-// Initialize countdown when DOM ready
+// PERBAIKAN: Initialize countdown saat DOM ready dengan pengecekan tambahan
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, status:', transactionStatus);
-    if (transactionStatus === 'menunggu_pembayaran') {
+    console.log('FIXED: DOM loaded, checking timer conditions...');
+    console.log('FIXED: Status:', transactionStatus, 'Remaining:', remainingSeconds, 'Expired:', isInitiallyExpired);
+    
+    if (transactionStatus === 'menunggu_pembayaran' && !isInitiallyExpired && remainingSeconds > 0) {
+        console.log('FIXED: Conditions met, starting timer...');
         initializeCountdown();
+    } else {
+        console.log('FIXED: Timer conditions not met, not starting timer');
     }
 });
 
 @else
-console.log('Timer not initialized - status:', transactionStatus, 'remaining:', remainingSeconds);
+console.log('FIXED: Timer not initialized - status:', transactionStatus);
 
-// Jika status bukan menunggu_pembayaran tapi ada expired transaction, auto redirect
+// Jika status bukan menunggu_pembayaran dan batal, auto redirect
 @if($transaksi->status === 'batal')
 setTimeout(() => {
     window.location.href = '{{ route("pembeli.profile") }}';
@@ -678,7 +707,7 @@ setTimeout(() => {
 @endif
 
 // ================================================
-// Upload Function dengan Error Handling yang lebih baik
+// Upload Function - tetap sama seperti sebelumnya
 // ================================================
 function handleUpload() {
     if (isUploadInProgress) {
@@ -699,13 +728,9 @@ function handleUpload() {
         return;
     }
     
-    // Prevent multiple uploads
     isUploadInProgress = true;
-    
-    // Disable button and show loading
     uploadBtn.disabled = true;
     uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Mengupload...';
-    
     document.getElementById('loadingOverlay').classList.remove('hidden');
     
     const formData = new FormData();
@@ -747,7 +772,6 @@ function handleUpload() {
                 countdownTimer = null;
             }
             
-            // Show success dan reload setelah delay
             setTimeout(() => {
                 location.reload();
             }, 2000);
@@ -784,7 +808,7 @@ function resetUploadButton() {
 }
 
 // ================================================
-// Image Functions
+// Image Functions - tetap sama
 // ================================================
 function handleImageLoad(img) {
     img.style.display = 'block';
@@ -850,7 +874,7 @@ function removeImage() {
 }
 
 // ================================================
-// Notification Function
+// Notification Function - tetap sama
 // ================================================
 function showNotification(message, type = 'info') {
     const existingNotifications = document.querySelectorAll('.notification');
@@ -893,6 +917,7 @@ function showNotification(message, type = 'info') {
 window.addEventListener('beforeunload', function() {
     if (countdownTimer) {
         clearInterval(countdownTimer);
+        console.log('FIXED: Timer cleaned up on page unload');
     }
 });
 </script>
