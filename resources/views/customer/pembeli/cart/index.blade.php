@@ -1,153 +1,224 @@
 @extends('layouts.customer')
 
 @section('content')
-<div class="bg-gray-100 min-h-screen py-8">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-            <!-- Header -->
-            <div class="bg-green-500 px-6 py-4 flex justify-between items-center">
-                <h1 class="text-xl font-bold text-white">Keranjang Belanja</h1>
-                <a href="{{ route('produk.index') }}" class="text-white bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm">
-                    <i class="fas fa-arrow-left mr-2"></i> Lanjut Belanja
+<div class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen py-4">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header Section -->
+        <div class="mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 flex items-center">
+                        <i class="fas fa-shopping-cart text-green-600 mr-3"></i>
+                        Keranjang Belanja
+                    </h1>
+                    <p class="text-gray-600 text-sm mt-1">Kelola produk yang akan Anda beli</p>
+                </div>
+                <a href="{{ route('produk.index') }}" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
+                    <i class="fas fa-arrow-left mr-2"></i> 
+                    Lanjut Belanja
                 </a>
             </div>
+        </div>
 
-            <!-- Content -->
-            <div class="p-6">
-                @if (session('success'))
-                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
-                    <p>{{ session('success') }}</p>
-                </div>
-                @endif
+        @if (session('success'))
+        <div class="bg-green-50 border-l-4 border-green-400 text-green-700 p-4 mb-6 rounded-r-lg" role="alert">
+            <div class="flex">
+                <i class="fas fa-check-circle mt-0.5 mr-3"></i>
+                <p>{{ session('success') }}</p>
+            </div>
+        </div>
+        @endif
 
-                @if (session('error'))
-                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
-                    <p>{{ session('error') }}</p>
-                </div>
-                @endif
+        @if (session('error'))
+        <div class="bg-red-50 border-l-4 border-red-400 text-red-700 p-4 mb-6 rounded-r-lg" role="alert">
+            <div class="flex">
+                <i class="fas fa-exclamation-circle mt-0.5 mr-3"></i>
+                <p>{{ session('error') }}</p>
+            </div>
+        </div>
+        @endif
 
-                <!-- Cart Content Container -->
-                <div id="cartContentContainer">
-                    @if(count($cartItems) > 0)
-                        <!-- Cart Items -->
-                        <div class="cart-items-container space-y-4 mb-6">
-                            @php $subtotal = 0; @endphp
-                            @foreach($cartItems as $item)
-                                @php $subtotal += $item['subtotal']; @endphp
-                                <div class="cart-item border border-gray-200 rounded-lg p-4 flex items-center space-x-4" 
-                                     data-product-id="{{ $item['product']->idProduk }}">
-                                    <!-- Product Image - FIXED -->
-                                    <div class="flex-shrink-0">
-                                        @php
-                                        $gambarArray = $item['product']->gambar ? explode(',', $item['product']->gambar) : ['default.jpg'];
-                                        $thumbnail = $gambarArray[0];
-                                        @endphp
-                                        <img class="h-20 w-20 rounded-lg object-cover bg-gray-200"
-                                            src="{{ asset('images/produk/' . trim($thumbnail)) }}"
-                                            alt="{{ $item['product']->deskripsi }}"
-                                            onerror="handleImageError(this)"
-                                            data-attempted-default="false">
-                                    </div>
-
-                                    <!-- Product Info -->
-                                    <div class="flex-grow">
-                                        <h3 class="text-lg font-semibold text-gray-900 mb-1">
-                                            {{ $item['product']->deskripsi }}
-                                        </h3>
-                                        <p class="text-sm text-gray-600 mb-2">
-                                            Kategori: {{ $item['product']->kategori->nama }}
-                                        </p>
+        <!-- Main Content -->
+        <div id="cartContentContainer">
+            @if(count($cartItems) > 0)
+                <div class="grid lg:grid-cols-3 gap-6">
+                    <!-- Cart Items - 2/3 width -->
+                    <div class="lg:col-span-2">
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                                <h2 class="text-lg font-semibold text-gray-900">Item Dipilih ({{ count($cartItems) }})</h2>
+                            </div>
+                            
+                            <div class="cart-items-container p-6 space-y-4">
+                                @php $subtotal = 0; @endphp
+                                @foreach($cartItems as $item)
+                                    @php $subtotal += $item['subtotal']; @endphp
+                                    <div class="cart-item group hover:bg-gray-50 p-4 rounded-lg border border-gray-100 transition-all duration-200" 
+                                         data-product-id="{{ $item['product']->idProduk }}">
                                         <div class="flex items-center space-x-4">
-                                            <span class="item-price text-lg font-bold text-green-600" 
-                                                  data-price="{{ $item['product']->hargaJual }}">
-                                                Rp {{ number_format($item['product']->hargaJual, 0, ',', '.') }}
-                                            </span>
-                                            @if($item['product']->tanggalGaransi && \Carbon\Carbon::parse($item['product']->tanggalGaransi)->isFuture())
-                                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                                                Garansi
-                                            </span>
-                                            @endif
+                                            <!-- Product Image -->
+                                            <div class="flex-shrink-0">
+                                                @php
+                                                $gambarArray = $item['product']->gambar ? explode(',', $item['product']->gambar) : ['default.jpg'];
+                                                $thumbnail = $gambarArray[0];
+                                                @endphp
+                                                <div class="relative">
+                                                    <img class="h-20 w-20 rounded-lg object-cover bg-gray-200 border border-gray-200"
+                                                        src="{{ asset('images/produk/' . trim($thumbnail)) }}"
+                                                        alt="{{ $item['product']->deskripsi }}"
+                                                        onerror="handleImageError(this)"
+                                                        data-attempted-default="false">
+                                                    
+                                                    @if($item['product']->tanggalGaransi && \Carbon\Carbon::parse($item['product']->tanggalGaransi)->isFuture())
+                                                    <span class="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                                        <i class="fas fa-shield-alt"></i>
+                                                    </span>
+                                                    @endif
+                                                </div>
+                                            </div>
+
+                                            <!-- Product Info -->
+                                            <div class="flex-grow min-w-0">
+                                                <h3 class="text-base font-semibold text-gray-900 truncate mb-1">
+                                                    {{ $item['product']->deskripsi }}
+                                                </h3>
+                                                <div class="flex items-center space-x-2 text-sm text-gray-500 mb-2">
+                                                    <span class="bg-gray-100 px-2 py-1 rounded-full">{{ $item['product']->kategori->nama }}</span>
+                                                    @if($item['product']->tanggalGaransi && \Carbon\Carbon::parse($item['product']->tanggalGaransi)->isFuture())
+                                                    <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">
+                                                        Bergaransi
+                                                    </span>
+                                                    @endif
+                                                </div>
+                                                <div class="flex items-center justify-between">
+                                                    <span class="item-price text-lg font-bold text-green-600" 
+                                                          data-price="{{ $item['product']->hargaJual }}">
+                                                        Rp {{ number_format($item['product']->hargaJual, 0, ',', '.') }}
+                                                    </span>
+                                                    <div class="flex items-center space-x-3">
+                                                        <div class="text-center">
+                                                            <span class="text-xs text-gray-500 block">Jumlah</span>
+                                                            <span class="text-sm font-semibold">1 pcs</span>
+                                                        </div>
+                                                        <button onclick="removeFromCart({{ $item['product']->idProduk }})" 
+                                                                class="remove-btn opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-full transition-all duration-200"
+                                                                data-product-id="{{ $item['product']->idProduk }}"
+                                                                type="button"
+                                                                title="Hapus dari keranjang">
+                                                            <i class="fas fa-trash text-sm"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-
-                                    <!-- Quantity (Always 1 for used items) -->
-                                    <div class="text-center">
-                                        <p class="text-sm text-gray-500">Jumlah</p>
-                                        <span class="text-lg font-semibold">1</span>
-                                    </div>
-
-                                    <!-- Remove Button -->
-                                    <div class="flex-shrink-0">
-                                        <button onclick="removeFromCart({{ $item['product']->idProduk }})" 
-                                                class="remove-btn text-red-600 hover:text-red-800 p-2 transition-colors"
-                                                data-product-id="{{ $item['product']->idProduk }}"
-                                                type="button">
-                                            <i class="fas fa-trash text-lg"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            @endforeach
+                                @endforeach
+                            </div>
                         </div>
+                    </div>
 
-                        <!-- Cart Summary -->
-                        <div class="cart-summary border-t border-gray-200 pt-6">
-                            <div class="bg-gray-50 rounded-lg p-6">
-                                <h3 class="text-lg font-semibold text-gray-900 mb-4">Ringkasan Belanja</h3>
-                                
-                                <div class="space-y-2 mb-4">
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-600">Subtotal (<span id="item-count">{{ count($cartItems) }}</span> item)</span>
-                                        <span id="subtotal-amount" class="font-semibold">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
+                    <!-- Cart Summary - 1/3 width -->
+                    <div class="lg:col-span-1">
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 sticky top-6">
+                            <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4 rounded-t-xl">
+                                <h3 class="text-lg font-semibold text-white flex items-center">
+                                    <i class="fas fa-calculator mr-2"></i>
+                                    Ringkasan Belanja
+                                </h3>
+                            </div>
+                            
+                            <div class="p-6 space-y-4">
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-gray-600">Subtotal</span>
+                                        <span id="subtotal-amount" class="font-semibold text-gray-900">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
                                     </div>
-                                    <div class="flex justify-between text-sm text-gray-500">
-                                        <span>Ongkos kirim akan dihitung di checkout</span>
-                                        <span>-</span>
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-gray-500">Total item</span>
+                                        <span id="item-count" class="text-gray-700">{{ count($cartItems) }} produk</span>
+                                    </div>
+                                    <div class="flex justify-between items-center text-sm text-blue-600">
+                                        <span>Ongkos kirim</span>
+                                        <span>Dihitung saat checkout</span>
                                     </div>
                                 </div>
                                 
-                                <div class="border-t border-gray-200 pt-4 mb-6">
-                                    <div class="flex justify-between text-lg font-bold">
-                                        <span>Total</span>
+                                <div class="border-t border-gray-200 pt-4">
+                                    <div class="flex justify-between items-center text-lg font-bold">
+                                        <span class="text-gray-900">Total Sementara</span>
                                         <span id="total-amount" class="text-green-600">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
                                     </div>
                                 </div>
 
-                                <!-- Checkout Button -->
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                    <div class="flex items-start">
+                                        <i class="fas fa-info-circle text-blue-500 mt-0.5 mr-2"></i>
+                                        <div class="text-sm">
+                                            <p class="text-blue-700 font-medium">Gratis ongkir untuk pembelian ≥ Rp 1.500.000</p>
+                                            <p class="text-blue-600 text-xs mt-1">Berlaku khusus area Yogyakarta</p>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <button onclick="proceedToCheckout()" 
-                                        class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+                                        class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg"
                                         type="button">
-                                    <i class="fas fa-shopping-cart mr-2"></i>
+                                    <i class="fas fa-credit-card mr-2"></i>
                                     Lanjut ke Checkout
                                 </button>
+                                
+                                <p class="text-xs text-gray-500 text-center">
+                                    <i class="fas fa-shield-alt mr-1"></i>
+                                    Transaksi aman dan terpercaya
+                                </p>
                             </div>
                         </div>
-                    @else
-                        <!-- Empty Cart -->
-                        <div class="empty-cart-container text-center py-16">
-                            <div class="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-gray-100 mb-4">
-                                <i class="fas fa-shopping-cart text-2xl text-gray-400"></i>
-                            </div>
-                            <h3 class="text-lg font-medium text-gray-900 mb-2">Keranjang Belanja Kosong</h3>
-                            <p class="text-gray-500 mb-6">Anda belum menambahkan produk ke dalam keranjang</p>
-                            
+                    </div>
+                </div>
+            @else
+                <!-- Empty Cart -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                    <div class="max-w-md mx-auto">
+                        <div class="bg-gray-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fas fa-shopping-cart text-3xl text-gray-400"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-3">Keranjang Masih Kosong</h3>
+                        <p class="text-gray-500 mb-8">Ayo mulai berbelanja dan temukan produk berkualitas dengan harga terjangkau!</p>
+                        
+                        <div class="space-y-3">
                             <a href="{{ route('produk.index') }}" 
-                               class="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors">
+                               class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
                                 <i class="fas fa-search mr-2"></i>
                                 Mulai Belanja
                             </a>
                         </div>
-                    @endif
+                        
+                        <div class="mt-8 grid grid-cols-3 gap-4 text-center">
+                            <div class="bg-green-50 p-4 rounded-lg">
+                                <i class="fas fa-recycle text-green-600 text-xl mb-2"></i>
+                                <p class="text-sm text-green-700 font-medium">Produk Berkualitas</p>
+                            </div>
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <i class="fas fa-shield-alt text-blue-600 text-xl mb-2"></i>
+                                <p class="text-sm text-blue-700 font-medium">Transaksi Aman</p>
+                            </div>
+                            <div class="bg-yellow-50 p-4 rounded-lg">
+                                <i class="fas fa-coins text-yellow-600 text-xl mb-2"></i>
+                                <p class="text-sm text-yellow-700 font-medium">Harga Terjangkau</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            @endif
         </div>
     </div>
 </div>
 
 <!-- Loading Overlay -->
-<div id="loadingOverlay" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
-    <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+<div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-xl p-6 flex items-center space-x-3 shadow-2xl">
         <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500"></div>
-        <span class="text-gray-700">Memproses...</span>
+        <span class="text-gray-700 font-medium">Memproses...</span>
     </div>
 </div>
 
@@ -168,7 +239,7 @@ function handleImageError(img) {
         
         // Buat placeholder div
         const placeholder = document.createElement('div');
-        placeholder.className = 'h-20 w-20 rounded-lg bg-gray-200 flex items-center justify-center';
+        placeholder.className = 'h-20 w-20 rounded-lg bg-gray-200 flex items-center justify-center border border-gray-200';
         placeholder.innerHTML = '<i class="fas fa-image text-gray-400 text-2xl"></i>';
         
         // Replace image dengan placeholder
@@ -201,7 +272,7 @@ function handleImageError(img) {
     console.log('All default images failed, creating placeholder');
     img.style.display = 'none';
     const placeholder = document.createElement('div');
-    placeholder.className = 'h-20 w-20 rounded-lg bg-gray-200 flex items-center justify-center';
+    placeholder.className = 'h-20 w-20 rounded-lg bg-gray-200 flex items-center justify-center border border-gray-200';
     placeholder.innerHTML = '<i class="fas fa-image text-gray-400 text-2xl"></i>';
     img.parentNode.replaceChild(placeholder, img);
 }
@@ -247,8 +318,9 @@ function removeFromCart(productId) {
             // Remove item dari UI
             const cartItem = document.querySelector(`.cart-item[data-product-id="${productId}"]`);
             if (cartItem) {
-                cartItem.style.transition = 'opacity 0.3s ease';
+                cartItem.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
                 cartItem.style.opacity = '0';
+                cartItem.style.transform = 'translateX(-100%)';
                 setTimeout(() => cartItem.remove(), 300);
             }
             
@@ -269,7 +341,7 @@ function removeFromCart(productId) {
         } else {
             if (removeBtn) {
                 removeBtn.disabled = false;
-                removeBtn.innerHTML = '<i class="fas fa-trash text-lg"></i>';
+                removeBtn.innerHTML = '<i class="fas fa-trash text-sm"></i>';
             }
             showNotification(data.error || 'Terjadi kesalahan', 'error');
         }
@@ -280,7 +352,7 @@ function removeFromCart(productId) {
         
         if (removeBtn) {
             removeBtn.disabled = false;
-            removeBtn.innerHTML = '<i class="fas fa-trash text-lg"></i>';
+            removeBtn.innerHTML = '<i class="fas fa-trash text-sm"></i>';
         }
         
         showNotification('Terjadi kesalahan saat menghapus produk', 'error');
@@ -293,18 +365,20 @@ function showEmptyCartMessage() {
     const cartContainer = document.getElementById('cartContentContainer');
     if (cartContainer) {
         cartContainer.innerHTML = `
-            <div class="empty-cart-container text-center py-16">
-                <div class="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-gray-100 mb-4">
-                    <i class="fas fa-shopping-cart text-2xl text-gray-400"></i>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                <div class="max-w-md mx-auto">
+                    <div class="bg-gray-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-shopping-cart text-3xl text-gray-400"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-3">Keranjang Masih Kosong</h3>
+                    <p class="text-gray-500 mb-8">Ayo mulai berbelanja dan temukan produk berkualitas dengan harga terjangkau!</p>
+                    
+                    <a href="{{ route('produk.index') }}" 
+                       class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-search mr-2"></i>
+                        Mulai Belanja
+                    </a>
                 </div>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">Keranjang Belanja Kosong</h3>
-                <p class="text-gray-500 mb-6">Anda belum menambahkan produk ke dalam keranjang</p>
-                
-                <a href="{{ route('produk.index') }}" 
-                   class="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors">
-                    <i class="fas fa-search mr-2"></i>
-                    Mulai Belanja
-                </a>
             </div>
         `;
     }
@@ -330,7 +404,7 @@ function updateCartSummary() {
     
     if (subtotalElement) subtotalElement.textContent = 'Rp ' + formatNumber(subtotal);
     if (totalElement) totalElement.textContent = 'Rp ' + formatNumber(subtotal);
-    if (itemCountElement) itemCountElement.textContent = itemCount;
+    if (itemCountElement) itemCountElement.textContent = itemCount + ' produk';
 }
 
 function formatNumber(number) {
@@ -349,7 +423,7 @@ function showNotification(message, type = 'info') {
     existingNotifications.forEach(notif => notif.remove());
     
     const notification = document.createElement('div');
-    notification.className = `notification fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 ${
+    notification.className = `notification fixed top-4 right-4 z-50 p-4 rounded-lg shadow-xl transition-all duration-300 max-w-sm ${
         type === 'success' ? 'bg-green-500 text-white' : 
         type === 'error' ? 'bg-red-500 text-white' : 
         'bg-blue-500 text-white'
