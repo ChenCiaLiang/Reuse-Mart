@@ -884,8 +884,7 @@ class TransaksiPenjualanController extends Controller
     }
 
     /**
-     * Menampilkan halaman pembayaran
-     * FIXED: Perbaiki perhitungan timer dan auto-cancel expired transactions
+     * PERBAIKAN: Update showPayment untuk load bukti pembayaran dari database
      */
     public function showPayment($idTransaksi)
     {
@@ -898,25 +897,18 @@ class TransaksiPenjualanController extends Controller
 
         $transaksi = TransaksiPenjualan::where('idTransaksiPenjualan', $idTransaksi)
             ->where('idPembeli', $idPembeli)
-            ->with(['detailTransaksiPenjualan.produk'])
+            ->with(['detailTransaksiPenjualan.produk', 'pegawaiVerifikasi'])
             ->first();
 
         if (!$transaksi) {
             return redirect()->route('pembeli.profile')->with('error', 'Transaksi tidak ditemukan');
         }
-        // FIXED: Perbaiki pengecekan expired transaction
+        
+        // Auto-cancel logic remains the same...
         if ($transaksi->status === 'menunggu_pembayaran') {
             $now = \Carbon\Carbon::now();
             $batasLunas = \Carbon\Carbon::parse($transaksi->tanggalBatasLunas);
-            // Log untuk debugging
-            \Log::info('Payment Timer Debug', [
-                'transaksi_id' => $idTransaksi,
-                'now' => $now->format('Y-m-d H:i:s'),
-                'batas_lunas' => $batasLunas->format('Y-m-d H:i:s'),
-                'is_past' => $now->gt($batasLunas),
-                'diff_seconds' => $batasLunas->diffInSeconds($now, false) // false = don't use absolute value
-            ]);
-            // Jika sudah expired, cancel transaksi
+            
             if ($now->gt($batasLunas)) {
                 \Log::info('Transaction expired, cancelling...', ['id' => $idTransaksi]);
                 $this->cancelExpiredTransaction($transaksi);
@@ -930,7 +922,7 @@ class TransaksiPenjualanController extends Controller
     }
 
     /**
-     * Upload bukti pembayaran (Fungsionalitas 68)
+     * Upload bukti pembayaran (Fungsionalitas 68) - DIPERBAIKI
      */
     public function uploadPaymentProof(Request $request, $idTransaksi)
     {
@@ -960,47 +952,82 @@ class TransaksiPenjualanController extends Controller
             return response()->json(['error' => 'Transaksi tidak ditemukan'], 404);
         }
 
-        // Check if transaction is still valid
+        // Check if transaction is still valid for payment upload
         if ($transaksi->status !== 'menunggu_pembayaran') {
             return response()->json(['error' => 'Status transaksi tidak valid untuk upload pembayaran'], 400);
         }
 
+        // Check if payment deadline has passed
         if (Carbon::now()->gt($transaksi->tanggalBatasLunas)) {
-            // Transaction expired
+            // Transaction expired - auto cancel
             $this->cancelExpiredTransaction($transaksi);
             return response()->json(['error' => 'Transaksi telah kedaluwarsa'], 400);
         }
 
         DB::beginTransaction();
         try {
-            // Upload file
+            // PERBAIKAN: Upload file dan simpan ke database
             $buktiFile = $request->file('bukti_pembayaran');
             $filename = 'bukti_' . $idTransaksi . '_' . time() . '.' . $buktiFile->getClientOriginalExtension();
-            $buktiFile->move(public_path('uploads/bukti_pembayaran'), $filename);
+            
+            // Ensure directory exists
+            $uploadPath = public_path('uploads/bukti_pembayaran');
+            if (!file_exists($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
+            
+            // Move uploaded file
+            $buktiFile->move($uploadPath, $filename);
+            $filePath = 'uploads/bukti_pembayaran/' . $filename;
 
-            // Update transaksi - gunakan kolom yang ada
+            // PERBAIKAN: Update transaksi dengan data bukti pembayaran di database
             $transaksi->update([
-                'status' => 'menunggu_verifikasi'
+                'status' => 'menunggu_verifikasi',
+                'buktiPembayaran' => $filePath, // Simpan path file ke database
+                'tanggalUploadBukti' => Carbon::now(), // Simpan timestamp upload
             ]);
 
-            // Simpan path bukti pembayaran di session untuk sementara
-            // Karena tidak boleh tambah kolom, gunakan session storage
-            session(['bukti_pembayaran_' . $idTransaksi => 'uploads/bukti_pembayaran/' . $filename]);
+            // PERBAIKAN: Hapus penggunaan session storage karena sekarang sudah di database
+            // session()->forget('bukti_pembayaran_' . $idTransaksi);
 
             DB::commit();
+
+            \Log::info('Payment proof uploaded successfully', [
+                'transaction_id' => $idTransaksi,
+                'customer_id' => $idPembeli,
+                'file_path' => $filePath,
+                'uploaded_at' => Carbon::now()->toDateTimeString()
+            ]);
 
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Bukti pembayaran berhasil diupload dan sedang diverifikasi'
+                    'message' => 'Bukti pembayaran berhasil diupload dan sedang diverifikasi',
+                    'data' => [
+                        'file_path' => $filePath,
+                        'upload_time' => $transaksi->tanggalUploadBukti->format('Y-m-d H:i:s'),
+                        'new_status' => $transaksi->status
+                    ]
                 ]);
             }
 
             return redirect()->route('pembeli.payment.show', $idTransaksi)
                 ->with('success', 'Bukti pembayaran berhasil diupload dan sedang diverifikasi');
+                
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error uploading payment proof: ' . $e->getMessage());
+            
+            // Delete uploaded file if transaction failed
+            if (isset($filePath) && file_exists(public_path($filePath))) {
+                unlink(public_path($filePath));
+            }
+            
+            \Log::error('Error uploading payment proof', [
+                'transaction_id' => $idTransaksi,
+                'customer_id' => $idPembeli,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
             if ($request->expectsJson()) {
                 return response()->json(['error' => 'Terjadi kesalahan saat mengupload bukti pembayaran'], 500);
@@ -1011,75 +1038,145 @@ class TransaksiPenjualanController extends Controller
     }
 
     /**
-     * Menampilkan daftar transaksi yang perlu diverifikasi (untuk CS)
+     * Menampilkan daftar transaksi yang perlu diverifikasi (untuk CS) - DIPERBAIKI
      */
     public function indexVerification()
     {
+        // PERBAIKAN: Include relasi pegawaiVerifikasi dan load bukti pembayaran dari database
         $transaksiList = TransaksiPenjualan::where('status', 'menunggu_verifikasi')
-            ->with(['pembeli', 'detailTransaksiPenjualan.produk'])
-            ->orderBy('tanggalPesan', 'desc')
+            ->with(['pembeli', 'detailTransaksiPenjualan.produk', 'pegawaiVerifikasi'])
+            ->whereNotNull('buktiPembayaran') // TAMBAHAN: Pastikan ada bukti pembayaran
+            ->whereNotNull('tanggalUploadBukti') // TAMBAHAN: Pastikan sudah diupload
+            ->orderBy('tanggalUploadBukti', 'asc') // PERBAIKAN: Urutkan berdasarkan waktu upload
             ->paginate(10);
 
         return view('pegawai.cs.verification.index', compact('transaksiList'));
     }
 
     /**
-     * Menampilkan detail transaksi untuk verifikasi (untuk CS)
+     * Menampilkan detail transaksi untuk verifikasi (untuk CS) - DIPERBAIKI
      */
     public function showVerification($idTransaksi)
     {
+        // PERBAIKAN: Include relasi dan load bukti pembayaran dari database
         $transaksi = TransaksiPenjualan::where('idTransaksiPenjualan', $idTransaksi)
             ->where('status', 'menunggu_verifikasi')
-            ->with(['pembeli', 'detailTransaksiPenjualan.produk'])
+            ->with(['pembeli', 'detailTransaksiPenjualan.produk', 'pegawaiVerifikasi'])
+            ->whereNotNull('buktiPembayaran') // TAMBAHAN: Pastikan ada bukti pembayaran
             ->first();
 
         if (!$transaksi) {
-            return redirect()->route('cs.verification.index')->with('error', 'Transaksi tidak ditemukan');
+            return redirect()->route('cs.verification.index')
+                ->with('error', 'Transaksi tidak ditemukan atau belum upload bukti pembayaran');
         }
 
         return view('pegawai.cs.verification.show', compact('transaksi'));
     }
 
     /**
-     * Verifikasi bukti pembayaran (Fungsionalitas 69)
+     * Verifikasi bukti pembayaran (Fungsionalitas 69-70) - DIPERBAIKI
      */
     public function verifyPayment(Request $request, $idTransaksi)
     {
         $validator = Validator::make($request->all(), [
             'status_verifikasi' => 'required|in:valid,tidak_valid',
-            'catatan' => 'nullable|string|max:255',
+            'catatan' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
         }
 
+        // Check authentication - pastikan CS yang login
+        if (!session('user') || session('role') !== 'pegawai') {
+            return redirect()->route('loginPage')->with('error', 'Unauthorized access');
+        }
+
+        $idPegawai = session('user')['idPegawai'];
+
         $transaksi = TransaksiPenjualan::where('idTransaksiPenjualan', $idTransaksi)
             ->where('status', 'menunggu_verifikasi')
+            ->whereNotNull('buktiPembayaran') // TAMBAHAN: Pastikan ada bukti pembayaran
             ->first();
 
         if (!$transaksi) {
-            return redirect()->route('cs.verification.index')->with('error', 'Transaksi tidak ditemukan');
+            return redirect()->route('cs.verification.index')
+                ->with('error', 'Transaksi tidak ditemukan atau tidak valid untuk verifikasi');
         }
 
         DB::beginTransaction();
         try {
             if ($request->status_verifikasi === 'valid') {
-                // Pembayaran valid - Update ke status disiapkan (Fungsionalitas 70)
-                $this->updateStatusToDisiapkan($transaksi);
+                // FUNGSIONALITAS 70: Pembayaran valid - Update ke status disiapkan
+                $transaksi->update([
+                    'status' => 'disiapkan',
+                    'tanggalLunas' => Carbon::now(),
+                    'tanggalLaku' => Carbon::now(),
+                    'catatanVerifikasi' => $request->catatan ?: 'Pembayaran diverifikasi dan diterima',
+                    'idPegawaiVerifikasi' => $idPegawai,
+                ]);
+
+                // Hitung dan berikan poin yang didapat (Fungsionalitas 62)
+                $this->calculateAndAwardPoints($transaksi);
+
                 $message = 'Pembayaran telah diverifikasi dan transaksi sedang disiapkan';
+                
+                \Log::info('Payment verified and approved', [
+                    'transaction_id' => $idTransaksi,
+                    'verified_by' => $idPegawai,
+                    'customer_id' => $transaksi->idPembeli,
+                    'points_awarded' => $transaksi->poinDidapat,
+                    'note' => $request->catatan
+                ]);
+                
             } else {
-                // Pembayaran tidak valid - Cancel transaksi (Fungsionalitas 67)
-                $this->cancelTransaction($transaksi, 'Bukti pembayaran tidak valid: ' . $request->catatan);
+                // FUNGSIONALITAS 69: Pembayaran tidak valid - Tolak dan cancel transaksi
+                $transaksi->update([
+                    'status' => 'batal',
+                    'catatanVerifikasi' => $request->catatan ?: 'Bukti pembayaran tidak valid atau tidak sesuai',
+                    'idPegawaiVerifikasi' => $idPegawai,
+                ]);
+
+                // Kembalikan poin yang sudah digunakan
+                if ($transaksi->poinDigunakan > 0) {
+                    $pembeli = $transaksi->pembeli;
+                    $pembeli->update(['poin' => $pembeli->poin + $transaksi->poinDigunakan]);
+                }
+
+                // Kembalikan status produk ke tersedia
+                $detailTransaksi = DetailTransaksiPenjualan::where('idTransaksiPenjualan', $idTransaksi)->get();
+                foreach ($detailTransaksi as $detail) {
+                    $produk = Produk::find($detail->idProduk);
+                    if ($produk) {
+                        $produk->update(['status' => 'Tersedia']);
+                    }
+                }
+
                 $message = 'Pembayaran ditolak dan transaksi dibatalkan';
+                
+                \Log::info('Payment rejected and transaction cancelled', [
+                    'transaction_id' => $idTransaksi,
+                    'verified_by' => $idPegawai,
+                    'customer_id' => $transaksi->idPembeli,
+                    'points_refunded' => $transaksi->poinDigunakan,
+                    'reason' => $request->catatan
+                ]);
             }
 
             DB::commit();
 
             return redirect()->route('cs.verification.index')->with('success', $message);
+            
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error verifying payment: ' . $e->getMessage());
+            
+            \Log::error('Error verifying payment', [
+                'transaction_id' => $idTransaksi,
+                'verified_by' => $idPegawai,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return back()->with('error', 'Terjadi kesalahan saat memverifikasi pembayaran');
         }
     }
@@ -1271,11 +1368,21 @@ class TransaksiPenjualanController extends Controller
     }
 
     /**
-     * Helper method untuk mengambil bukti pembayaran dari session
+     * PERBAIKAN: Helper method untuk mengambil bukti pembayaran dari database
      */
     private function getBuktiPembayaran($idTransaksi)
     {
-        return session('bukti_pembayaran_' . $idTransaksi);
+        $transaksi = TransaksiPenjualan::find($idTransaksi);
+        return $transaksi ? $transaksi->buktiPembayaran : null;
+    }
+
+    /**
+     * Helper method untuk cek apakah bukti pembayaran sudah diupload
+     */
+    private function hasUploadedPaymentProof($idTransaksi)
+    {
+        $transaksi = TransaksiPenjualan::find($idTransaksi);
+        return $transaksi && $transaksi->hasBuktiPembayaran();
     }
 
     /**

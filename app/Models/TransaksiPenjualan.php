@@ -13,7 +13,7 @@ class TransaksiPenjualan extends Model
 {
     use HasFactory;
 
-    public $timestamps = true; // UBAH JADI TRUE untuk enable created_at/updated_at
+    public $timestamps = true;
     protected $table = 'transaksi_penjualan';
     protected $primaryKey = 'idTransaksiPenjualan';
 
@@ -32,6 +32,10 @@ class TransaksiPenjualan extends Model
         'metodePengiriman',
         'poinDidapat',
         'poinDigunakan',
+        'buktiPembayaran',
+        'tanggalUploadBukti',
+        'catatanVerifikasi',
+        'idPegawaiVerifikasi',
     ];
 
     protected $casts = [
@@ -44,6 +48,7 @@ class TransaksiPenjualan extends Model
         'tanggalBatasAmbil' => 'datetime',
         'tanggalKirim' => 'datetime',
         'tanggalAmbil' => 'datetime',
+        'tanggalUploadBukti' => 'datetime',
     ];
 
     public function pembeli(): BelongsTo
@@ -54,6 +59,12 @@ class TransaksiPenjualan extends Model
     public function pegawai(): BelongsTo
     {
         return $this->belongsTo(Pegawai::class, 'idPegawai', 'idPegawai');
+    }
+
+    // TAMBAHAN BARU: Relasi untuk pegawai verifikasi
+    public function pegawaiVerifikasi(): BelongsTo
+    {
+        return $this->belongsTo(Pegawai::class, 'idPegawaiVerifikasi', 'idPegawai');
     }
 
     public function detailTransaksiPenjualan(): HasMany
@@ -90,5 +101,34 @@ class TransaksiPenjualan extends Model
     public function getNilaiPoinDidapatAttribute()
     {
         return $this->poinDidapat * 10;
+    }
+
+    public function getBuktiPembayaranUrlAttribute()
+    {
+        if (!$this->buktiPembayaran) {
+            return null;
+        }
+        
+        return asset($this->buktiPembayaran);
+    }
+
+    public function hasBuktiPembayaran()
+    {
+        return !empty($this->buktiPembayaran);
+    }
+
+    public function isPaymentUploaded()
+    {
+        return $this->hasBuktiPembayaran() && $this->tanggalUploadBukti;
+    }
+
+    public function isVerified()
+    {
+        return in_array($this->status, ['disiapkan', 'kirim', 'diambil', 'terjual']);
+    }
+
+    public function isRejected()
+    {
+        return $this->status === 'batal' && !empty($this->catatanVerifikasi);
     }
 }
