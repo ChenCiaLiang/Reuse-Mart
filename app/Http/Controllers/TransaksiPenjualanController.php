@@ -1085,19 +1085,55 @@ class TransaksiPenjualanController extends Controller
             return back()->withErrors($validator)->withInput();
         }
 
-        // Check authentication - pastikan CS yang login
-        if (!session('user') || session('role') !== 'pegawai') {
-            return redirect()->route('loginPage')->with('error', 'Unauthorized access');
+        // PERBAIKAN: Authentication check yang lebih robust
+        $user = session('user');
+        $role = session('role');
+        
+        // Log untuk debugging
+        \Log::info('Verifikasi pembayaran - Auth check', [
+            'has_user_session' => !is_null($user),
+            'user_data' => $user,
+            'role' => $role,
+            'request_method' => $request->method(),
+            'csrf_token' => $request->header('X-CSRF-TOKEN') ?? 'not_set',
+            'session_id' => session()->getId()
+        ]);
+
+        // Check authentication - CS bisa berupa 'pegawai' atau 'cs'
+        if (!$user || !in_array($role, ['pegawai', 'cs'])) {
+            \Log::warning('Verifikasi pembayaran - Unauthorized access attempt', [
+                'user' => $user,
+                'role' => $role,
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ]);
+            
+            return redirect()->route('loginPage')->with('error', 'Session tidak valid, silakan login ulang sebagai CS');
         }
 
-        $idPegawai = session('user')['idPegawai'];
+        // Pastikan user memiliki ID pegawai (untuk CS yang login sebagai pegawai)
+        $idPegawai = null;
+        if (isset($user['idPegawai'])) {
+            $idPegawai = $user['idPegawai'];
+        } else {
+            \Log::error('Verifikasi pembayaran - No pegawai ID found in session', [
+                'user_session' => $user,
+                'role' => $role
+            ]);
+            return redirect()->route('loginPage')->with('error', 'Data pegawai tidak ditemukan dalam session');
+        }
 
+        // Cari transaksi
         $transaksi = TransaksiPenjualan::where('idTransaksiPenjualan', $idTransaksi)
             ->where('status', 'menunggu_verifikasi')
-            ->whereNotNull('buktiPembayaran') // TAMBAHAN: Pastikan ada bukti pembayaran
+            ->whereNotNull('buktiPembayaran')
             ->first();
 
         if (!$transaksi) {
+            \Log::warning('Verifikasi pembayaran - Transaction not found or invalid', [
+                'transaksi_id' => $idTransaksi,
+                'verified_by' => $idPegawai
+            ]);
             return redirect()->route('cs.verification.index')
                 ->with('error', 'Transaksi tidak ditemukan atau tidak valid untuk verifikasi');
         }
@@ -1173,7 +1209,7 @@ class TransaksiPenjualanController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
 
-            return back()->with('error', 'Terjadi kesalahan saat memverifikasi pembayaran');
+            return back()->with('error', 'Terjadi kesalahan saat memverifikasi pembayaran: ' . $e->getMessage());
         }
     }
 

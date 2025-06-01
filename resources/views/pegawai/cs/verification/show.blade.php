@@ -246,15 +246,41 @@
                             @endif
                         </div>
 
-                        <!-- Verification Form -->
+                        <!-- Verification Form - BAGIAN YANG DIPERBAIKI -->
                         <div class="bg-white border-2 border-gray-200 rounded-lg p-6">
                             <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                                 <i class="fas fa-check-circle text-green-600 mr-2"></i>
                                 Verifikasi Pembayaran
                             </h3>
+
+                            <!-- TAMBAHAN BARU: Debug Session Info (untuk troubleshooting) -->
+                            @if(config('app.debug'))
+                            <div class="bg-blue-50 border border-blue-200 rounded p-3 mb-4 text-sm">
+                                <strong>Debug Info:</strong><br>
+                                Role: {{ session('role') ?? 'null' }}<br>
+                                User: {{ session('user')['nama'] ?? 'null' }}<br>
+                                Pegawai ID: {{ session('user')['idPegawai'] ?? 'null' }}<br>
+                                Session ID: {{ session()->getId() }}
+                            </div>
+                            @endif
+
+                            <!-- Error Messages -->
+                            @if ($errors->any())
+                            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                                <ul class="list-disc list-inside">
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                            @endif
                             
-                            <form action="{{ route('cs.verification.verify', $transaksi->idTransaksiPenjualan) }}" method="POST">
+                            <form id="verificationForm" action="{{ route('cs.verification.verify', $transaksi->idTransaksiPenjualan) }}" method="POST">
                                 @csrf
+                                
+                                <!-- TAMBAHAN BARU: Hidden fields untuk debugging -->
+                                <input type="hidden" name="debug_session_role" value="{{ session('role') }}">
+                                <input type="hidden" name="debug_user_id" value="{{ session('user')['idPegawai'] ?? 'null' }}">
                                 
                                 <div class="mb-6">
                                     <label class="block text-sm font-medium text-gray-700 mb-3">
@@ -264,7 +290,7 @@
                                     <div class="space-y-3">
                                         <label class="flex items-start p-4 border-2 border-green-200 rounded-lg cursor-pointer hover:bg-green-50 transition-colors group">
                                             <input type="radio" name="status_verifikasi" value="valid" 
-                                                   class="h-4 w-4 text-green-600 focus:ring-green-500 mt-1" required>
+                                                class="h-4 w-4 text-green-600 focus:ring-green-500 mt-1" required>
                                             <div class="ml-3">
                                                 <div class="font-medium text-green-800 group-hover:text-green-900">
                                                     <i class="fas fa-check-circle mr-2"></i>
@@ -278,7 +304,7 @@
                                         
                                         <label class="flex items-start p-4 border-2 border-red-200 rounded-lg cursor-pointer hover:bg-red-50 transition-colors group">
                                             <input type="radio" name="status_verifikasi" value="tidak_valid" 
-                                                   class="h-4 w-4 text-red-600 focus:ring-red-500 mt-1" required>
+                                                class="h-4 w-4 text-red-600 focus:ring-red-500 mt-1" required>
                                             <div class="ml-3">
                                                 <div class="font-medium text-red-800 group-hover:text-red-900">
                                                     <i class="fas fa-times-circle mr-2"></i>
@@ -297,26 +323,37 @@
                                         Catatan Verifikasi <span class="text-gray-400">(Opsional)</span>
                                     </label>
                                     <textarea name="catatan" id="catatan" rows="4" 
-                                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                              placeholder="Tambahkan catatan verifikasi...">{{ old('catatan') }}</textarea>
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            placeholder="Tambahkan catatan verifikasi...">{{ old('catatan') }}</textarea>
                                     @error('catatan')
                                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 
                                 <div class="flex space-x-3">
-                                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors shadow-lg hover:shadow-xl">
+                                    <button type="submit" id="submitBtn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
                                         <i class="fas fa-check mr-2"></i>
-                                        Simpan Verifikasi
+                                        <span id="submitText">Simpan Verifikasi</span>
                                     </button>
                                     
                                     <a href="{{ route('cs.verification.index') }}" 
-                                       class="flex-1 text-center bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
+                                    class="flex-1 text-center bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors">
                                         <i class="fas fa-times mr-2"></i>
                                         Batal
                                     </a>
                                 </div>
                             </form>
+                            
+                            <!-- TAMBAHAN BARU: Test Session Button (untuk debugging) -->
+                            @if(config('app.debug'))
+                            <div class="mt-4 pt-4 border-t border-gray-200">
+                                <button onclick="testSession()" class="bg-yellow-500 text-white px-4 py-2 rounded text-sm hover:bg-yellow-600">
+                                    <i class="fas fa-bug mr-1"></i>
+                                    Test Session
+                                </button>
+                                <div id="sessionTestResult" class="mt-2 text-sm"></div>
+                            </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -493,9 +530,56 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Form submission handling
+document.getElementById('verificationForm').addEventListener('submit', function(e) {
+    const submitBtn = document.getElementById('submitBtn');
+    const submitText = document.getElementById('submitText');
+    
+    // Disable button and show loading
+    submitBtn.disabled = true;
+    submitText.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...';
+    
+    // Log form submission
+    console.log('Form submitted at:', new Date().toISOString());
+    console.log('CSRF Token:', document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'));
+    
+    // Re-enable button after 10 seconds (fallback)
+    setTimeout(() => {
+        submitBtn.disabled = false;
+        submitText.innerHTML = '<i class="fas fa-check mr-2"></i>Simpan Verifikasi';
+    }, 10000);
+});
+
+
+// Function to test session (debug only)
+function testSession() {
+    fetch('/cs/verification/test-session', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            test: true
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('sessionTestResult').innerHTML = 
+            '<div class="bg-green-100 p-2 rounded">' + JSON.stringify(data, null, 2) + '</div>';
+    })
+    .catch(error => {
+        document.getElementById('sessionTestResult').innerHTML = 
+            '<div class="bg-red-100 p-2 rounded">Error: ' + error.message + '</div>';
+    });
+}
+
 // Log page unload to detect unwanted reloads
-window.addEventListener('beforeunload', function(e) {
-    console.log('Page is about to unload/reload');
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Page loaded - Session check:');
+    console.log('Role:', '{{ session("role") ?? "null" }}');
+    console.log('User:', '{{ session("user")["nama"] ?? "null" }}');
+    console.log('Pegawai ID:', '{{ session("user")["idPegawai"] ?? "null" }}');
 });
 </script>
 @endsection
