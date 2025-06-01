@@ -42,21 +42,54 @@ class PembeliController extends Controller
      */
     public function historyTransaksi(Request $request)
     {
-        // Ambil ID penitip dari session
+        // Ambil ID pembeli dari session
         $idPembeli = session('user')['idPembeli'];
 
-        // Filter berdasarkan tanggal jika ada
+        // Filter berdasarkan tanggal jika ada - UBAH ke tanggalPesan agar semua status bisa tampil
         $startDate = $request->input('start_date') ? Carbon::parse($request->input('start_date'))->startOfDay() : Carbon::now()->subMonths(3)->startOfDay();
         $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date'))->endOfDay() : Carbon::now()->endOfDay();
 
-        // Query yang diperbaiki menggunakan relasi komisi
-        $transaksiPenjualan = TransaksiPenjualan::join('detail_transaksi_penjualan', 'transaksi_penjualan.idTransaksiPenjualan', '=', 'detail_transaksi_penjualan.idTransaksiPenjualan')
+        // Filter status jika ada
+        $statusFilter = $request->input('status');
+
+        // Query yang diperbaiki - tampilkan SEMUA status transaksi pembeli
+        $query = TransaksiPenjualan::join('detail_transaksi_penjualan', 'transaksi_penjualan.idTransaksiPenjualan', '=', 'detail_transaksi_penjualan.idTransaksiPenjualan')
             ->join('produk', 'detail_transaksi_penjualan.idProduk', '=', 'produk.idProduk')
-            ->whereBetween('transaksi_penjualan.tanggalLunas', [$startDate, $endDate])
-            ->orderBy('transaksi_penjualan.tanggalLunas', 'desc')
+            ->where('transaksi_penjualan.idPembeli', $idPembeli) // TAMBAHAN: Filter berdasarkan pembeli
+            ->whereBetween('transaksi_penjualan.tanggalPesan', [$startDate, $endDate]) // UBAH: Gunakan tanggalPesan bukan tanggalLunas
             ->select('transaksi_penjualan.*', 'produk.deskripsi', 'produk.hargaJual')
-            ->distinct()
-            ->paginate(10);
+            ->distinct();
+
+        // Filter berdasarkan status jika dipilih
+        if ($statusFilter && $statusFilter !== 'semua') {
+            $query->where('transaksi_penjualan.status', $statusFilter);
+        }
+
+        $transaksiPenjualan = $query->orderBy('transaksi_penjualan.tanggalPesan', 'desc')->paginate(10);
+
+        // Hitung statistik untuk semua status
+        $allTransactions = TransaksiPenjualan::where('idPembeli', $idPembeli)
+            ->whereBetween('tanggalPesan', [$startDate, $endDate])
+            ->get();
+
+        $statistics = [
+            'total' => $allTransactions->count(),
+            'menunggu_pembayaran' => $allTransactions->where('status', 'menunggu_pembayaran')->count(),
+            'menunggu_verifikasi' => $allTransactions->where('status', 'menunggu_verifikasi')->count(),
+            'disiapkan' => $allTransactions->where('status', 'disiapkan')->count(),
+            'kirim' => $allTransactions->where('status', 'kirim')->count(),
+            'diambil' => $allTransactions->where('status', 'diambil')->count(),
+            'terjual' => $allTransactions->where('status', 'terjual')->count(),
+            'batal' => $allTransactions->where('status', 'batal')->count(),
+            'bulan_ini' => $allTransactions->filter(function($t) {
+                return \Carbon\Carbon::parse($t->tanggalPesan)->isCurrentMonth();
+            })->count(),
+            'total_belanja' => $allTransactions->where('status', '!=', 'batal')->sum(function($t) {
+                return $t->detailTransaksiPenjualan->sum(function($detail) {
+                    return $detail->produk->hargaJual ?? 0;
+                });
+            })
+        ];
 
         // Tambahkan variabel debug untuk troubleshooting
         $debug = [
@@ -64,10 +97,18 @@ class PembeliController extends Controller
             'startDate' => $startDate->format('Y-m-d H:i:s'),
             'endDate' => $endDate->format('Y-m-d H:i:s'),
             'count' => $transaksiPenjualan->count(),
-            'total' => $transaksiPenjualan->total()
+            'total' => $transaksiPenjualan->total(),
+            'statusFilter' => $statusFilter
         ];
 
-        return view('customer.pembeli.history', compact('transaksiPenjualan', 'startDate', 'endDate', 'debug'));
+        return view('customer.pembeli.history', compact(
+            'transaksiPenjualan', 
+            'startDate', 
+            'endDate', 
+            'debug', 
+            'statistics',
+            'statusFilter'
+        ));
     }
     /**
      * Menampilkan detail transaksi
