@@ -16,6 +16,14 @@ use App\Http\Controllers\TransaksiPenjualanController;
 use App\Http\Controllers\MerchandiseController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/test-notification', function () {
+    // Direct call, bukan dispatch
+    $job = new \App\Jobs\CheckPenitipanExpiryJob();
+    $job->handle();
+
+    return 'Job executed directly! Check log file.';
+});
+
 Route::get('/test/{id}', [KomisiController::class, 'getKomisiPenjualan'])->name('getKomisiPenjualan');
 
 Route::middleware('guest')->group(function () {
@@ -216,7 +224,7 @@ Route::prefix('customer')->group(function () {
             Route::get('/{idTransaksi}', [TransaksiPenjualanController::class, 'showPayment'])->name('show');
             Route::post('/{idTransaksi}/upload', [TransaksiPenjualanController::class, 'uploadPaymentProof'])->name('upload');
             Route::get('/{idTransaksi}/status', [TransaksiPenjualanController::class, 'getTransactionStatus'])->name('status');
-            
+
             Route::post('/{idTransaksi}/cancel-expired', [TransaksiPenjualanController::class, 'cancelExpiredPayment'])->name('cancel-expired');
         });
     });

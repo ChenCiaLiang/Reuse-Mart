@@ -69,7 +69,7 @@
         <div class="mb-4 border-b border-black pb-3">
             <div class="font-bold mb-1">Pembeli :</div>
             <div class="mb-1">{{ $transaksi->emailPembeli }} / {{ $transaksi->namaPembeli }}</div>
-            <div>{{ $transaksi->alamat ?? 'Alamat tidak tersedia' }}</div>
+            <div>{{ $transaksi->alamatPengiriman ?? 'Alamat tidak tersedia' }}</div>
         </div>
         
         <!-- Delivery Information -->
@@ -121,21 +121,18 @@
                             {{ $transaksi->total + $transaksi->ongkir }}
                         </td>
                     </tr>
-                    @if(isset($transaksi->potonganPoin) && $transaksi->potonganPoin > 0)
+                    @if(isset($transaksi->poinDigunakan) && $transaksi->poinDigunakan > 0)
                         <tr>
                             <td class="py-0.5">Potongan Poin</td>
                             <td class="py-0.5 text-right font-bold">
-                                - {{ number_format($transaksi->potonganPoin, 0, ',', '.') }}
+                            {{ $transaksi->poinDigunakan * 100 }}
                             </td>
                         </tr>
                     @endif
                     <tr class="border-t-2 border-black pt-1">
                         <td class="py-1 text-sm font-bold">Total Bayar</td>
                         <td class="py-1 text-right text-sm font-bold">
-                            @php
-                                $totalBayar = ($transaksi->total + $transaksi->ongkir) - ($transaksi->potonganPoin ?? 0);
-                            @endphp
-                            {{ number_format($totalBayar, 0, ',', '.') }}
+                            {{ $transaksi->total - ($transaksi->poinDigunakan ? ($transaksi->poinDigunakan * 100) : 0 ) }}
                         </td>
                     </tr>
                 </tbody>
@@ -144,19 +141,14 @@
         
         <!-- Points Information -->
         <div class="mb-4 text-xs">
-            @php
-                $poinDasar = floor($totalBayar / 10000);
-                $bonusPoin = $totalBayar > 500000 ? floor($poinDasar * 0.2) : 0;
-                $totalPoinBaru = $poinDasar + $bonusPoin;
-            @endphp
-            <div class="mb-1">Poin dari pesanan ini: {{ $totalPoinBaru }}</div>
-            <div>Total poin customer: {{ ($transaksi->poinSebelumnya ?? 0) + $totalPoinBaru }}</div>
+            <div class="mb-1">Poin dari pesanan ini: {{ $transaksi->poinDidapat }}</div>
+            <div>Total poin customer: {{ $pembeli->poin }}</div>
         </div>
         
         <!-- QC Information -->
-        {{-- <div class="mb-5 text-xs">
-            QC oleh: {{ $transaksi->namaPegawaiQC ?? $transaksi->namaPegawai ?? 'Admin' }}
-        </div> --}}
+        <div class="mb-5 text-xs">
+            QC oleh: {{ $qc->nama }} (P{{ $qc->idPegawai }})
+        </div>
         
         <!-- Signature Area -->
         <div class="border-t border-black pt-3">

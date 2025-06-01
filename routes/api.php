@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PegawaiController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 
 
@@ -27,4 +28,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('organisasi')->middleware('Role:organisasi')->group(function () {});
 
     Route::get('/logout', [AuthController::class, 'logout']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/broadcasting/auth', function (Request $request) {
+        return Broadcast::auth($request);
+    });
 });

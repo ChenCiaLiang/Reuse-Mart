@@ -64,7 +64,5 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'auth.sanctum' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-        'Role' => \App\Http\Middleware\Role::class,
-        // 'add.sanctum.token' => \App\Http\Middleware\AddSanctumToken::class,
     ];
 }

@@ -723,7 +723,7 @@ class TransaksiPenjualanController extends Controller
 
             // Generate nomor transaksi
             $nomorTransaksi = $this->generateTransactionNumber();
-            
+
             // Buat transaksi penjualan
             $tanggalPesan = Carbon::now();
             $tanggalBatasLunas = $tanggalPesan->copy()->addMinutes(1);
@@ -784,7 +784,7 @@ class TransaksiPenjualanController extends Controller
             } else {
                 $this->clearCart();
             }
-            
+
             DB::commit();
 
             return response()->json([
@@ -794,7 +794,6 @@ class TransaksiPenjualanController extends Controller
                 'nomorTransaksi' => $nomorTransaksi,
                 'redirect_url' => route('pembeli.payment.show', $transaksi->idTransaksiPenjualan)
             ]);
-            
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Error in proceedCheckout: ' . $e->getMessage());
@@ -903,12 +902,12 @@ class TransaksiPenjualanController extends Controller
         if (!$transaksi) {
             return redirect()->route('pembeli.profile')->with('error', 'Transaksi tidak ditemukan');
         }
-        
+
         // Auto-cancel logic remains the same...
         if ($transaksi->status === 'menunggu_pembayaran') {
             $now = \Carbon\Carbon::now();
             $batasLunas = \Carbon\Carbon::parse($transaksi->tanggalBatasLunas);
-            
+
             if ($now->gt($batasLunas)) {
                 \Log::info('Transaction expired, cancelling...', ['id' => $idTransaksi]);
                 $this->cancelExpiredTransaction($transaksi);
@@ -969,13 +968,13 @@ class TransaksiPenjualanController extends Controller
             // PERBAIKAN: Upload file dan simpan ke database
             $buktiFile = $request->file('bukti_pembayaran');
             $filename = 'bukti_' . $idTransaksi . '_' . time() . '.' . $buktiFile->getClientOriginalExtension();
-            
+
             // Ensure directory exists
             $uploadPath = public_path('uploads/bukti_pembayaran');
             if (!file_exists($uploadPath)) {
                 mkdir($uploadPath, 0755, true);
             }
-            
+
             // Move uploaded file
             $buktiFile->move($uploadPath, $filename);
             $filePath = 'uploads/bukti_pembayaran/' . $filename;
@@ -1013,15 +1012,14 @@ class TransaksiPenjualanController extends Controller
 
             return redirect()->route('pembeli.payment.show', $idTransaksi)
                 ->with('success', 'Bukti pembayaran berhasil diupload dan sedang diverifikasi');
-                
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             // Delete uploaded file if transaction failed
             if (isset($filePath) && file_exists(public_path($filePath))) {
                 unlink(public_path($filePath));
             }
-            
+
             \Log::error('Error uploading payment proof', [
                 'transaction_id' => $idTransaksi,
                 'customer_id' => $idPembeli,
@@ -1120,7 +1118,7 @@ class TransaksiPenjualanController extends Controller
                 $this->calculateAndAwardPoints($transaksi);
 
                 $message = 'Pembayaran telah diverifikasi dan transaksi sedang disiapkan';
-                
+
                 \Log::info('Payment verified and approved', [
                     'transaction_id' => $idTransaksi,
                     'verified_by' => $idPegawai,
@@ -1128,7 +1126,6 @@ class TransaksiPenjualanController extends Controller
                     'points_awarded' => $transaksi->poinDidapat,
                     'note' => $request->catatan
                 ]);
-                
             } else {
                 // FUNGSIONALITAS 69: Pembayaran tidak valid - Tolak dan cancel transaksi
                 $transaksi->update([
@@ -1153,7 +1150,7 @@ class TransaksiPenjualanController extends Controller
                 }
 
                 $message = 'Pembayaran ditolak dan transaksi dibatalkan';
-                
+
                 \Log::info('Payment rejected and transaction cancelled', [
                     'transaction_id' => $idTransaksi,
                     'verified_by' => $idPegawai,
@@ -1166,17 +1163,16 @@ class TransaksiPenjualanController extends Controller
             DB::commit();
 
             return redirect()->route('cs.verification.index')->with('success', $message);
-            
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             \Log::error('Error verifying payment', [
                 'transaction_id' => $idTransaksi,
                 'verified_by' => $idPegawai,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return back()->with('error', 'Terjadi kesalahan saat memverifikasi pembayaran');
         }
     }
@@ -1209,13 +1205,13 @@ class TransaksiPenjualanController extends Controller
     private function calculateAndAwardPoints($transaksi)
     {
         // PERBAIKAN: Ambil poin dari database transaksi, bukan dari session
-            $poinDidapat = $transaksi->poinDidapat;
+        $poinDidapat = $transaksi->poinDidapat;
 
         if ($poinDidapat > 0) {
             // Tambahkan poin ke pembeli
             $pembeli = $transaksi->pembeli;
             $pembeli->update(['poin' => $pembeli->poin + $poinDidapat]);
-            
+
             \Log::info('Points awarded to customer', [
                 'transaction_id' => $transaksi->idTransaksiPenjualan,
                 'customer_id' => $pembeli->idPembeli,
@@ -1250,7 +1246,7 @@ class TransaksiPenjualanController extends Controller
             // 1. Kembalikan status produk ke tersedia
             $detailTransaksi = DetailTransaksiPenjualan::where('idTransaksiPenjualan', $transaksi->idTransaksiPenjualan)->get();
             $restoredProducts = [];
-            
+
             foreach ($detailTransaksi as $detail) {
                 $produk = Produk::find($detail->idProduk);
                 if ($produk) {
@@ -1263,7 +1259,7 @@ class TransaksiPenjualanController extends Controller
             if ($transaksi->poinDigunakan > 0) {
                 $pembeli = $transaksi->pembeli;
                 $pembeli->update(['poin' => $pembeli->poin + $transaksi->poinDigunakan]);
-                
+
                 \Log::info('Points refunded to customer due to cancellation', [
                     'transaction_id' => $transaksi->idTransaksiPenjualan,
                     'customer_id' => $pembeli->idPembeli,
@@ -1277,7 +1273,7 @@ class TransaksiPenjualanController extends Controller
                 // HARD DELETE: Hapus transaksi dari database
                 DetailTransaksiPenjualan::where('idTransaksiPenjualan', $transaksi->idTransaksiPenjualan)->delete();
                 $transaksi->delete();
-                
+
                 \Log::info('Transaction hard deleted', [
                     'transaction_id' => $transaksi->idTransaksiPenjualan,
                     'reason' => $reason
@@ -1285,7 +1281,7 @@ class TransaksiPenjualanController extends Controller
             } else {
                 // SOFT DELETE: Update status menjadi batal
                 $transaksi->update(['status' => 'batal']);
-                
+
                 // Simpan catatan pembatalan di session
                 session(['catatan_batal_' . $transaksi->idTransaksiPenjualan => $reason]);
             }
@@ -1297,13 +1293,13 @@ class TransaksiPenjualanController extends Controller
             ]);
 
             DB::commit();
-            
+
             \Log::info('Transaction cancellation completed', [
                 'transaction_id' => $transaksi->idTransaksiPenjualan,
                 'restored_products' => count($restoredProducts),
                 'hard_deleted' => $hardDelete
             ]);
-            
+
             return true;
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1407,6 +1403,10 @@ class TransaksiPenjualanController extends Controller
             ->where('tp.idTransaksiPenjualan', $id)
             ->first();
 
+        $qc = session('user');
+
+        $pembeli = Pembeli::find($penjualan->idPembeli);
+
         if (!$penjualan) {
             return redirect()->route('gudang.pengiriman.index')->with('error', 'Transaksi Penjualan tidak ditemukan!');
         }
@@ -1414,9 +1414,6 @@ class TransaksiPenjualanController extends Controller
         $detail = DB::table('detail_transaksi_penjualan as dtp')
             ->join('produk as pr', 'dtp.idProduk', '=', 'pr.idProduk')
             ->join('kategori_produk as kp', 'pr.idKategori', '=', 'kp.idKategori')
-            // ->join('detail_transaksi_penitipan as dtpt', 'dtpt.idDetailTransaksiPenitipan', '=', 'pr.idDetailTransaksiPenitipan')
-            // ->join('transaksi_penitipan as tp', 'tp.idTransaksiPenitipan', '=', 'dtpt.idTransaksiPenitipan')
-            // ->join('pegawai as p', 'p.idPegawai', '=', 'dtpt.idPegawai')
             ->select(
                 'pr.idProduk',
                 'pr.deskripsi as namaProduk',
@@ -1428,8 +1425,6 @@ class TransaksiPenjualanController extends Controller
                 'pr.status',
                 'pr.ratingProduk',
                 'kp.nama as kategori',
-                // 'p.idPegawai as idPegawai',
-                // 'p.nama as namaPegawai',
             )
             ->where('dtp.idTransaksiPenjualan', $id)
             ->get();
@@ -1448,7 +1443,12 @@ class TransaksiPenjualanController extends Controller
         $penjualan->tanggalKirim = $penjualan->tanggalKirim ? Carbon::parse($penjualan->tanggalKirim)->format('Y-m-d') : '-';
         $penjualan->tanggalAmbil = $penjualan->tanggalAmbil ? Carbon::parse($penjualan->tanggalAmbil)->format('Y-m-d') : '-';;
 
+        $penjualan->alamatPengiriman = json_decode($penjualan->alamatPengiriman, true)['alamatLengkap'] ?? NULL;
+
+
         $data = [
+            'pembeli' => $pembeli,
+            'qc' => $qc,
             'transaksi' => $penjualan,
             'detail' => $detail,
             'tanggal_cetak' => now(),
@@ -1489,7 +1489,7 @@ class TransaksiPenjualanController extends Controller
             // Cek apakah memang sudah expired
             $now = \Carbon\Carbon::now();
             $batasLunas = \Carbon\Carbon::parse($transaksi->tanggalBatasLunas);
-            
+
             if ($now->lt($batasLunas)) {
                 // Masih dalam batas waktu, tidak perlu cancel
                 return response()->json(['error' => 'Transaksi belum expired'], 400);
@@ -1507,13 +1507,13 @@ class TransaksiPenjualanController extends Controller
                 // 1. Kembalikan status produk ke 'Tersedia'
                 $detailTransaksi = DetailTransaksiPenjualan::where('idTransaksiPenjualan', $idTransaksi)->get();
                 $restoredProducts = [];
-                
+
                 foreach ($detailTransaksi as $detail) {
                     $produk = Produk::find($detail->idProduk);
                     if ($produk && $produk->status !== 'Tersedia') {
                         $produk->update(['status' => 'Tersedia']);
                         $restoredProducts[] = $detail->idProduk;
-                        
+
                         \Log::info('Product status restored to Tersedia', [
                             'product_id' => $detail->idProduk,
                             'transaction_id' => $idTransaksi
@@ -1525,7 +1525,7 @@ class TransaksiPenjualanController extends Controller
                 if ($transaksi->poinDigunakan > 0) {
                     $pembeli = $transaksi->pembeli;
                     $pembeli->update(['poin' => $pembeli->poin + $transaksi->poinDigunakan]);
-                    
+
                     \Log::info('Points refunded due to auto-cancellation', [
                         'transaction_id' => $idTransaksi,
                         'customer_id' => $pembeli->idPembeli,
@@ -1559,7 +1559,7 @@ class TransaksiPenjualanController extends Controller
                     'cart',
                     'direct_buy',
                     'checkout_shipping_method',
-                    'checkout_shipping_address', 
+                    'checkout_shipping_address',
                     'checkout_points_used',
                     'bukti_pembayaran_' . $idTransaksi
                 ]);
@@ -1574,7 +1574,6 @@ class TransaksiPenjualanController extends Controller
                     'points_refunded' => $transaksi->poinDigunakan,
                     'redirect_url' => route('pembeli.profile')
                 ]);
-
             } catch (\Exception $e) {
                 DB::rollBack();
                 \Log::error('Error in auto-cancelling transaction', [
@@ -1582,16 +1581,15 @@ class TransaksiPenjualanController extends Controller
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
                 ]);
-                
+
                 return response()->json(['error' => 'Gagal membatalkan transaksi'], 500);
             }
-
         } catch (\Exception $e) {
             \Log::error('Error in cancelExpiredTransactionAPI', [
                 'transaction_id' => $idTransaksi,
                 'error' => $e->getMessage()
             ]);
-            
+
             return response()->json(['error' => 'Terjadi kesalahan server'], 500);
         }
     }
@@ -1621,7 +1619,7 @@ class TransaksiPenjualanController extends Controller
         // Check jika memang sudah expired
         $now = \Carbon\Carbon::now();
         $batasLunas = \Carbon\Carbon::parse($transaksi->tanggalBatasLunas);
-        
+
         if ($now->lte($batasLunas)) {
             return response()->json(['error' => 'Transaksi belum expired'], 400);
         }
@@ -1638,7 +1636,7 @@ class TransaksiPenjualanController extends Controller
             // 1. Kembalikan status produk ke tersedia
             $detailTransaksi = DetailTransaksiPenjualan::where('idTransaksiPenjualan', $idTransaksi)->get();
             $restoredProductIds = [];
-            
+
             foreach ($detailTransaksi as $detail) {
                 $produk = Produk::find($detail->idProduk);
                 if ($produk && $produk->status !== 'Tersedia') {
@@ -1653,7 +1651,7 @@ class TransaksiPenjualanController extends Controller
                 $pembeli = $transaksi->pembeli;
                 $pembeli->update(['poin' => $pembeli->poin + $transaksi->poinDigunakan]);
                 $pointsRefunded = $transaksi->poinDigunakan;
-                
+
                 \Log::info('Points refunded due to auto cancel', [
                     'transaction_id' => $idTransaksi,
                     'customer_id' => $idPembeli,
@@ -1685,10 +1683,9 @@ class TransaksiPenjualanController extends Controller
                 ],
                 'redirect_url' => route('pembeli.profile')
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             \Log::error('Error in auto cancel expired payment', [
                 'transaction_id' => $idTransaksi,
                 'customer_id' => $idPembeli,

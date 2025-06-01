@@ -5,6 +5,7 @@ use App\Http\Middleware\Role;
 use App\Http\Middleware\RolePegawai;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\RedirectIfAuthenticated;
+use App\Jobs\CheckPenitipanExpiryJob;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Container\Attributes\Log;
 use Illuminate\Foundation\Application;
@@ -40,6 +41,10 @@ return Application::configure(basePath: dirname(__DIR__))
             ->withoutOverlapping()
             ->sendOutputTo(storage_path('logs/rating-penitip.log'))
             ->appendOutputTo(storage_path('logs/rating-penitip.log'));
+
+        $schedule->job(new CheckPenitipanExpiryJob)->daily();
+        $schedule->command('notifications:penitipan-reminders')
+            ->dailyAt('09:00');
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
