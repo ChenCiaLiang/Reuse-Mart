@@ -604,20 +604,42 @@ class TransaksiPenjualanController extends Controller
      * Melakukan Checkout - Menambah data transaksi di database (Fungsionalitas 63)
      * UPDATED: Menambahkan penyimpanan poin yang digunakan ke database
      */
+    // File: app/Http/Controllers/TransaksiPenjualanController.php
+    // Method: proceedCheckout() - PERBAIKAN VALIDATION
+
     public function proceedCheckout(Request $request)
     {
+        // PERBAIKAN: Validation rule yang benar
         $validator = Validator::make($request->all(), [
             'metode_pengiriman' => 'required|in:kurir,ambil_sendiri',
-            'idAlamat' => 'required_if:metode_pengiriman,kurir|exists:alamat,idAlamat',
+            // PERBAIKAN: Tambahkan 'nullable' agar exists tidak dijalankan jika null
+            'idAlamat' => 'required_if:metode_pengiriman,kurir|nullable|exists:alamat,idAlamat',
             'poin_digunakan' => 'nullable|integer|min:0',
         ]);
 
+        // ALTERNATIF: Validasi kondisional yang lebih eksplisit
+        /*
+        $rules = [
+            'metode_pengiriman' => 'required|in:kurir,ambil_sendiri',
+            'poin_digunakan' => 'nullable|integer|min:0',
+        ];
+
+        // Hanya tambahkan rule idAlamat jika metode pengiriman adalah kurir
+        if ($request->metode_pengiriman === 'kurir') {
+            $rules['idAlamat'] = 'required|exists:alamat,idAlamat';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
+        */
+
         if ($validator->fails()) {
+            \Log::error('CHECKOUT DEBUG: Validation failed', $validator->errors()->toArray());
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
         // Check authentication
         if (!session('user') || session('role') !== 'pembeli') {
+            \Log::error('CHECKOUT DEBUG: Authentication failed');
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -665,6 +687,8 @@ class TransaksiPenjualanController extends Controller
                         'alamatLengkap' => $alamat->alamatLengkap,
                         'idAlamat' => $alamat->idAlamat
                     ]);
+                } else {
+                    return response()->json(['error' => 'Alamat pengiriman wajib dipilih untuk pengiriman kurir'], 400);
                 }
             } else {
                 // Ambil sendiri - alamat gudang
@@ -682,7 +706,7 @@ class TransaksiPenjualanController extends Controller
                 $ongkir = $subtotal >= 1500000 ? 0 : 100000;
             }
 
-            // Validasi dan hitung penggunaan poin (Fungsionalitas 65)
+            // Validasi dan hitung penggunaan poin
             $poinDigunakan = min($request->poin_digunakan ?? 0, $pembeli->poin);
             $diskonPoin = $poinDigunakan * 10;
             $totalSebelumDiskon = $subtotal + $ongkir;
@@ -690,19 +714,19 @@ class TransaksiPenjualanController extends Controller
             $poinDigunakan = floor($diskonPoin / 10);
             $totalAkhir = $totalSebelumDiskon - $diskonPoin;
 
-            // Hitung poin yang akan didapat (Fungsionalitas 62) - HITUNG DI AWAL
+            // Hitung poin yang akan didapat
             $poinDidapat = floor($totalAkhir / 10000);
             if ($totalAkhir > 500000) {
                 $bonusPoin = floor($poinDidapat * 0.2);
                 $poinDidapat += $bonusPoin;
             }
 
-            // Generate nomor transaksi (Fungsionalitas 64)
+            // Generate nomor transaksi
             $nomorTransaksi = $this->generateTransactionNumber();
             
-            // Buat transaksi penjualan (Fungsionalitas 63) - UPDATED dengan poin
+            // Buat transaksi penjualan
             $tanggalPesan = Carbon::now();
-            $tanggalBatasLunas = $tanggalPesan->copy()->addMinutes(1); // 1 menit timeout
+            $tanggalBatasLunas = $tanggalPesan->copy()->addMinutes(1);
 
             $transaksi = TransaksiPenjualan::create([
                 'status' => 'menunggu_pembayaran',
@@ -713,16 +737,15 @@ class TransaksiPenjualanController extends Controller
                 'tanggalBatasAmbil' => null,
                 'tanggalKirim' => null,
                 'tanggalAmbil' => null,
-                'alamat' => $request->idAlamat,
                 'idPembeli' => $idPembeli,
                 'idPegawai' => null,
                 'alamatPengiriman' => $alamatPengiriman,
                 'metodePengiriman' => $metodePengiriman,
-                'poinDidapat' => $poinDidapat, // BARU: Simpan poin yang akan didapat
-                'poinDigunakan' => $poinDigunakan, // BARU: Simpan poin yang digunakan
+                'poinDidapat' => $poinDidapat,
+                'poinDigunakan' => $poinDigunakan,
             ]);
 
-            // Simpan detail transaksi dan update status produk (Fungsionalitas 66)
+            // Simpan detail transaksi dan update status produk
             foreach ($products as $product) {
                 DetailTransaksiPenjualan::create([
                     'idTransaksiPenjualan' => $transaksi->idTransaksiPenjualan,
@@ -733,7 +756,7 @@ class TransaksiPenjualanController extends Controller
                 $product->update(['status' => 'Terjual']);
             }
 
-            // Kurangi poin yang digunakan (Fungsionalitas 65)
+            // Kurangi poin yang digunakan
             if ($poinDigunakan > 0) {
                 $pembeli->update(['poin' => $pembeli->poin - $poinDigunakan]);
             }
@@ -751,7 +774,7 @@ class TransaksiPenjualanController extends Controller
                     'alamat_pengiriman' => $alamatPengiriman,
                     'idAlamat' => $request->idAlamat,
                     'poin_digunakan' => $poinDigunakan,
-                    'poin_didapat' => $poinDidapat, // BARU: Simpan ke session juga
+                    'poin_didapat' => $poinDidapat,
                 ]
             ]);
 
@@ -761,6 +784,7 @@ class TransaksiPenjualanController extends Controller
             } else {
                 $this->clearCart();
             }
+            
             DB::commit();
 
             return response()->json([
@@ -770,6 +794,7 @@ class TransaksiPenjualanController extends Controller
                 'nomorTransaksi' => $nomorTransaksi,
                 'redirect_url' => route('pembeli.payment.show', $transaksi->idTransaksiPenjualan)
             ]);
+            
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Error in proceedCheckout: ' . $e->getMessage());

@@ -1,4 +1,5 @@
 <?php
+// File: app/Models/TransaksiPenjualan.php
 
 namespace App\Models;
 
@@ -12,7 +13,7 @@ class TransaksiPenjualan extends Model
 {
     use HasFactory;
 
-    public $timestamps = false;
+    public $timestamps = true; // UBAH JADI TRUE untuk enable created_at/updated_at
     protected $table = 'transaksi_penjualan';
     protected $primaryKey = 'idTransaksiPenjualan';
 
@@ -26,16 +27,23 @@ class TransaksiPenjualan extends Model
         'tanggalKirim',
         'tanggalAmbil',
         'idPembeli',
-        'idPegawai', //KURIR
-        'alamatPengiriman', // TAMBAHAN BARU
-        'metodePengiriman', // TAMBAHAN BARU
-        'poinDidapat', // TAMBAHAN BARU - Poin yang didapat dari transaksi
-        'poinDigunakan', // TAMBAHAN BARU - Poin yang digunakan untuk transaksi
+        'idPegawai',
+        'alamatPengiriman',
+        'metodePengiriman',
+        'poinDidapat',
+        'poinDigunakan',
     ];
 
     protected $casts = [
         'poinDidapat' => 'integer',
         'poinDigunakan' => 'integer',
+        'tanggalLaku' => 'datetime',
+        'tanggalPesan' => 'datetime',
+        'tanggalBatasLunas' => 'datetime',
+        'tanggalLunas' => 'datetime',
+        'tanggalBatasAmbil' => 'datetime',
+        'tanggalKirim' => 'datetime',
+        'tanggalAmbil' => 'datetime',
     ];
 
     public function pembeli(): BelongsTo
@@ -58,17 +66,11 @@ class TransaksiPenjualan extends Model
         return $this->hasOne(Komisi::class, 'idTransaksiPenjualan', 'idTransaksiPenjualan');
     }
 
-    /**
-     * Get alamat pengiriman sebagai array
-     */
     public function getAlamatPengirimanArrayAttribute()
     {
         return $this->alamatPengiriman ? json_decode($this->alamatPengiriman, true) : null;
     }
 
-    /**
-     * Set alamat pengiriman dari array
-     */
     public function setAlamatFromAlamatModel($alamat)
     {
         if ($alamat) {
@@ -80,19 +82,13 @@ class TransaksiPenjualan extends Model
         }
     }
 
-    /**
-     * Get total diskon poin dalam rupiah
-     */
     public function getDiskonPoinRupiahAttribute()
     {
-        return $this->poinDigunakan * 10; // 1 poin = Rp 10
+        return $this->poinDigunakan * 10;
     }
 
-    /**
-     * Get nilai poin yang didapat dalam rupiah (untuk referensi)
-     */
     public function getNilaiPoinDidapatAttribute()
     {
-        return $this->poinDidapat * 10; // 1 poin = Rp 10
+        return $this->poinDidapat * 10;
     }
 }
