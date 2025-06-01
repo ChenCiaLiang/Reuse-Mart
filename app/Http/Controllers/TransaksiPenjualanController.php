@@ -1073,6 +1073,7 @@ class TransaksiPenjualanController extends Controller
 
     /**
      * Verifikasi bukti pembayaran (Fungsionalitas 69-70) - DIPERBAIKI
+     * TAMBAHAN: Auto generate tanggal antar/ambil berdasarkan metode pengiriman
      */
     public function verifyPayment(Request $request, $idTransaksi)
     {
@@ -1085,7 +1086,7 @@ class TransaksiPenjualanController extends Controller
             return back()->withErrors($validator)->withInput();
         }
 
-        // PERBAIKAN: Authentication check yang lebih robust
+        // Authentication check
         $user = session('user');
         $role = session('role');
         
@@ -1142,24 +1143,54 @@ class TransaksiPenjualanController extends Controller
         try {
             if ($request->status_verifikasi === 'valid') {
                 // FUNGSIONALITAS 70: Pembayaran valid - Update ke status disiapkan
-                $transaksi->update([
+                $tanggalLunas = Carbon::now();
+                $tanggalLaku = Carbon::now();
+                
+                // TAMBAHAN BARU: Generate tanggal antar/ambil berdasarkan metode pengiriman
+                $jadwalData = $this->generateScheduleDates($transaksi->metodePengiriman, $tanggalLunas);
+                
+                $updateData = [
                     'status' => 'disiapkan',
-                    'tanggalLunas' => Carbon::now(),
-                    'tanggalLaku' => Carbon::now(),
+                    'tanggalLunas' => $tanggalLunas,
+                    'tanggalLaku' => $tanggalLaku,
                     'catatanVerifikasi' => $request->catatan ?: 'Pembayaran diverifikasi dan diterima',
                     'idPegawaiVerifikasi' => $idPegawai,
-                ]);
+                ];
+                
+                // Tambahkan data jadwal berdasarkan metode pengiriman
+                if ($transaksi->metodePengiriman === 'kurir') {
+                    $updateData['tanggalKirim'] = $jadwalData['tanggal_kirim'];
+                    \Log::info('Jadwal pengiriman kurir ditetapkan', [
+                        'transaction_id' => $idTransaksi,
+                        'tanggal_kirim' => $jadwalData['tanggal_kirim']->format('Y-m-d H:i:s'),
+                        'alasan' => $jadwalData['alasan']
+                    ]);
+                } else {
+                    // ambil_sendiri
+                    $updateData['tanggalAmbil'] = $jadwalData['tanggal_ambil'];
+                    $updateData['tanggalBatasAmbil'] = $jadwalData['tanggal_batas_ambil'];
+                    \Log::info('Jadwal pengambilan mandiri ditetapkan', [
+                        'transaction_id' => $idTransaksi,
+                        'tanggal_ambil' => $jadwalData['tanggal_ambil']->format('Y-m-d H:i:s'),
+                        'tanggal_batas_ambil' => $jadwalData['tanggal_batas_ambil']->format('Y-m-d H:i:s'),
+                        'alasan' => $jadwalData['alasan']
+                    ]);
+                }
+                
+                $transaksi->update($updateData);
 
                 // Hitung dan berikan poin yang didapat (Fungsionalitas 62)
                 $this->calculateAndAwardPoints($transaksi);
 
-                $message = 'Pembayaran telah diverifikasi dan transaksi sedang disiapkan';
+                $message = 'Pembayaran telah diverifikasi dan transaksi sedang disiapkan. ' . $jadwalData['alasan'];
 
                 \Log::info('Payment verified and approved', [
                     'transaction_id' => $idTransaksi,
                     'verified_by' => $idPegawai,
                     'customer_id' => $transaksi->idPembeli,
                     'points_awarded' => $transaksi->poinDidapat,
+                    'metode_pengiriman' => $transaksi->metodePengiriman,
+                    'jadwal_info' => $jadwalData,
                     'note' => $request->catatan
                 ]);
             } else {
@@ -1210,6 +1241,130 @@ class TransaksiPenjualanController extends Controller
             ]);
 
             return back()->with('error', 'Terjadi kesalahan saat memverifikasi pembayaran: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * METODE BARU: Generate tanggal antar/ambil berdasarkan ketentuan bisnis
+     * 
+     * Ketentuan:
+     * - Jam operasional: 08:00 - 20:00
+     * - Verifikasi setelah jam 16:00 = jadwal esok hari
+     * - Verifikasi sebelum jam 16:00 = jadwal hari ini atau esok hari
+     * - Batas ambil = tanggal ambil + 2 hari
+     */
+    private function generateScheduleDates($metodePengiriman, $tanggalVerifikasi)
+    {
+        $now = Carbon::parse($tanggalVerifikasi);
+        $jamVerifikasi = $now->format('H:i');
+        
+        // Tentukan tanggal dasar untuk penjadwalan
+        if ($jamVerifikasi >= '16:00') {
+            // Verifikasi setelah jam 16:00 = jadwal esok hari
+            $tanggalDasar = $now->copy()->addDay();
+            $alasan = "Dijadwalkan esok hari karena verifikasi setelah jam 16:00";
+        } else {
+            // Verifikasi sebelum jam 16:00 = bisa hari ini atau esok hari
+            // Untuk konsistensi, kita jadwalkan esok hari juga kecuali hari ini masih pagi
+            if ($jamVerifikasi <= '10:00') {
+                $tanggalDasar = $now->copy();
+                $alasan = "Dijadwalkan hari ini karena verifikasi di pagi hari";
+            } else {
+                $tanggalDasar = $now->copy()->addDay();
+                $alasan = "Dijadwalkan esok hari untuk persiapan";
+            }
+        }
+        
+        // Set jam operasional (09:00 untuk pengiriman, 08:00 untuk pengambilan)
+        if ($metodePengiriman === 'kurir') {
+            $tanggalKirim = $tanggalDasar->copy()->setTime(9, 0, 0); // Jam 09:00 untuk pengiriman
+            
+            return [
+                'tanggal_kirim' => $tanggalKirim,
+                'alasan' => $alasan . ". Pengiriman dijadwalkan " . $tanggalKirim->format('d M Y H:i')
+            ];
+        } else {
+            // ambil_sendiri
+            $tanggalAmbil = $tanggalDasar->copy()->setTime(8, 0, 0); // Jam 08:00 untuk pengambilan
+            $tanggalBatasAmbil = $tanggalAmbil->copy()->addDays(2)->setTime(20, 0, 0); // +2 hari jam 20:00
+            
+            return [
+                'tanggal_ambil' => $tanggalAmbil,
+                'tanggal_batas_ambil' => $tanggalBatasAmbil,
+                'alasan' => $alasan . ". Pengambilan tersedia mulai " . $tanggalAmbil->format('d M Y H:i') . 
+                        " sampai " . $tanggalBatasAmbil->format('d M Y H:i')
+            ];
+        }
+    }
+
+    /**
+     * METODE BARU: Cek dan update transaksi yang melebihi batas ambil (untuk scheduler)
+     * Fungsionalitas 77: Status menjadi "hangus" jika tidak diambil dalam 2 hari
+     */
+    public function checkExpiredPickupTransactions()
+    {
+        $expiredPickupTransactions = TransaksiPenjualan::where('status', 'disiapkan')
+            ->where('metodePengiriman', 'ambil_sendiri')
+            ->whereNotNull('tanggalBatasAmbil')
+            ->where('tanggalBatasAmbil', '<', Carbon::now())
+            ->get();
+
+        foreach ($expiredPickupTransactions as $transaksi) {
+            $this->markTransactionAsExpired($transaksi);
+        }
+
+        return response()->json([
+            'message' => 'Expired pickup transactions checked',
+            'expired_count' => $expiredPickupTransactions->count()
+        ]);
+    }
+
+    /**
+     * METODE BARU: Tandai transaksi sebagai hangus dan ubah barang menjadi donasi
+     */
+    private function markTransactionAsExpired($transaksi)
+    {
+        DB::beginTransaction();
+        try {
+            \Log::info('Marking transaction as expired due to pickup timeout', [
+                'transaction_id' => $transaksi->idTransaksiPenjualan,
+                'customer_id' => $transaksi->idPembeli,
+                'tanggal_batas_ambil' => $transaksi->tanggalBatasAmbil,
+                'current_time' => Carbon::now()->format('Y-m-d H:i:s')
+            ]);
+
+            // Update status transaksi menjadi hangus
+            $transaksi->update(['status' => 'hangus']);
+
+            // Update status barang menjadi "barang untuk donasi" (sesuai Fungsionalitas 77)
+            $detailTransaksi = DetailTransaksiPenjualan::where('idTransaksiPenjualan', $transaksi->idTransaksiPenjualan)->get();
+            foreach ($detailTransaksi as $detail) {
+                $produk = Produk::find($detail->idProduk);
+                if ($produk) {
+                    $produk->update(['status' => 'Untuk Donasi']); // atau status yang sesuai dengan ketentuan
+                }
+            }
+
+            // CATATAN: Poin tidak dikembalikan karena ini bukan pembatalan, tapi keterlambatan pengambilan
+            // Pembayaran dianggap hangus sesuai ketentuan
+
+            DB::commit();
+
+            \Log::info('Transaction marked as expired successfully', [
+                'transaction_id' => $transaksi->idTransaksiPenjualan,
+                'new_status' => 'hangus',
+                'products_marked_for_donation' => $detailTransaksi->count()
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error marking transaction as expired: ' . $e->getMessage(), [
+                'transaction_id' => $transaksi->idTransaksiPenjualan,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
         }
     }
 
