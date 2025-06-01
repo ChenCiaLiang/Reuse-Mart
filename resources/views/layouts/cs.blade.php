@@ -19,6 +19,23 @@
         </div>
         
         <nav class="mt-5">
+            <!-- TAMBAHAN BARU: Menu Verifikasi Pembayaran -->
+            <a href="{{ route('cs.verification.index') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('cs.verification.*') ? 'bg-green-700' : '' }}">
+                <i class="fas fa-credit-card mr-3"></i>
+                <span>Verifikasi Pembayaran</span>
+                @php
+                    // Hitung jumlah transaksi yang menunggu verifikasi
+                    $pendingVerification = \App\Models\TransaksiPenjualan::where('status', 'menunggu_verifikasi')
+                        ->whereNotNull('buktiPembayaran')
+                        ->count();
+                @endphp
+                @if($pendingVerification > 0)
+                <span class="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                    {{ $pendingVerification }}
+                </span>
+                @endif
+            </a>
+            
             <a href="{{ route('cs.penitip.index') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('cs.penitip.*') ? 'bg-green-700' : '' }}">
                 <i class="fas fa-users mr-3"></i>
                 <span>Manajemen Penitip</span>
@@ -49,6 +66,10 @@
                 <h1 class="text-lg font-semibold text-gray-700">
                     @if(request()->routeIs('cs.dashboard'))
                         Dashboard
+                    @elseif(request()->routeIs('cs.verification.index'))
+                        Verifikasi Pembayaran
+                    @elseif(request()->routeIs('cs.verification.show'))
+                        Detail Verifikasi Pembayaran
                     @elseif(request()->routeIs('cs.penitip.index'))
                         Manajemen Penitip
                     @elseif(request()->routeIs('cs.penitip.create'))
