@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Customer Service Dashboard - ReUseMart</title>
     @vite('resources/css/app.css')
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
@@ -91,6 +92,14 @@
             </div>
             
             <div class="flex items-center space-x-4">
+                <!-- TAMBAHAN BARU: Debug Session Info (bisa dihapus setelah masalah teratasi) -->
+                @if(config('app.debug'))
+                <div class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                    Role: {{ session('role') ?? 'null' }} | 
+                    User: {{ session('user')['nama'] ?? 'null' }}
+                </div>
+                @endif
+                
                 <div class="relative">
                     <button class="flex items-center text-gray-700 focus:outline-none">
                         <div class="text-right">
@@ -98,7 +107,7 @@
                             <p class="text-xs text-gray-500">{{ ucfirst(session('role')) ?? 'Jabatan' }}</p>
                         </div>
                     </button>
-                    </div>
+                </div>
             </div>
         </header>
         
@@ -148,5 +157,15 @@
         }, 3000);
     </script>
     @endif
+
+    <!-- TAMBAHAN BARU: Setup CSRF token untuk AJAX -->
+    <script>
+        // Setup CSRF token untuk semua AJAX request
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+    </script>
 </body>
 </html>
