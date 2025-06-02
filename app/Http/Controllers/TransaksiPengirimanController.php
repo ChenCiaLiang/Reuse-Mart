@@ -21,7 +21,7 @@ class TransaksiPengirimanController extends Controller
         // Ambil parameter pencarian
         $search = $request->input('search');
 
-        $pengiriman = TransaksiPenjualan::whereIn('status', ['terjual', 'pengambilan', 'pengiriman'])
+        $pengiriman = TransaksiPenjualan::whereIn('status', ['disiapkan', 'pengambilan', 'pengiriman'])
             ->when($search, function ($query) use ($search) {
                 return $query->where(function ($q) use ($search) {
                     $q->where('idTransaksiPenjualan', 'like', '%' . $search . '%')

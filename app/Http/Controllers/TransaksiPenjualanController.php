@@ -1089,7 +1089,7 @@ class TransaksiPenjualanController extends Controller
         // Authentication check
         $user = session('user');
         $role = session('role');
-        
+
         // Log untuk debugging
         \Log::info('Verifikasi pembayaran - Auth check', [
             'has_user_session' => !is_null($user),
@@ -1108,7 +1108,7 @@ class TransaksiPenjualanController extends Controller
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent()
             ]);
-            
+
             return redirect()->route('loginPage')->with('error', 'Session tidak valid, silakan login ulang sebagai CS');
         }
 
@@ -1145,10 +1145,10 @@ class TransaksiPenjualanController extends Controller
                 // FUNGSIONALITAS 70: Pembayaran valid - Update ke status disiapkan
                 $tanggalLunas = Carbon::now();
                 $tanggalLaku = Carbon::now();
-                
+
                 // TAMBAHAN BARU: Generate tanggal antar/ambil berdasarkan metode pengiriman
                 $jadwalData = $this->generateScheduleDates($transaksi->metodePengiriman, $tanggalLunas);
-                
+
                 $updateData = [
                     'status' => 'disiapkan',
                     'tanggalLunas' => $tanggalLunas,
@@ -1156,7 +1156,7 @@ class TransaksiPenjualanController extends Controller
                     'catatanVerifikasi' => $request->catatan ?: 'Pembayaran diverifikasi dan diterima',
                     'idPegawaiVerifikasi' => $idPegawai,
                 ];
-                
+
                 // Tambahkan data jadwal berdasarkan metode pengiriman
                 if ($transaksi->metodePengiriman === 'kurir') {
                     $updateData['tanggalKirim'] = $jadwalData['tanggal_kirim'];
@@ -1176,13 +1176,18 @@ class TransaksiPenjualanController extends Controller
                         'alasan' => $jadwalData['alasan']
                     ]);
                 }
-                
+
                 $transaksi->update($updateData);
 
                 // Hitung dan berikan poin yang didapat (Fungsionalitas 62)
                 $this->calculateAndAwardPoints($transaksi);
 
                 $message = 'Pembayaran telah diverifikasi dan transaksi sedang disiapkan. ' . $jadwalData['alasan'];
+
+                $komisiController = new KomisiController();
+                foreach ($transaksi->detailTransaksiPenjualan as $detail) {
+                    $komisiController->getKomisiPenjualan($detail->idDetailTransaksiPenjualan);
+                }
 
                 \Log::info('Payment verified and approved', [
                     'transaction_id' => $idTransaksi,
@@ -1257,7 +1262,7 @@ class TransaksiPenjualanController extends Controller
     {
         $now = Carbon::parse($tanggalVerifikasi);
         $jamVerifikasi = $now->format('H:i');
-        
+
         // Tentukan tanggal dasar untuk penjadwalan
         if ($jamVerifikasi >= '16:00') {
             // Verifikasi setelah jam 16:00 = jadwal esok hari
@@ -1274,11 +1279,11 @@ class TransaksiPenjualanController extends Controller
                 $alasan = "Dijadwalkan esok hari untuk persiapan";
             }
         }
-        
+
         // Set jam operasional (09:00 untuk pengiriman, 08:00 untuk pengambilan)
         if ($metodePengiriman === 'kurir') {
             $tanggalKirim = $tanggalDasar->copy()->setTime(9, 0, 0); // Jam 09:00 untuk pengiriman
-            
+
             return [
                 'tanggal_kirim' => $tanggalKirim,
                 'alasan' => $alasan . ". Pengiriman dijadwalkan " . $tanggalKirim->format('d M Y H:i')
@@ -1287,12 +1292,12 @@ class TransaksiPenjualanController extends Controller
             // ambil_sendiri
             $tanggalAmbil = $tanggalDasar->copy()->setTime(8, 0, 0); // Jam 08:00 untuk pengambilan
             $tanggalBatasAmbil = $tanggalAmbil->copy()->addDays(2)->setTime(20, 0, 0); // +2 hari jam 20:00
-            
+
             return [
                 'tanggal_ambil' => $tanggalAmbil,
                 'tanggal_batas_ambil' => $tanggalBatasAmbil,
-                'alasan' => $alasan . ". Pengambilan tersedia mulai " . $tanggalAmbil->format('d M Y H:i') . 
-                        " sampai " . $tanggalBatasAmbil->format('d M Y H:i')
+                'alasan' => $alasan . ". Pengambilan tersedia mulai " . $tanggalAmbil->format('d M Y H:i') .
+                    " sampai " . $tanggalBatasAmbil->format('d M Y H:i')
             ];
         }
     }
