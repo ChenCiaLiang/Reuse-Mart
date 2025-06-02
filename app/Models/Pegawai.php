@@ -23,6 +23,7 @@ class Pegawai extends Authenticatable
         'noTelp',
         'alamat',
         'tanggalLahir',
+        'komisi',
         'idJabatan',
     ];
 

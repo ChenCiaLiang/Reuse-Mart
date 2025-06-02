@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DetailTransaksiPenjualan;
 use App\Models\Komisi;
+use App\Models\Pembeli;
 use Illuminate\Support\Facades\DB;
 
 class KomisiController extends Controller
@@ -17,16 +18,19 @@ class KomisiController extends Controller
             ->leftJoin('detail_transaksi_penitipan as dtpt', 'dtpt.idProduk', '=', 'pr.idProduk')
             ->leftJoin('transaksi_penitipan as tpt', 'tpt.idTransaksiPenitipan', '=', 'dtpt.idTransaksiPenitipan')
             ->leftJoin('penitip as pt', 'pt.idPenitip', '=', 'tpt.idPenitip')
-            ->leftJoin('pegawai as hunter', 'pr.idPegawai', '=', 'hunter.idPegawai')
+            ->leftJoin('pegawai as hunter', 'tpt.idHunter', '=', 'hunter.idPegawai')
             ->leftJoin('komisi as kom', function ($join) {
                 $join->on('kom.idDetailTransaksiPenjualan', '=', 'dtpj.idDetailTransaksiPenjualan')
                     ->on('kom.idPenitip', '=', 'pt.idPenitip');
             })
             ->select([
+                'tpj.poinDidapat',
                 'pr.hargaJual as harga_barang',
+                'pb.idPembeli',
                 'pr.idProduk',
+                'pr.hargaJual',
                 'pt.idPenitip',
-                'hunter.idPegawai as idHunter',
+                'hunter.*',
                 'tpj.tanggalLaku',
                 'tpt.tanggalMasukPenitipan',
                 'pt.saldo as saldo_penitip',
@@ -58,11 +62,9 @@ class KomisiController extends Controller
         // brp poin yang pembeli dapat
         // status perpanjangan
 
-        $barang = $komisi->barang;
-        $harga = $data->harga_barang;
-        $detail = $komisi->barang->detailtransaksipenitipan->first();
-        $pembeli = $komisi->transaksiPembelian->pembeli;
-        $poinDapat = $komisi->transaksiPembelian->tambahan_poin;
+        $harga = $data->hargaJual;
+        $pembeli = Pembeli::find($data->idPembeli);
+        $poinDapat = $data->poinDidapat;
 
 
         $komisi_hunter = 0;
@@ -70,8 +72,8 @@ class KomisiController extends Controller
         $komisi_penitip = 0;
         $bonus_penitip = 0;
 
-        if ($barang->id_hunter) {
-            if ($detail->status_perpanjangan == 0) {
+        if ($data->hunter) {
+            if ($data->statusPerpanjangan == 0) {
                 $komisi_penitip = $harga * 0.8;
                 $komisi_hunter = $harga * 0.05;
                 $komisi_reusemart = $harga * 0.15;
@@ -81,7 +83,7 @@ class KomisiController extends Controller
                 $komisi_reusemart = $harga * 0.25;
             }
         } else {
-            if ($detail->status_perpanjangan == 0) {
+            if ($data->statusPerpanjangan == 0) {
                 $komisi_penitip = $harga * 0.8;
                 $komisi_reusemart = $harga * 0.2;
             } else {
@@ -90,19 +92,20 @@ class KomisiController extends Controller
             }
         }
 
-        if ($detail->tanggal_penitipan >= now()->subDays(7)) {
+        if ($data->tanggalMasukPenitipan >= now()->subDays(7)) {
             $bonus_penitip = $komisi_reusemart * 0.1;
             $komisi_reusemart = $komisi_reusemart - $bonus_penitip;
         }
 
+        //CEKME
         $komisi->update([
             'komisi_hunter' => $komisi_hunter,
             'komisi_reusemart' => $komisi_reusemart,
             'bonus_penitip' => $bonus_penitip,
         ]);
 
-        if ($detail->transaksiPenitipan->penitip) {
-            $penitip = $detail->transaksiPenitipan->penitip;
+        if ($data->transaksiPenitipan->penitip) {
+            $penitip = $data->transaksiPenitipan->penitip;
             $penitip->saldo += $komisi_penitip;
             $penitip->komisi_penitip += $bonus_penitip;
             $penitip->save();

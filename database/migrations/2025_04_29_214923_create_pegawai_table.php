@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('noTelp');
             $table->string('alamat');
             $table->dateTime('tanggalLahir');
+            $table->dateTime('komisi')->default(0);
             $table->unsignedBigInteger('idJabatan');
             $table->foreign('idJabatan')
                 ->references('idJabatan')->on('jabatan')
