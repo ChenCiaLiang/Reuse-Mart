@@ -455,7 +455,7 @@ function updateCalculation() {
     currentCalculation.total_akhir = totalBeforeDiscount - actualDiscount;
     
     // Calculate points earned (Fungsionalitas 62)
-    currentCalculation.poin_didapat = Math.floor(currentCalculation.total_akhir / 10000);
+    currentCalculation.poin_didapat = Math.floor(currentCalculation.subtotal / 10000);
     if (currentCalculation.total_akhir > 500000) {
         const bonus = Math.floor(currentCalculation.poin_didapat * 0.2);
         currentCalculation.poin_didapat += bonus;
