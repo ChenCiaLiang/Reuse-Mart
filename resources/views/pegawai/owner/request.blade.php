@@ -39,7 +39,7 @@
                     <tr class="border-b border-gray-200 hover:bg-gray-50">
                         <td class="py-3 px-6">{{ $request->idRequest }}</td>
                         <td class="py-3 px-6">{{ $request->organisasi->nama }}</td>
-                        <td class="py-3 px-6">{{ $request->tanggalRequest->format('d/m/Y') }}</td>
+                        <td class="py-3 px-6">{{ \Carbon\Carbon::parse($request->tanggalRequest)->format('d/m/Y') }}</td>
                         <td class="py-3 px-6">{{ $request->request }}</td>
                         <td class="py-3 px-6">
                             <span class="px-2 py-1 text-xs rounded-full 

@@ -6,10 +6,11 @@
     <title>Owner Panel - ReUseMart</title>
     @vite('resources/css/app.css')
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-gray-100 font-sans flex">
     <!-- Sidebar -->
-    <aside class="w-64 h-screen bg-green-800 text-white fixed">
+    <aside class="w-64 h-screen bg-green-800 text-white fixed overflow-y-auto">
         <div class="p-6">
             <div class="flex items-center space-x-2">
                 <img src="{{ asset('images/Logo/Logo.jpg') }}" alt="ReUseMart Logo" class="h-8 rounded">
@@ -21,23 +22,48 @@
         <nav class="mt-5">
             
             <a href="{{ route('owner.dashboard') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('owner.dashboard') ? 'bg-green-700' : '' }}">
-                <i class="fas fa-hands-helping mr-3"></i>
+                <i class="fas fa-tachometer-alt mr-3"></i>
                 <span>Dashboard</span>
             </a>
 
-            <a href="{{ route('owner.donasi.request') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('owner.request') ? 'bg-green-700' : '' }}">
+            <!-- Menu Donasi -->
+            <div class="px-6 py-2">
+                <p class="text-xs text-green-300 uppercase tracking-wider">Donasi</p>
+            </div>
+
+            <a href="{{ route('owner.donasi.request') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('owner.donasi.request') ? 'bg-green-700' : '' }}">
                 <i class="fas fa-hands-helping mr-3"></i>
                 <span>Request Donasi</span>
             </a>
             
-            <a href="{{ route('owner.donasi.history') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('owner.history') ? 'bg-green-700' : '' }}">
+            <a href="{{ route('owner.donasi.history') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('owner.donasi.history') ? 'bg-green-700' : '' }}">
                 <i class="fas fa-history mr-3"></i>
                 <span>History Donasi</span>
             </a>
             
-            <a href="{{ route('owner.donasi.barang') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('owner.barang') ? 'bg-green-700' : '' }}">
+            <a href="{{ route('owner.donasi.barang') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('owner.donasi.barang') ? 'bg-green-700' : '' }}">
                 <i class="fas fa-box mr-3"></i>
                 <span>Barang untuk Donasi</span>
+            </a>
+
+            <!-- Menu Laporan -->
+            <div class="px-6 py-2 mt-4">
+                <p class="text-xs text-green-300 uppercase tracking-wider">Laporan</p>
+            </div>
+
+            <a href="{{ route('owner.laporan.penjualan-bulanan-index') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('owner.laporan.penjualan-bulanan-index') ? 'bg-green-700' : '' }}">
+                <i class="fas fa-chart-line mr-3"></i>
+                <span>Laporan Penjualan</span>
+            </a>
+
+            <a href="{{ route('owner.laporan.komisi-bulanan-index') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('owner.laporan.komisi-bulanan-index') ? 'bg-green-700' : '' }}">
+                <i class="fas fa-percentage mr-3"></i>
+                <span>Laporan Komisi</span>
+            </a>
+
+            <a href="{{ route('owner.laporan.stok-gudang-index') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('owner.laporan.stok-gudang-index') ? 'bg-green-700' : '' }}">
+                <i class="fas fa-warehouse mr-3"></i>
+                <span>Laporan Stok Gudang</span>
             </a>
         </nav>
         
@@ -60,14 +86,20 @@
                 <h1 class="text-lg font-semibold text-gray-700">
                     @if(request()->routeIs('owner.dashboard'))
                         Dashboard
-                    @elseif(request()->routeIs('owner.request'))
+                    @elseif(request()->routeIs('owner.donasi.request'))
                         Daftar Request Donasi
-                    @elseif(request()->routeIs('owner.history'))
+                    @elseif(request()->routeIs('owner.donasi.history'))
                         History Donasi
-                    @elseif(request()->routeIs('owner.barang'))
+                    @elseif(request()->routeIs('owner.donasi.barang'))
                         Barang untuk Donasi
-                    @elseif(request()->routeIs('owner.edit'))
+                    @elseif(request()->routeIs('owner.donasi.edit'))
                         Update Informasi Donasi
+                    @elseif(request()->routeIs('owner.laporan.penjualan-bulanan-index'))
+                        Laporan Penjualan Bulanan
+                    @elseif(request()->routeIs('owner.laporan.komisi-bulanan-index'))
+                        Laporan Komisi Bulanan
+                    @elseif(request()->routeIs('owner.laporan.stok-gudang-index'))
+                        Laporan Stok Gudang
                     @else
                         ReUseMart Owner Panel
                     @endif

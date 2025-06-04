@@ -38,7 +38,7 @@ class RequestDonasiController extends Controller
             ->get();
 
         // History donasi terakhir
-        $historyDonasi = TransaksiDonasi::with(['request.organisasi', 'produk'])
+        $historyDonasi = TransaksiDonasi::with(['requestDonasi.organisasi', 'produk'])
             ->orderBy('tanggalPemberian', 'desc')
             ->limit(5)
             ->get();
@@ -153,10 +153,10 @@ class RequestDonasiController extends Controller
     {
         $idOrganisasi = $request->input('idOrganisasi');
 
-        $query = TransaksiDonasi::with(['request.organisasi', 'produk']);
+        $query = TransaksiDonasi::with(['requestDonasi.organisasi', 'produk']);
 
         if ($idOrganisasi) {
-            $query->whereHas('request', function ($q) use ($idOrganisasi) {
+            $query->whereHas('requestDonasi', function ($q) use ($idOrganisasi) {
                 $q->where('idOrganisasi', $idOrganisasi);
             });
         }
@@ -173,8 +173,8 @@ class RequestDonasiController extends Controller
     public function barangDonasi()
     {
         $barang = Produk::where('status', 'barang untuk donasi')->get();
-        $organisasi = Organisasi::has('requestDonasi')->get();
-        return view('pegawai.owner.barang', compact('barang', 'organisasi'));
+        $requestDonasi=RequestDonasi::where('status', 'Belum terpenuhi')->get();
+        return view('pegawai.owner.barang', compact('barang', 'requestDonasi'));
     }
 
     /**
@@ -198,7 +198,7 @@ class RequestDonasiController extends Controller
         // Buat transaksi donasi baru
         $transaksiDonasi = new TransaksiDonasi();
         $transaksiDonasi->tanggalPemberian = now(); // Tanggal dapat diubah nanti
-        $transaksiDonasi->namaPenerima = ''; // Nama penerima dapat diubah nanti
+        $transaksiDonasi->namaPenerima = $requestDonasi->penerima; // Nama penerima dapat diubah nanti
         $transaksiDonasi->idRequest = $requestDonasi->idRequest;
         $transaksiDonasi->idProduk = $produk->idProduk;
         $transaksiDonasi->save();
@@ -207,7 +207,7 @@ class RequestDonasiController extends Controller
         $produk->status = 'proses donasi';
         $produk->save();
 
-        return redirect()->route('request-donasi.update-donasi', $transaksiDonasi->id)->with('success', 'Barang berhasil dialokasikan untuk donasi. Silakan lengkapi informasi donasi.');
+        return redirect()->route('owner.donasi.barang', $transaksiDonasi->id)->with('success', 'Barang berhasil dialokasikan untuk donasi. Silakan lengkapi informasi donasi.');
     }
 
     /**
@@ -215,7 +215,7 @@ class RequestDonasiController extends Controller
      */
     public function editDonasi($id)
     {
-        $donasi = TransaksiDonasi::with(['request.organisasi', 'produk'])->findOrFail($id);
+        $donasi = TransaksiDonasi::with(['requestDonasi.organisasi', 'produk'])->findOrFail($id);
         return view('pegawai.owner.edit', compact('donasi'));
     }
 
@@ -262,7 +262,7 @@ class RequestDonasiController extends Controller
 
             DB::commit();
 
-            return redirect()->route('request-donasi.history')->with('success', 'Informasi donasi berhasil diperbarui dan notifikasi telah dikirim ke penitip');
+            return redirect()->route('owner.donasi.history')->with('success', 'Informasi donasi berhasil diperbarui dan notifikasi telah dikirim ke penitip');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());

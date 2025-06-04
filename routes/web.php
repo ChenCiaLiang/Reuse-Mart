@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AlamatController;
+use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\PegawaiController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DiskusiProdukController;
@@ -165,6 +166,20 @@ Route::prefix('pegawai')->middleware('RolePegawai:pegawai')->group(function () {
             Route::post('/alokasi', [RequestDonasiController::class, 'alokasikanBarang'])->name('alokasi');
             Route::get('/edit/{id}', [RequestDonasiController::class, 'editDonasi'])->name('edit');
             Route::put('/update/{id}', [RequestDonasiController::class, 'updateDonasi'])->name('update');
+        });
+
+         Route::prefix('laporan')->name('laporan.')->group(function () {
+             // Laporan Penjualan Bulanan
+            Route::get('/penjualan-bulanan-index', [LaporanController::class, 'penjualanBulanan'])->name('penjualan-bulanan-index');
+            Route::get('/penjualan-bulanan/download', [LaporanController::class, 'downloadPenjualanBulanan'])->name('penjualan-bulanan.download');
+            
+            // Laporan Komisi Bulanan
+            Route::get('/komisi-bulanan-index', [LaporanController::class, 'komisiBulanan'])->name('komisi-bulanan-index');
+            Route::get('/komisi-bulanan/download', [LaporanController::class, 'downloadKomisiBulanan'])->name('komisi-bulanan.download');
+            
+            // Laporan Stok Gudang
+            Route::get('/stok-gudang-index', [LaporanController::class, 'stokGudang'])->name('stok-gudang-index');
+            Route::get('/stok-gudang/download', [LaporanController::class, 'downloadStokGudang'])->name('stok-gudang.download');
         });
     });
 });

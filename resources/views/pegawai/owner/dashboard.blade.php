@@ -162,9 +162,9 @@
                 <tbody class="divide-y bg-white">
                     @forelse($historyDonasi ?? [] as $donasi)
                     <tr class="text-gray-700">
-                        <td class="px-4 py-3 text-sm">{{ $donasi->tanggalPemberian->format('d/m/Y') }}</td>
+                        <td class="px-4 py-3 text-sm">{{ \Carbon\Carbon::parse($donasi->tanggalPemberian)->format('d/m/Y') }}</td>
                         <td class="px-4 py-3 text-sm">{{ $donasi->produk->deskripsi }}</td>
-                        <td class="px-4 py-3 text-sm">{{ $donasi->request->organisasi->nama }}</td>
+                        <td class="px-4 py-3 text-sm">{{ $donasi->requestDonasi->organisasi->nama }}</td>
                         <td class="px-4 py-3 text-sm">{{ $donasi->namaPenerima }}</td>
                     </tr>
                     @empty
