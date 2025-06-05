@@ -123,7 +123,7 @@ class TransaksiPengirimanController extends Controller
         $hariPembelian = $tanggalLaku->format('Y-m-d');
         $hariPengiriman = $tanggalKirimRequest->format('Y-m-d');
 
-        if ($jamPembelian >= 16.00 && $jamPembelian <= 08.00) {
+        if ($jamPembelian >= 16.00 || $jamPembelian <= 08.00) {
             if ($hariPembelian === $hariPengiriman) {
                 $tanggalMinimal = $tanggalLaku->copy()->addDay()->format('d/m/Y');
                 $errorMessage = "Pembelian setelah jam 16:00 tidak bisa dikirim di hari yang sama. Minimal tanggal kirim: {$tanggalMinimal}";

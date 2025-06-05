@@ -33,7 +33,7 @@
             <div class="text-base font-bold mb-1">ReUse Mart</div>
             <div class="text-xs">Jl. Green Eco Park No. 456 Yogyakarta</div>
         </div>
-        
+        <br><br>
         <!-- Invoice Information -->
         <div class="mb-4">
             <table class="w-full border-collapse">
@@ -64,7 +64,7 @@
                 </tbody>
             </table>
         </div>
-        
+        <br><br>
         <!-- Customer Information -->
         <div class="mb-4 border-b border-black pb-3">
             <div class="font-bold mb-1">Pembeli :</div>
@@ -76,7 +76,7 @@
         <div class="mb-4 font-bold">
             Delivery: {{ $transaksi->namaPegawai ?? 'Diambil sendiri' }}
         </div>
-        
+        <br>
         <!-- Items Table -->
         <div class="mb-4">
             <table class="w-full border-collapse">
@@ -95,6 +95,7 @@
                             </td>
                         </tr>
                     @endforeach
+                    <br><br>
                 </tbody>
             </table>
         </div>
@@ -132,13 +133,13 @@
                     <tr class="border-t-2 border-black pt-1">
                         <td class="py-1 text-sm font-bold">Total Bayar</td>
                         <td class="py-1 text-right text-sm font-bold">
-                            {{ $transaksi->total - ($transaksi->poinDigunakan ? ($transaksi->poinDigunakan * 100) : 0 ) }}
+                            {{ $transaksi->total - ($transaksi->poinDigunakan ? ($transaksi->poinDigunakan * 100) : 0 ) + $transaksi->ongkir }}
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
-        
+        <br>
         <!-- Points Information -->
         <div class="mb-4 text-xs">
             <div class="mb-1">Poin dari pesanan ini: {{ $transaksi->poinDidapat }}</div>
@@ -149,7 +150,7 @@
         <div class="mb-5 text-xs">
             QC oleh: {{ $qc->nama }} (P{{ $qc->idPegawai }})
         </div>
-        
+        <br>
         <!-- Signature Area -->
         <div class="border-t border-black pt-3">
             @if($transaksi->idPegawai)
@@ -157,13 +158,12 @@
             @else
                 <div class="mb-8">Diambil oleh:</div>
             @endif
-            
+            <br><br><br><br><br>
             <div class="mb-4">
-                (<span class="inline-block border-b border-dotted border-black w-48 mx-2"></span>)
+                (..............)
             </div>
-            
             <div>
-                Tanggal: <span class="inline-block border-b border-dotted border-black w-48 ml-2"></span>
+                Tanggal: ........
             </div>
         </div>
         

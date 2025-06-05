@@ -242,12 +242,12 @@ class TransaksiPenitipanController extends Controller
                     'updated_at' => now()
                 ]);
 
-            DB::table('komisi')
-                ->whereIn('idProduk', $produkIds)
-                ->update([
-                    'status' => 'Diambil Kembali',
-                    'updated_at' => now()
-                ]);
+            // DB::table('komisi')
+            //     ->whereIn('idProduk', $produkIds)
+            //     ->update([
+            //         'status' => 'Diambil Kembali',
+            //         'updated_at' => now()
+            //     ]);
 
             DB::commit();
 

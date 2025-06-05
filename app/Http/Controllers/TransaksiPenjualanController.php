@@ -1179,9 +1179,6 @@ class TransaksiPenjualanController extends Controller
 
                 $transaksi->update($updateData);
 
-                // Hitung dan berikan poin yang didapat (Fungsionalitas 62)
-                $this->calculateAndAwardPoints($transaksi);
-
                 $message = 'Pembayaran telah diverifikasi dan transaksi sedang disiapkan. ' . $jadwalData['alasan'];
 
                 $komisiController = new KomisiController();
@@ -1285,7 +1282,7 @@ class TransaksiPenjualanController extends Controller
             $tanggalKirim = $tanggalDasar->copy()->setTime(9, 0, 0); // Jam 09:00 untuk pengiriman
 
             return [
-                'tanggal_kirim' => $tanggalKirim,
+                'tanggal_kirim' => NULL,
                 'alasan' => $alasan . ". Pengiriman dijadwalkan " . $tanggalKirim->format('d M Y H:i')
             ];
         } else {
@@ -1294,8 +1291,8 @@ class TransaksiPenjualanController extends Controller
             $tanggalBatasAmbil = $tanggalAmbil->copy()->addDays(2)->setTime(20, 0, 0); // +2 hari jam 20:00
 
             return [
-                'tanggal_ambil' => $tanggalAmbil,
-                'tanggal_batas_ambil' => $tanggalBatasAmbil,
+                'tanggal_ambil' => NULL,
+                'tanggal_batas_ambil' => NULL,
                 'alasan' => $alasan . ". Pengambilan tersedia mulai " . $tanggalAmbil->format('d M Y H:i') .
                     " sampai " . $tanggalBatasAmbil->format('d M Y H:i')
             ];
@@ -1385,9 +1382,6 @@ class TransaksiPenjualanController extends Controller
             'tanggalLaku' => Carbon::now(),
         ]);
 
-        // Hitung dan berikan poin yang didapat (Fungsionalitas 62)
-        $this->calculateAndAwardPoints($transaksi);
-
         // TODO: Kirim notifikasi ke penitip
         // Implementasi notifikasi bisa ditambahkan di sini
 
@@ -1398,24 +1392,24 @@ class TransaksiPenjualanController extends Controller
      * Hitung dan berikan poin ke pembeli (Fungsionalitas 62)
      * UPDATED: Menggunakan data poin dari database transaksi
      */
-    private function calculateAndAwardPoints($transaksi)
-    {
-        // PERBAIKAN: Ambil poin dari database transaksi, bukan dari session
-        $poinDidapat = $transaksi->poinDidapat;
+    // private function calculateAndAwardPoints($transaksi)
+    // {
+    //     // PERBAIKAN: Ambil poin dari database transaksi, bukan dari session
+    //     $poinDidapat = $transaksi->poinDidapat;
 
-        if ($poinDidapat > 0) {
-            // Tambahkan poin ke pembeli
-            $pembeli = $transaksi->pembeli;
-            $pembeli->update(['poin' => $pembeli->poin + $poinDidapat]);
+    //     if ($poinDidapat > 0) {
+    //         // Tambahkan poin ke pembeli
+    //         $pembeli = $transaksi->pembeli;
+    //         $pembeli->update(['poin' => $pembeli->poin + $poinDidapat]);
 
-            \Log::info('Points awarded to customer', [
-                'transaction_id' => $transaksi->idTransaksiPenjualan,
-                'customer_id' => $pembeli->idPembeli,
-                'points_awarded' => $poinDidapat,
-                'new_total_points' => $pembeli->poin
-            ]);
-        }
-    }
+    //         \Log::info('Points awarded to customer', [
+    //             'transaction_id' => $transaksi->idTransaksiPenjualan,
+    //             'customer_id' => $pembeli->idPembeli,
+    //             'points_awarded' => $poinDidapat,
+    //             'new_total_points' => $pembeli->poin
+    //         ]);
+    //     }
+    // }
 
     /**
      * Cancel transaksi yang expired atau tidak valid (Fungsionalitas 67)

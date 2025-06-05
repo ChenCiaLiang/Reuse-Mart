@@ -149,13 +149,14 @@
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Aksi Transaksi</h3>
             <div class="flex flex-wrap gap-3">
                 {{-- Show different buttons based on delivery method --}}
-                @if($pengiriman->status == 'terjual')
+                @if($pengiriman->metodePengiriman == 'kurir' && $pengiriman->status == 'disiapkan')
                     {{-- Delivery by courier --}}
                     <a href="{{ route('gudang.pengiriman.penjadwalanKirimPage', $pengiriman->idTransaksiPenjualan) }}" 
                         class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors duration-200">
                         <i class="fa-solid fa-truck mr-2"></i>
                         Penjadwalan Kirim
                     </a>
+                @elseif($pengiriman->metodePengiriman == 'ambil_sendiri' && $pengiriman->status == 'disiapkan')
                     {{-- Self pickup --}}
                     <a href="{{ route('gudang.pengiriman.penjadwalanAmbilPage', $pengiriman->idTransaksiPenjualan) }}" 
                         class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors duration-200">
@@ -163,7 +164,7 @@
                         Penjadwalan Ambil
                     </a>
                 @else
-                    @if($pengiriman->tanggalBatasAmbil)
+                    @if($pengiriman->status == 'pengambilan')
                         <a href="{{ route('gudang.pengiriman.konfirmasiAmbil', $pengiriman->idTransaksiPenjualan) }}" 
                             class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors duration-200">
                             <i class="fa-solid fa-circle-check mr-2"></i>
