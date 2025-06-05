@@ -65,6 +65,16 @@
                 <i class="fas fa-warehouse mr-3"></i>
                 <span>Laporan Stok Gudang</span>
             </a>
+
+            <a href="{{ route('owner.laporan.laporanKategori') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('owner.laporan.laporanKategori') ? 'bg-green-700' : '' }}">
+                <i class="fas fa-warehouse mr-3"></i>
+                <span>Laporan penjualan per kategori barang</span>
+            </a>
+
+            <a href="{{ route('owner.laporan.masaPenitipanHabis') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('owner.laporan.masaPenitipanHabis') ? 'bg-green-700' : '' }}">
+                <i class="fas fa-warehouse mr-3"></i>
+                <span>Laporan Masa Penitipan Habis</span>
+            </a>
         </nav>
         
         <div class="absolute bottom-0 w-full p-4 border-t border-green-700">
@@ -100,6 +110,10 @@
                         Laporan Komisi Bulanan
                     @elseif(request()->routeIs('owner.laporan.stok-gudang-index'))
                         Laporan Stok Gudang
+                    @elseif(request()->routeIs('owner.laporan.laporanKategori'))
+                        Laporan penjualan per kategori barang
+                    @elseif(request()->routeIs('owner.laporan.masaPenitipanHabis'))
+                        Laporan Masa Penitipan Habis
                     @else
                         ReUseMart Owner Panel
                     @endif

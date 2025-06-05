@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\KategoriProduk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -15,7 +16,7 @@ class LaporanController extends Controller
     public function penjualanBulanan(Request $request)
     {
         $tahun = $request->get('tahun', date('Y'));
-        
+
         $dataPenjualan = DB::table('transaksi_penjualan as tp')
             ->join('detail_transaksi_penjualan as dtp', 'tp.idTransaksiPenjualan', '=', 'dtp.idTransaksiPenjualan')
             ->join('produk as p', 'dtp.idProduk', '=', 'p.idProduk')
@@ -32,9 +33,18 @@ class LaporanController extends Controller
 
         // Format data untuk grafik dan tabel
         $bulanIndonesia = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember'
         ];
 
         $dataFormatted = [];
@@ -58,14 +68,17 @@ class LaporanController extends Controller
         }
 
         return view('pegawai.owner.laporan.penjualan-bulanan-index', compact(
-            'dataFormatted', 'tahun', 'totalBarang', 'totalPenjualan'
+            'dataFormatted',
+            'tahun',
+            'totalBarang',
+            'totalPenjualan'
         ));
     }
 
     public function downloadPenjualanBulanan(Request $request)
     {
         $tahun = $request->get('tahun', date('Y'));
-        
+
         $dataPenjualan = DB::table('transaksi_penjualan as tp')
             ->join('detail_transaksi_penjualan as dtp', 'tp.idTransaksiPenjualan', '=', 'dtp.idTransaksiPenjualan')
             ->join('produk as p', 'dtp.idProduk', '=', 'p.idProduk')
@@ -81,9 +94,18 @@ class LaporanController extends Controller
             ->get();
 
         $bulanIndonesia = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember'
         ];
 
         $dataFormatted = [];
@@ -106,7 +128,10 @@ class LaporanController extends Controller
         }
 
         $pdf = PDF::loadView('pegawai.owner.laporan.pdf.penjualan-bulanan', compact(
-            'dataFormatted', 'tahun', 'totalBarang', 'totalPenjualan'
+            'dataFormatted',
+            'tahun',
+            'totalBarang',
+            'totalPenjualan'
         ));
 
         return $pdf->download("Laporan_Penjualan_Bulanan_{$tahun}.pdf");
@@ -144,15 +169,27 @@ class LaporanController extends Controller
             ->get();
 
         $bulanIndonesia = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember'
         ];
 
         $namaBulan = $bulanIndonesia[(int)$bulan];
 
         return view('pegawai.owner.laporan.komisi-bulanan-index', compact(
-            'dataKomisi', 'bulan', 'tahun', 'namaBulan'
+            'dataKomisi',
+            'bulan',
+            'tahun',
+            'namaBulan'
         ));
     }
 
@@ -187,15 +224,27 @@ class LaporanController extends Controller
             ->get();
 
         $bulanIndonesia = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember'
         ];
 
         $namaBulan = $bulanIndonesia[(int)$bulan];
 
         $pdf = PDF::loadView('pegawai.owner.laporan.pdf.komisi-bulanan', compact(
-            'dataKomisi', 'bulan', 'tahun', 'namaBulan'
+            'dataKomisi',
+            'bulan',
+            'tahun',
+            'namaBulan'
         ));
 
         return $pdf->download("Laporan_Komisi_Bulanan_{$namaBulan}_{$tahun}.pdf");
@@ -252,5 +301,116 @@ class LaporanController extends Controller
         $pdf = PDF::loadView('pegawai.owner.laporan.pdf.stok-gudang', compact('dataStok'));
 
         return $pdf->download('Laporan_Stok_Gudang_' . date('Y-m-d') . '.pdf');
+    }
+
+    public function laporanKategori(Request $request)
+    {
+        $tahun = $request->get('tahun', date('Y'));
+
+        // Ambil semua kategori
+        $kategoris = KategoriProduk::all();
+
+        $data = [];
+        $totalTerjual = 0;
+        $totalGagalTerjual = 0;
+
+        foreach ($kategoris as $kategori) {
+            // Hitung item terjual per kategori berdasarkan tahun tanggalLaku
+            $itemTerjual = DB::table('produk')
+                ->join('detail_transaksi_penjualan', 'produk.idProduk', '=', 'detail_transaksi_penjualan.idProduk')
+                ->join('transaksi_penjualan', 'detail_transaksi_penjualan.idTransaksiPenjualan', '=', 'transaksi_penjualan.idTransaksiPenjualan')
+                ->where('produk.idKategori', $kategori->idKategori)
+                ->where('produk.status', 'Terjual')
+                ->whereNotNull('transaksi_penjualan.tanggalLaku')  // Pastikan ada tanggalLaku
+                ->whereYear('transaksi_penjualan.tanggalLaku', $tahun)  // Filter berdasarkan tahun tanggalLaku
+                ->count();
+
+            // Hitung item gagal terjual per kategori berdasarkan status produk
+            $itemGagalTerjual = DB::table('produk')
+                ->where('produk.idKategori', $kategori->idKategori)
+                ->whereIn('produk.status', ['barang untuk donasi', 'Didonasikan', 'Diambil Kembali'])
+                ->count();
+
+            $data[] = [
+                'kategori' => $kategori->nama,
+                'item_terjual' => $itemTerjual,
+                'item_gagal_terjual' => $itemGagalTerjual
+            ];
+
+            $totalTerjual += $itemTerjual;
+            $totalGagalTerjual += $itemGagalTerjual;
+        }
+
+        $reportData = [
+            'data' => $data,
+            'tahun' => $tahun,
+            'tanggal_cetak' => Carbon::now()->format('d F Y'),
+            'total_terjual' => $totalTerjual,
+            'total_gagal_terjual' => $totalGagalTerjual
+        ];
+
+        // Jika request untuk PDF
+        if ($request->get('format') == 'pdf') {
+            $pdf = Pdf::loadView('pegawai.owner.laporan.pdf.laporanKategori', $reportData);
+            return $pdf->download('laporan-penjualan-per-kategori-' . $tahun . '.pdf');
+        }
+
+        // Return view laporan untuk tampilan web
+        return view('pegawai.owner.laporan.laporanKategori', $reportData);
+    }
+
+    public function laporanKategoriForm()
+    {
+        return view('pegawai.owner.laporan.laporanKategori-form');
+    }
+
+    public function masaPenitipanHabis()
+    {
+        try {
+            // Query untuk mengambil data barang yang masa penitipannya sudah habis
+            $dataBarang = DB::table('transaksi_penitipan as tp')
+                ->join('detail_transaksi_penitipan as dtp', 'tp.idTransaksiPenitipan', '=', 'dtp.idTransaksiPenitipan')
+                ->join('produk as p', 'dtp.idProduk', '=', 'p.idProduk')
+                ->join('penitip as pen', 'tp.idPenitip', '=', 'pen.idPenitip')
+                ->select(
+                    'p.idProduk',
+                    'p.deskripsi as namaProduk',
+                    'p.idKategori',
+                    'pen.idPenitip',
+                    'pen.nama as namaPenitip',
+                    'tp.tanggalMasukPenitipan',
+                    'tp.tanggalAkhirPenitipan',
+                    'tp.batasAmbil'
+                )
+                ->where('tp.tanggalAkhirPenitipan', '<', Carbon::now())
+                //CEKME
+                ->where('tp.statusPenitipan', '!=', 'Diambil')
+                ->where('tp.statusPenitipan', '!=', 'Selesai')
+                ->orderBy('tp.tanggalAkhirPenitipan', 'asc')
+                ->get();
+            // Generate kode produk: K + idKategori + idProduk
+            foreach ($dataBarang as $item) {
+                $item->kodeProduk = strtoupper(substr($item->namaProduk, 0, 1)) . $item->idProduk;
+            }
+
+            $tanggalCetak = Carbon::now()->format('d F Y');
+
+            // Data untuk PDF
+            $data = [
+                'dataBarang' => $dataBarang,
+                'tanggalCetak' => $tanggalCetak,
+                'totalBarang' => $dataBarang->count()
+            ];
+
+            // Generate PDF
+            $pdf = PDF::loadView('pegawai.owner.laporan.pdf.laporanMasaPenitipanHabis', $data);
+            $pdf->setPaper('A4', 'landscape');
+
+            $namaFile = 'Laporan_Barang_Penitipan_Habis_' . Carbon::now()->format('Y-m-d_His') . '.pdf';
+
+            return $pdf->download($namaFile);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menggenerate laporan: ' . $e->getMessage());
+        }
     }
 }

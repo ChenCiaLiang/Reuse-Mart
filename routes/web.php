@@ -168,18 +168,25 @@ Route::prefix('pegawai')->middleware('RolePegawai:pegawai')->group(function () {
             Route::put('/update/{id}', [RequestDonasiController::class, 'updateDonasi'])->name('update');
         });
 
-         Route::prefix('laporan')->name('laporan.')->group(function () {
-             // Laporan Penjualan Bulanan
+        Route::prefix('laporan')->name('laporan.')->group(function () {
+            // Laporan Penjualan Bulanan
             Route::get('/penjualan-bulanan-index', [LaporanController::class, 'penjualanBulanan'])->name('penjualan-bulanan-index');
             Route::get('/penjualan-bulanan/download', [LaporanController::class, 'downloadPenjualanBulanan'])->name('penjualan-bulanan.download');
-            
+
             // Laporan Komisi Bulanan
             Route::get('/komisi-bulanan-index', [LaporanController::class, 'komisiBulanan'])->name('komisi-bulanan-index');
             Route::get('/komisi-bulanan/download', [LaporanController::class, 'downloadKomisiBulanan'])->name('komisi-bulanan.download');
-            
+
             // Laporan Stok Gudang
             Route::get('/stok-gudang-index', [LaporanController::class, 'stokGudang'])->name('stok-gudang-index');
             Route::get('/stok-gudang/download', [LaporanController::class, 'downloadStokGudang'])->name('stok-gudang.download');
+
+            // Laporan Kategori
+            Route::get('/penjualan-kategori', [LaporanController::class, 'laporanKategoriForm'])->name('laporanKategori');
+            Route::get('/penjualan-kategori/pdf', [LaporanController::class, 'laporanKategori'])->name('laporanKategoriPdf');
+
+            // Laporan Masa Penitipan Habis
+            Route::get('/masaPenitipanHabis/pdf', [LaporanController::class, 'masaPenitipanHabis'])->name('masaPenitipanHabis');
         });
     });
 });
