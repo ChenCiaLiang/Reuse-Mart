@@ -769,11 +769,15 @@ class TransaksiPenitipanController extends Controller
             ->where('dtp.idTransaksiPenitipan', $id)
             ->get();
 
+        $tahun = date('y');
+        $bulan = date('m');
+        $nomorNota = $tahun . '.' . $bulan . '.' . $id;
+
         $data = [
             'transaksi' => $transaksi,
             'detail' => $detail,
             'tanggal_cetak' => now(),
-            'nomor_nota' => 'NOTA-' . str_pad($id, 6, '0', STR_PAD_LEFT) . '-' . date('Ymd')
+            'nomor_nota' => $nomorNota
         ];
 
         $pdf = Pdf::loadView('pegawai.gudang.penitipan.print-nota', $data);

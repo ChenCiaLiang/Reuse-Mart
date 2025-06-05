@@ -50,13 +50,13 @@
                 <tbody class="text-gray-600 text-sm">
                     @forelse($donasi as $d)
                     <tr class="border-b border-gray-200 hover:bg-gray-50">
-                        <td class="py-3 px-6">{{ $d->id }}</td>
-                        <td class="py-3 px-6">{{ $d->tanggalPemberian->format('d/m/Y') }}</td>
+                        <td class="py-3 px-6">{{ $d->idTransaksiDonasi }}</td>
+                        <td class="py-3 px-6">{{ \Carbon\Carbon::parse(time: $d->tanggalPemberian)->format('d/m/Y') }}</td>
                         <td class="py-3 px-6">{{ $d->produk->deskripsi }}</td>
                         <td class="py-3 px-6">{{ $d->request->organisasi->nama }}</td>
                         <td class="py-3 px-6">{{ $d->namaPenerima }}</td>
                         <td class="py-3 px-6">
-                            <a href="{{ route('owner.donasi.edit', $d->id) }}" class="text-blue-600 hover:text-blue-900">Edit</a>
+                            <a href="{{ route('owner.donasi.edit', $d->idTransaksiDonasi) }}" class="text-blue-600 hover:text-blue-900">Edit</a>
                         </td>
                     </tr>
                     @empty

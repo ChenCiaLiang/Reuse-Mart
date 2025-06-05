@@ -261,6 +261,7 @@ class TransaksiPenjualanController extends Controller
     }
     /**
      * Menghitung total belanja dengan ongkir (Fungsionalitas 60)
+     * UPDATED: Poin hanya dihitung dari subtotal, bukan dari total akhir
      */
     public function calculateTotal(Request $request)
     {
@@ -326,7 +327,7 @@ class TransaksiPenjualanController extends Controller
 
         // Validasi dan hitung penggunaan poin (Fungsionalitas 61)
         $poinDigunakan = min($request->poin_digunakan ?? 0, $pembeli->poin);
-        $diskonPoin = $poinDigunakan * 10; // 1 poin = Rp 10 (sesuai dokumen reward: 100 poin = Rp 10.000)
+        $diskonPoin = $poinDigunakan * 10; 
 
         // Pastikan diskon tidak melebihi subtotal + ongkir
         $totalSebelumDiskon = $subtotal + $ongkir;
@@ -336,10 +337,10 @@ class TransaksiPenjualanController extends Controller
         // Total akhir
         $totalAkhir = $totalSebelumDiskon - $diskonPoin;
 
-        // Hitung poin yang akan didapat (Fungsionalitas 62)
-        // 1 poin = 10.000, bonus 20% jika > 500.000
-        $poinDapat = floor($totalAkhir / 10000);
-        if ($totalAkhir > 500000) {
+        // PERBAIKAN: Hitung poin yang akan didapat HANYA dari subtotal (Fungsionalitas 62)
+        // Poin dihitung dari harga barang saja, tidak termasuk ongkir
+        $poinDapat = floor($subtotal / 10000); // 1 poin = 10.000 dari subtotal
+        if ($subtotal > 500000) { // Bonus 20% jika subtotal > 500.000
             $bonusPoin = floor($poinDapat * 0.2);
             $poinDapat += $bonusPoin;
         }
@@ -350,7 +351,7 @@ class TransaksiPenjualanController extends Controller
             'poin_digunakan' => $poinDigunakan,
             'diskon_poin' => $diskonPoin,
             'total_akhir' => $totalAkhir,
-            'poin_didapat' => $poinDapat,
+            'poin_didapat' => $poinDapat, 
             'sisa_poin' => $pembeli->poin - $poinDigunakan,
             'metode_pengiriman' => $request->metode_pengiriman
         ]);
@@ -714,12 +715,12 @@ class TransaksiPenjualanController extends Controller
             $poinDigunakan = floor($diskonPoin / 10);
             $totalAkhir = $totalSebelumDiskon - $diskonPoin;
 
-            // Hitung poin yang akan didapat
-            $poinDidapat = floor($totalAkhir / 10000);
-            if ($totalAkhir > 500000) {
-                $bonusPoin = floor($poinDidapat * 0.2);
-                $poinDidapat += $bonusPoin;
-            }
+        // PERBAIKAN: Hitung poin yang akan didapat HANYA dari subtotal
+        $poinDidapat = floor($subtotal / 10000); // Dari subtotal saja
+        if ($subtotal > 500000) { // Bonus berdasarkan subtotal
+            $bonusPoin = floor($poinDidapat * 0.2);
+            $poinDidapat += $bonusPoin;
+        }
 
             // Generate nomor transaksi
             $nomorTransaksi = $this->generateTransactionNumber();

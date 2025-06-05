@@ -36,7 +36,7 @@ class OrganisasiController extends Controller
     {
         $organisasi = Organisasi::findOrFail($id);
         // Ambil data request donasi untuk organisasi ini
-        $requestDonasi = $organisasi->requestDonasis()->orderBy('tanggalRequest', 'desc')->get();
+        $requestDonasi = $organisasi->requestDonasi()->orderBy('tanggalRequest', 'desc')->get();
         return view('pegawai.admin.manajemenOrganisasi..show', compact('organisasi', 'requestDonasi'));
     }
 

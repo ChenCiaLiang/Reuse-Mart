@@ -37,7 +37,6 @@
                         <td class="py-3 px-6">{{ $b->idProduk }}</td>
                         <td class="py-3 px-6">{{ $b->deskripsi }}</td>
                         <td class="py-3 px-6">{{ $b->kategori->nama }}</td>
-                        <td class="py-3 px-6">{{ $b->created_at->format('d/m/Y') }}</td>
                         <td class="py-3 px-6">
                             <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
                                 {{ $b->status }}
@@ -71,16 +70,10 @@
                     <label for="idRequest" class="block text-sm font-medium text-gray-700 mb-1">Pilih Request Donasi:</label>
                     <select id="idRequest" name="idRequest" class="w-full px-3 py-2 border border-gray-300 rounded-md" required>
                         <option value="">-- Pilih Request Donasi --</option>
-                        @foreach($organisasi as $org)
-                            <optgroup label="{{ $org->nama }}">
-                                @foreach($org->requestDonasis as $req)
-                                    @if($req->status != 'Terpenuhi')
-                                        <option value="{{ $req->idRequest }}">
-                                            {{ $req->request }} ({{ $req->tanggalRequest->format('d/m/Y') }})
-                                        </option>
-                                    @endif
-                                @endforeach
-                            </optgroup>
+                            @foreach($requestDonasi as $req)
+                                <option value="{{ $req->idRequest }}">
+                                    {{ $req->request }} ({{ \Carbon\Carbon::parse($req->tanggalRequest)->format('d/m/Y') }})
+                                </option>
                         @endforeach
                     </select>
                 </div>
