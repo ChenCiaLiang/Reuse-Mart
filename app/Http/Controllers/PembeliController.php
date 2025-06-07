@@ -13,6 +13,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
 
 class PembeliController extends Controller
 {
@@ -360,4 +361,254 @@ class PembeliController extends Controller
 
     //     return view('customer.pembeli.list', compact('transaksiPenjualan', 'pembeli'));
     // }
+
+    /**
+     * Menampilkan profil diri sendiri dan poin reward
+     * Mobile API Endpoint: GET /api/pembeli/profile
+     */
+    public function getProfile()
+    {
+        try {
+            // Ambil data pembeli yang sedang login
+            $pembeli = Pembeli::find(Auth::id());
+
+            // Jika pembeli tidak ditemukan, return error
+            if (!$pembeli) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pembeli tidak ditemukan'
+                ], 401);
+            }
+
+            // Format response data profil
+            $profileData = [
+                'idPembeli' => $pembeli->idPembeli,
+                'nama' => $pembeli->nama,
+                'email' => $pembeli->email,
+                'poin' => $pembeli->poin,
+                'total_transaksi' => $this->getTotalTransaksi($pembeli->idPembeli),  // Pastikan fungsi ini bekerja sesuai kebutuhan
+                'total_pembelian' => $this->getTotalPembelian($pembeli->idPembeli)   // Sama dengan getTotalTransaksi
+            ];
+
+            // Response sukses dengan data profil
+            return response()->json([
+                'success' => true,
+                'message' => 'Profil berhasil diambil',
+                'data' => $profileData
+            ], 200);
+
+        } catch (\Exception $e) {
+            // Jika ada error, tangkap exception dan kembalikan pesan error
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Menampilkan history transaksi pembelian dan detailnya
+     * Mobile API Endpoint: GET /api/pembeli/history-transaksi
+     * Parameters: tanggal_mulai, tanggal_selesai (optional)
+     */
+    public function getHistoryTransaksi(Request $request)
+    {
+        try {
+            $pembeli = Pembeli::find(Auth::id());
+            if (!$pembeli) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User tidak ditemukan'
+                ], 401);
+            }
+            // Validasi input tanggal jika ada
+            $validator = Validator::make($request->all(), [
+                'tanggal_mulai' => 'nullable|date|date_format:Y-m-d',
+                'tanggal_selesai' => 'nullable|date|date_format:Y-m-d|after_or_equal:tanggal_mulai'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Format tanggal tidak valid',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+            
+            if (!$pembeli) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User tidak ditemukan'
+                ], 401);
+            }
+
+            // Query transaksi penjualan pembeli
+            $query = TransaksiPenjualan::where('idPembeli', $pembeli->idPembeli)
+                ->with(['detailTransaksiPenjualan.produk.kategori'])
+                ->orderBy('tanggalPesan', 'desc');
+
+            // Filter berdasarkan periode tanggal jika ada
+            if ($request->tanggal_mulai && $request->tanggal_selesai) {
+                $tanggalMulai = Carbon::parse($request->tanggal_mulai)->startOfDay();
+                $tanggalSelesai = Carbon::parse($request->tanggal_selesai)->endOfDay();
+                
+                $query->whereBetween('tanggalPesan', [$tanggalMulai, $tanggalSelesai]);
+            } elseif ($request->tanggal_mulai) {
+                $tanggalMulai = Carbon::parse($request->tanggal_mulai)->startOfDay();
+                $query->where('tanggalPesan', '>=', $tanggalMulai);
+            } elseif ($request->tanggal_selesai) {
+                $tanggalSelesai = Carbon::parse($request->tanggal_selesai)->endOfDay();
+                $query->where('tanggalPesan', '<=', $tanggalSelesai);
+            }
+
+            $transaksi = $query->get();
+
+            // Format data transaksi
+            $historyData = $transaksi->map(function ($trans) {
+                return [
+                    'idTransaksiPenjualan' => $trans->idTransaksiPenjualan,
+                    'tanggal_pesan' => $trans->tanggalPesan ? Carbon::parse($trans->tanggalPesan)->format('d/m/Y H:i') : null,
+                    'tanggal_lunas' => $trans->tanggalLunas ? Carbon::parse($trans->tanggalLunas)->format('d/m/Y H:i') : null,
+                    'tanggal_kirim' => $trans->tanggalKirim ? Carbon::parse($trans->tanggalKirim)->format('d/m/Y H:i') : null,
+                    'tanggal_ambil' => $trans->tanggalAmbil ? Carbon::parse($trans->tanggalAmbil)->format('d/m/Y H:i') : null,
+                    'status' => $this->getStatusTransaksi($trans),
+                    'metode_pengiriman' => $trans->metodePengiriman,
+                    'alamat_pengiriman' => $this->formatAlamatPengiriman($trans->alamatPengiriman),
+                    'poin_didapat' => $trans->poinDidapat ?? 0,
+                    'poin_digunakan' => $trans->poinDigunakan ?? 0,
+                    'total_harga' => $this->calculateTotalHarga($trans),
+                    'ongkos_kirim' => $this->calculateOngkosKirim($trans),
+                    'total_bayar' => $this->calculateTotalBayar($trans),
+                    'detail_produk' => $this->formatDetailProduk($trans->detailTransaksiPenjualan)
+                ];
+            });
+
+            // Summary data
+            $summary = [
+                'total_transaksi' => $historyData->count(),
+                'periode' => [
+                    'tanggal_mulai' => $request->tanggal_mulai,
+                    'tanggal_selesai' => $request->tanggal_selesai
+                ]
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'History transaksi berhasil diambil',
+                'summary' => $summary,
+                'data' => $historyData
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Helper Functions
+     */
+
+    private function getTotalTransaksi($idPembeli)
+    {
+        return TransaksiPenjualan::where('idPembeli', $idPembeli)->count();
+    }
+
+    private function getTotalPembelian($idPembeli)
+    {
+        return TransaksiPenjualan::where('idPembeli', $idPembeli)
+            ->whereIn('status', ['terjual', 'kirim', 'diambil'])
+            ->with('detailTransaksiPenjualan.produk')
+            ->get()
+            ->sum(function ($transaksi) {
+                return $this->calculateTotalBayar($transaksi);
+            });
+    }
+
+    private function getStatusTransaksi($transaksi)
+    {
+        $status = $transaksi->status;
+        $statusLabels = [
+            'menunggu_pembayaran' => 'Menunggu Pembayaran',
+            'menunggu_verifikasi' => 'Menunggu Verifikasi',
+            'dibayar' => 'Sudah Dibayar',
+            'disiapkan' => 'Sedang Disiapkan',
+            'kirim' => 'Sedang Dikirim',
+            'diambil' => 'Sudah Diambil',
+            'terjual' => 'Selesai',
+            'batal' => 'Dibatalkan',
+            'hangus' => 'Hangus'
+        ];
+
+        return [
+            'code' => $status,
+            'label' => $statusLabels[$status] ?? $status
+        ];
+    }
+
+    private function formatAlamatPengiriman($alamatPengiriman)
+    {
+        if (!$alamatPengiriman) {
+            return null;
+        }
+
+        $alamat = is_string($alamatPengiriman) ? json_decode($alamatPengiriman, true) : $alamatPengiriman;
+        
+        return [
+            'jenis' => $alamat['jenis'] ?? null,
+            'alamat_lengkap' => $alamat['alamatLengkap'] ?? null,
+            'id_alamat' => $alamat['idAlamat'] ?? null
+        ];
+    }
+
+    private function calculateTotalHarga($transaksi)
+    {
+        return $transaksi->detailTransaksiPenjualan->sum(function ($detail) {
+            return $detail->produk->hargaJual ?? 0;
+        });
+    }
+
+    private function calculateOngkosKirim($transaksi)
+    {
+        $totalHarga = $this->calculateTotalHarga($transaksi);
+        
+        // Berdasarkan requirements: gratis jika >= 1.5 juta, 100rb jika < 1.5 juta
+        if ($transaksi->metodePengiriman === 'kurir') {
+            return $totalHarga >= 1500000 ? 0 : 100000;
+        }
+        
+        return 0; // Ambil sendiri gratis
+    }
+
+    private function calculateTotalBayar($transaksi)
+    {
+        $totalHarga = $this->calculateTotalHarga($transaksi);
+        $ongkosKirim = $this->calculateOngkosKirim($transaksi);
+        $potonganPoin = ($transaksi->poinDigunakan ?? 0) * 100; // 1 poin = Rp 100
+        
+        return $totalHarga + $ongkosKirim - $potonganPoin;
+    }
+
+    private function formatDetailProduk($detailTransaksi)
+    {
+        return $detailTransaksi->map(function ($detail) {
+            $produk = $detail->produk;
+            $gambar = $produk->gambar ? explode(',', $produk->gambar)[0] : null;
+            
+            return [
+                'idProduk' => $produk->idProduk,
+                'nama' => $produk->deskripsi,
+                'harga_jual' => $produk->hargaJual,
+                'kategori' => $produk->kategori->nama ?? null,
+                'gambar_utama' => $gambar,
+                'status_garansi' => $produk->tanggalGaransi ? 
+                    (Carbon::parse($produk->tanggalGaransi)->isFuture() ? 'Bergaransi' : 'Tidak Bergaransi') : 
+                    'Tidak Bergaransi',
+                'tanggal_garansi' => $produk->tanggalGaransi ? 
+                    Carbon::parse($produk->tanggalGaransi)->format('d/m/Y') : null
+            ];
+        });
+    }
 }

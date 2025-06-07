@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PegawaiController;
+use App\Http\Controllers\PembeliController;
 use App\Http\Controllers\ProdukController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
@@ -27,7 +28,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('owner')->middleware('Role:owner')->group(function () {});
 
-    Route::prefix('pembeli')->middleware('Role:pembeli')->group(function () {});
+    Route::prefix('pembeli')->middleware('Role:pembeli')->group(function () {
+        Route::get('/profile', [PembeliController::class, 'getProfile']);
+        Route::get('/history-transaksi', [PembeliController::class, 'getHistoryTransaksi']);
+
+    });
 
     Route::prefix('penitip')->middleware('Role:penitip')->group(function () {});
 
