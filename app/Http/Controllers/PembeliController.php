@@ -414,17 +414,39 @@ class PembeliController extends Controller
     public function getHistoryTransaksi(Request $request)
     {
         try {
-            $pembeli = Pembeli::find(Auth::id());
-            if (!$pembeli) {
+            // ✅ Debug untuk melihat apa yang terjadi
+            Log::info('Auth Debug', [
+                'auth_id' => Auth::id(),
+                'auth_user_type' => get_class(Auth::user()),
+                'auth_check' => Auth::check(),
+                'guard' => Auth::getDefaultDriver()
+            ]);
+            
+            // ✅ Langsung gunakan Auth::user()
+            $pembeli = Auth::user();
+            
+            // ✅ Cek apakah user adalah instance Pembeli
+            if (!$pembeli || !($pembeli instanceof \App\Models\Pembeli)) {
+                Log::warning('Unauthorized access attempt', [
+                    'user_type' => $pembeli ? get_class($pembeli) : 'null',
+                    'user_id' => $pembeli ? $pembeli->id : 'null'
+                ]);
+                
                 return response()->json([
                     'success' => false,
-                    'message' => 'User tidak ditemukan'
+                    'message' => 'Unauthorized access'
                 ], 401);
             }
-            // Validasi input tanggal jika ada
+
+            Log::info('Pembeli authenticated', [
+                'pembeli_id' => $pembeli->idPembeli,
+                'pembeli_email' => $pembeli->email
+            ]);
+
+            // Validasi input tanggal lunas jika ada
             $validator = Validator::make($request->all(), [
-                'tanggal_mulai' => 'nullable|date|date_format:Y-m-d',
-                'tanggal_selesai' => 'nullable|date|date_format:Y-m-d|after_or_equal:tanggal_mulai'
+                'tanggal_lunas_mulai' => 'nullable|date|date_format:Y-m-d',
+                'tanggal_lunas_selesai' => 'nullable|date|date_format:Y-m-d|after_or_equal:tanggal_lunas_mulai'
             ]);
 
             if ($validator->fails()) {
@@ -434,34 +456,31 @@ class PembeliController extends Controller
                     'errors' => $validator->errors()
                 ], 422);
             }
-            
-            if (!$pembeli) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User tidak ditemukan'
-                ], 401);
-            }
 
             // Query transaksi penjualan pembeli
             $query = TransaksiPenjualan::where('idPembeli', $pembeli->idPembeli)
                 ->with(['detailTransaksiPenjualan.produk.kategori'])
                 ->orderBy('tanggalPesan', 'desc');
 
-            // Filter berdasarkan periode tanggal jika ada
-            if ($request->tanggal_mulai && $request->tanggal_selesai) {
-                $tanggalMulai = Carbon::parse($request->tanggal_mulai)->startOfDay();
-                $tanggalSelesai = Carbon::parse($request->tanggal_selesai)->endOfDay();
+            // Filter berdasarkan periode tanggal lunas jika ada
+            if ($request->tanggal_lunas_mulai && $request->tanggal_lunas_selesai) {
+                $tanggalLunasMulai = Carbon::parse($request->tanggal_lunas_mulai)->startOfDay();
+                $tanggalLunasSelesai = Carbon::parse($request->tanggal_lunas_selesai)->endOfDay();
                 
-                $query->whereBetween('tanggalPesan', [$tanggalMulai, $tanggalSelesai]);
-            } elseif ($request->tanggal_mulai) {
-                $tanggalMulai = Carbon::parse($request->tanggal_mulai)->startOfDay();
-                $query->where('tanggalPesan', '>=', $tanggalMulai);
-            } elseif ($request->tanggal_selesai) {
-                $tanggalSelesai = Carbon::parse($request->tanggal_selesai)->endOfDay();
-                $query->where('tanggalPesan', '<=', $tanggalSelesai);
+                $query->whereBetween('tanggalLunas', [$tanggalLunasMulai, $tanggalLunasSelesai]);
+            } elseif ($request->tanggal_lunas_mulai) {
+                $tanggalLunasMulai = Carbon::parse($request->tanggal_lunas_mulai)->startOfDay();
+                $query->where('tanggalLunas', '>=', $tanggalLunasMulai);
+            } elseif ($request->tanggal_lunas_selesai) {
+                $tanggalLunasSelesai = Carbon::parse($request->tanggal_lunas_selesai)->endOfDay();
+                $query->where('tanggalLunas', '<=', $tanggalLunasSelesai);
             }
 
             $transaksi = $query->get();
+
+            Log::info('Query result', [
+                'transaksi_count' => $transaksi->count()
+            ]);
 
             // Format data transaksi
             $historyData = $transaksi->map(function ($trans) {
@@ -486,9 +505,9 @@ class PembeliController extends Controller
             // Summary data
             $summary = [
                 'total_transaksi' => $historyData->count(),
-                'periode' => [
-                    'tanggal_mulai' => $request->tanggal_mulai,
-                    'tanggal_selesai' => $request->tanggal_selesai
+                'filter_tanggal_lunas' => [
+                    'tanggal_lunas_mulai' => $request->tanggal_lunas_mulai,
+                    'tanggal_lunas_selesai' => $request->tanggal_lunas_selesai
                 ]
             ];
 
@@ -500,13 +519,17 @@ class PembeliController extends Controller
             ], 200);
 
         } catch (\Exception $e) {
+            Log::error('Error in getHistoryTransaksi', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ], 500);
         }
     }
-
     /**
      * Helper Functions
      */
