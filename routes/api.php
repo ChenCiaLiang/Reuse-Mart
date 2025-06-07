@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PegawaiController;
 use App\Http\Controllers\PembeliController;
+use App\Http\Controllers\PenitipController;
 use App\Http\Controllers\ProdukController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
@@ -34,7 +35,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     });
 
-    Route::prefix('penitip')->middleware('Role:penitip')->group(function () {});
+    Route::prefix('penitip')->middleware('Role:penitip')->group(function () {
+        Route::get('/profile', [PenitipController::class, 'getProfile']);
+        Route::get('/history-transaksi', [PenitipController::class, 'getHistoryTransaksi']);
+        Route::get('/detail-transaksi/{idTransaksiPenjualan}', [PenitipController::class, 'getDetailTransaksi']);
+    });
 
     Route::prefix('organisasi')->middleware('Role:organisasi')->group(function () {});
 
