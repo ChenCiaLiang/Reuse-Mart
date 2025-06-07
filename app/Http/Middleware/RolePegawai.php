@@ -35,6 +35,10 @@ class RolePegawai
                 return $next($request);
             }
 
+            if ($jabatan === 'hunter' && $routePrefix === 'hunter') {
+                return $next($request);
+            }
+
             return redirect()->route('unAuthorized');
         }
 

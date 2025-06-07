@@ -10,11 +10,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
 
+Route::get('produk', [ProdukController::class, 'index']);
+Route::get('produk/{id}', [ProdukController::class, 'show']);
+Route::get('kategori', [ProdukController::class, 'kategori']);
 Route::middleware('auth:sanctum')->group(function () {
     //umum
-    Route::get('produk', [ProdukController::class, 'index']);
-    Route::get('produk/{id}', [ProdukController::class, 'show']);
-    Route::get('kategori', [ProdukController::class, 'kategori']);
 
     Route::prefix('admin')->middleware('Role:admin')->group(function () {
         Route::get('pegawai/{id}', [PegawaiController::class, 'show'])->name('show');
