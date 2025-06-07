@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PegawaiController;
+use App\Http\Controllers\ProdukController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
@@ -10,6 +11,11 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
+    //umum
+    Route::get('produk', [ProdukController::class, 'index']);
+    Route::get('produk/{id}', [ProdukController::class, 'show']);
+    Route::get('kategori', [ProdukController::class, 'kategori']);
+
     Route::prefix('admin')->middleware('Role:admin')->group(function () {
         Route::get('pegawai/{id}', [PegawaiController::class, 'show'])->name('show');
     });
