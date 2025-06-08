@@ -338,123 +338,135 @@ class PenitipController extends Controller
                     'message' => 'Unauthorized access'
                 ], 401);
             }
-            // Ambil parameter pagination
-            $page = $request->input('page', 1);
-            $perPage = $request->input('per_page', 10);
 
-            // Query yang disesuaikan dengan struktur database
-            $transaksiQuery = DB::table('transaksi_penitipan as tp')
+            // Validasi parameter
+            $validated = $request->validate([
+                'start_date' => 'nullable|date',
+                'end_date' => 'nullable|date|after_or_equal:start_date',
+                'page' => 'nullable|integer|min:1',
+                'per_page' => 'nullable|integer|min:1|max:50',
+            ]);
+
+            $page = $validated['page'] ?? 1;
+            $perPage = $validated['per_page'] ?? 10;
+            $startDate = $validated['start_date'] ?? null;
+            $endDate = $validated['end_date'] ?? null;
+
+            // Query utama berdasarkan transaksi penitipan
+            $query = DB::table('transaksi_penitipan as tp')
                 ->join('detail_transaksi_penitipan as dtp', 'tp.idTransaksiPenitipan', '=', 'dtp.idTransaksiPenitipan')
                 ->join('produk as p', 'dtp.idProduk', '=', 'p.idProduk')
+                ->join('kategori_produk as kp', 'p.idKategori', '=', 'kp.idKategori')
                 ->leftJoin('detail_transaksi_penjualan as dtpj', 'p.idProduk', '=', 'dtpj.idProduk')
                 ->leftJoin('transaksi_penjualan as tpj', 'dtpj.idTransaksiPenjualan', '=', 'tpj.idTransaksiPenjualan')
-                ->leftJoin('komisi as k', function($join) use ($penitip) {
-                    $join->on('dtpj.idDetailTransaksiPenjualan', '=', 'k.idDetailTransaksiPenjualan')
-                        ->where('k.idPenitip', '=', $penitip->idPenitip);
-                })
+                ->leftJoin('komisi as k', 'dtpj.idDetailTransaksiPenjualan', '=', 'k.idDetailTransaksiPenjualan')
                 ->where('tp.idPenitip', $penitip->idPenitip)
-                ->where(function($query) {
-                    $query->where('p.status', 'Terjual')
-                        ->orWhere('tpj.status', 'terjual')
-                        ->orWhere('tpj.status', 'selesai')
-                        ->orWhere('tpj.status', 'diambil');
-                })
-                ->whereNotNull('tpj.tanggalLunas')
-                ->orderBy('tpj.tanggalLunas', 'desc')
                 ->select(
+                    'tp.idTransaksiPenitipan',
                     'tpj.idTransaksiPenjualan',
-                    'tpj.tanggalPesan',
-                    'tpj.tanggalLunas', 
-                    'tpj.status',
                     'p.idProduk',
                     'p.deskripsi as nama_produk',
-                    'p.hargaJual',
+                    'p.hargaJual as harga_jual',
                     'p.gambar',
-                    'tp.tanggalMasukPenitipan',
-                    'tp.statusPenitipan',
-                    'tp.statusPerpanjangan',
-                    'k.komisiPenitip',
-                    'k.komisiHunter', 
-                    'k.komisiReuse'
-                )
-                ->distinct();
+                    'p.status as status_produk',
+                    'tp.tanggalMasukPenitipan as tanggal_penitipan',
+                    'tp.statusPenitipan as status_penitipan',
+                    'tpj.tanggalPesan as tanggal_pesan',
+                    'tpj.tanggalLunas as tanggal_lunas',
+                    'tpj.status as status_penjualan',
+                    'k.komisiPenitip as komisi_penitip',
+                    'k.komisiHunter as komisi_hunter',
+                    'k.komisiReuse as komisi_reuse',
+                    'kp.nama as kategori'
+                );
 
-            // Jika tidak ada transaksi terjual, ambil semua history penitipan
-            $totalSold = $transaksiQuery->count();
-            
-            if ($totalSold == 0) {
-                // Fallback: ambil semua barang yang pernah dititipkan
-                $transaksiQuery = DB::table('transaksi_penitipan as tp')
-                    ->join('detail_transaksi_penitipan as dtp', 'tp.idTransaksiPenitipan', '=', 'dtp.idTransaksiPenitipan')
-                    ->join('produk as p', 'dtp.idProduk', '=', 'p.idProduk')
-                    ->where('tp.idPenitip', $penitip->idPenitip)
-                    ->orderBy('tp.tanggalMasukPenitipan', 'desc')
-                    ->select(
-                        DB::raw('NULL as idTransaksiPenjualan'),
-                        'tp.tanggalMasukPenitipan as tanggalPesan',
-                        DB::raw('NULL as tanggalLunas'),
-                        'p.status',
-                        'p.idProduk',
-                        'p.deskripsi as nama_produk',
-                        'p.hargaJual',
-                        'p.gambar',
-                        'tp.tanggalMasukPenitipan',
-                        'tp.statusPenitipan',
-                        'tp.statusPerpanjangan',
-                        DB::raw('0 as komisiPenitip'),
-                        DB::raw('0 as komisiHunter'),
-                        DB::raw('0 as komisiReuse')
-                    );
+            // Filter berdasarkan tanggal jika ada
+            if ($startDate) {
+                $query->where('tp.tanggalMasukPenitipan', '>=', $startDate . ' 00:00:00');
+            }
+            if ($endDate) {
+                $query->where('tp.tanggalMasukPenitipan', '<=', $endDate . ' 23:59:59');
             }
 
-            // Pagination manual untuk query builder
-            $total = $transaksiQuery->count();
-            $results = $transaksiQuery->offset(($page - 1) * $perPage)
-                                    ->limit($perPage)
-                                    ->get();
+            // Order by terbaru dulu
+            $query->orderBy('tp.tanggalMasukPenitipan', 'desc')
+                ->orderBy('tp.idTransaksiPenitipan', 'desc');
 
-            // Format data untuk mobile
-            $transaksiData = $results->map(function ($transaksi) {
-                $gambar = $transaksi->gambar ? explode(',', $transaksi->gambar)[0] : null;
+            // Clone query untuk total count
+            $totalQuery = clone $query;
+            $total = $totalQuery->count();
+
+            // Pagination
+            $offset = ($page - 1) * $perPage;
+            $results = $query->offset($offset)->limit($perPage)->get();
+
+            // Format data hasil
+            $transactions = $results->map(function ($item) {
+                // Ambil gambar pertama jika ada
+                $gambar = null;
+                if ($item->gambar) {
+                    $gambarArray = explode(',', $item->gambar);
+                    $gambar = trim($gambarArray[0]);
+                }
+
+                // Tentukan status dan tanggal yang akan ditampilkan
+                $isTerjual = !is_null($item->idTransaksiPenjualan) && !is_null($item->tanggal_lunas);
                 
                 return [
-                    'idTransaksiPenjualan' => $transaksi->idTransaksiPenjualan,
-                    'idProduk' => $transaksi->idProduk,
-                    'nama_produk' => $transaksi->nama_produk,
-                    'harga_jual' => (float) $transaksi->hargaJual,
+                    'idTransaksiPenitipan' => (int) $item->idTransaksiPenitipan,
+                    'idTransaksiPenjualan' => $item->idTransaksiPenjualan ? (int) $item->idTransaksiPenjualan : null,
+                    'idProduk' => (int) $item->idProduk,
+                    'nama_produk' => $item->nama_produk,
+                    'harga_jual' => (float) $item->harga_jual,
                     'gambar' => $gambar,
-                    'tanggal_pesan' => $transaksi->tanggalPesan ? 
-                        Carbon::parse($transaksi->tanggalPesan)->format('d/m/Y') : 
-                        Carbon::parse($transaksi->tanggalMasukPenitipan)->format('d/m/Y'),
-                    'tanggal_lunas' => $transaksi->tanggalLunas ? 
-                        Carbon::parse($transaksi->tanggalLunas)->format('d/m/Y') : null,
-                    'status' => $transaksi->status,
-                    'status_penitipan' => $transaksi->statusPenitipan ?? null,
-                    'komisi_penitip' => (float) ($transaksi->komisiPenitip ?? 0),
-                    'komisi_hunter' => (float) ($transaksi->komisiHunter ?? 0),
-                    'komisi_reuse' => (float) ($transaksi->komisiReuse ?? 0),
+                    'kategori' => $item->kategori,
+                    'tanggal_pesan' => $isTerjual ? 
+                        Carbon::parse($item->tanggal_pesan)->format('d/m/Y') : 
+                        Carbon::parse($item->tanggal_penitipan)->format('d/m/Y'),
+                    'tanggal_lunas' => $item->tanggal_lunas ? 
+                        Carbon::parse($item->tanggal_lunas)->format('d/m/Y') : null,
+                    'status' => $isTerjual ? $item->status_penjualan : $item->status_produk,
+                    'status_penitipan' => $item->status_penitipan,
+                    'komisi_penitip' => (float) ($item->komisi_penitip ?? 0),
+                    'komisi_hunter' => (float) ($item->komisi_hunter ?? 0),
+                    'komisi_reuse' => (float) ($item->komisi_reuse ?? 0),
                 ];
             });
 
-            // Calculate pagination info
+            // Pagination info
             $lastPage = ceil($total / $perPage);
             $hasMore = $page < $lastPage;
+
+            $paginationInfo = [
+                'current_page' => (int) $page,
+                'per_page' => (int) $perPage,
+                'total' => (int) $total,
+                'last_page' => (int) $lastPage,
+                'has_more' => $hasMore,
+            ];
+
+            // Filter info
+            $filterInfo = [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+            ];
 
             return response()->json([
                 'success' => true,
                 'message' => 'History transaksi berhasil diambil',
                 'data' => [
-                    'transactions' => $transaksiData,
-                    'pagination' => [
-                        'current_page' => $page,
-                        'per_page' => $perPage,
-                        'total' => $total,
-                        'last_page' => $lastPage,
-                        'has_more' => $hasMore,
-                    ],
+                    'transactions' => $transactions,
+                    'pagination' => $paginationInfo,
+                    'filter' => $filterInfo,
                 ],
             ], 200);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
             Log::error('Error in getHistoryTransaksi penitip', [
                 'error' => $e->getMessage(),
