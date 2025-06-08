@@ -187,6 +187,18 @@ Route::prefix('pegawai')->middleware('RolePegawai:pegawai')->group(function () {
 
             // Laporan Masa Penitipan Habis
             Route::get('/masaPenitipanHabis/pdf', [LaporanController::class, 'masaPenitipanHabis'])->name('masaPenitipanHabis');
+
+            // Rute Laporan Request Donasi
+            Route::get('request-donasi', [LaporanController::class, 'laporanRequestDonasi'])->name('request-donasi');
+            Route::get('request-donasi/pdf', [LaporanController::class, 'downloadLaporanRequestDonasiPdf'])->name('request-donasi.pdf');
+
+            // Rute Laporan Donasi Barang
+            Route::get('donasi-barang', [LaporanController::class, 'laporanDonasiBarang'])->name('donasi-barang');
+            Route::get('donasi-barang/pdf', [LaporanController::class, 'downloadLaporanDonasiBarangPdf'])->name('donasi-barang.pdf');
+
+            // Rute Laporan Transaksi Penitip
+            Route::get('transaksi-penitip', [LaporanController::class, 'laporanTransaksiPenitipForm'])->name('transaksi-penitip');
+            Route::post('transaksi-penitip/generate', [LaporanController::class, 'generateLaporanTransaksiPenitip'])->name('transaksi-penitip.generate');
         });
     });
 });

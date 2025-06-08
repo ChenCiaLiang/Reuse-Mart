@@ -75,6 +75,22 @@
                 <i class="fas fa-warehouse mr-3"></i>
                 <span>Laporan Masa Penitipan Habis</span>
             </a>
+
+            <a href="{{ route('owner.laporan.request-donasi') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('owner.laporan.request-donasi') ? 'bg-green-700' : '' }}">
+                <i class="fas fa-file-invoice mr-3"></i>
+                <span>Laporan Request Donasi</span>
+            </a>
+
+            <a href="{{ route('owner.laporan.donasi-barang') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('owner.laporan.donasi-barang') ? 'bg-green-700' : '' }}">
+                <i class="fas fa-box-open mr-3"></i>
+                <span>Laporan Donasi Barang</span>
+            </a>
+
+            <a href="{{ route('owner.laporan.transaksi-penitip') }}" class="flex items-center px-6 py-3 hover:bg-green-700 {{ request()->routeIs('owner.laporan.transaksi-penitip*') ? 'bg-green-700' : '' }}">
+                <i class="fas fa-user-check mr-3"></i>
+                <span>Laporan Transaksi Penitip</span>
+            </a>
+
         </nav>
         
         <div class="absolute bottom-0 w-full p-4 border-t border-green-700">
@@ -114,6 +130,12 @@
                         Laporan penjualan per kategori barang
                     @elseif(request()->routeIs('owner.laporan.masaPenitipanHabis'))
                         Laporan Masa Penitipan Habis
+                    @elseif(request()->routeIs('owner.laporan.request-donasi'))
+                        Laporan Request Donasi
+                    @elseif(request()->routeIs('owner.laporan.donasi-barang'))
+                        Laporan Donasi Barang
+                    @elseif(request()->routeIs('owner.laporan.transaksi-penitip*'))
+                        Laporan Transaksi Penitip
                     @else
                         ReUseMart Owner Panel
                     @endif

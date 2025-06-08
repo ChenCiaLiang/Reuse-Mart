@@ -413,4 +413,127 @@ class LaporanController extends Controller
             return redirect()->back()->with('error', 'Gagal menggenerate laporan: ' . $e->getMessage());
         }
     }
+
+    // Laporan Request Donasi
+    public function laporanRequestDonasi(Request $request)
+    {
+        $query = RequestDonasi::with('organisasi');
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('judul', 'like', "%{$search}%")
+                  ->orWhere('status', 'like', "%{$search}%")
+                  ->orWhereHas('organisasi', function ($q2) use ($search) {
+                      $q2->where('nama_org', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $requests = $query->latest()->paginate(10);
+        return view('pegawai.owner.laporan.request-donasi-index', compact('requests'));
+    }
+
+    public function downloadLaporanRequestDonasiPdf(Request $request)
+    {
+        $query = RequestDonasi::with('organisasi');
+
+         if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('judul', 'like', "%{$search}%")
+                  ->orWhere('status', 'like', "%{$search}%")
+                  ->orWhereHas('organisasi', function ($q2) use ($search) {
+                      $q2->where('nama_org', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        $requests = $query->latest()->get();
+        $pdf = Pdf::loadView('pegawai.owner.laporan.pdf.request-donasi', [
+            'requests' => $requests,
+            'search' => $request->input('search')
+        ]);
+        return $pdf->download('laporan-request-donasi-'.date('Y-m-d').'.pdf');
+    }
+
+    // Laporan Donasi Barang
+    public function laporanDonasiBarang(Request $request)
+    {
+        $query = TransaksiDonasi::with('requestDonasi.organisasi', 'produk');
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->whereHas('produk', function($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%");
+            })->orWhereHas('requestDonasi.organisasi', function($q) use ($search) {
+                $q->where('nama_org', 'like', "%{$search}%");
+            });
+        }
+
+        $donations = $query->latest()->paginate(10);
+        return view('pegawai.owner.laporan.donasi-barang-index', compact('donations'));
+    }
+
+    public function downloadLaporanDonasiBarangPdf(Request $request)
+    {
+         $query = TransaksiDonasi::with('requestDonasi.organisasi', 'produk');
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->whereHas('produk', function($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%");
+            })->orWhereHas('requestDonasi.organisasi', function($q) use ($search) {
+                $q->where('nama_org', 'like', "%{$search}%");
+            });
+        }
+        
+        $donations = $query->latest()->get();
+        $pdf = Pdf::loadView('pegawai.owner.laporan.pdf.donasi-barang', [
+            'donations' => $donations,
+            'search' => $request->input('search')
+        ]);
+        return $pdf->download('laporan-donasi-barang-'.date('Y-m-d').'.pdf');
+    }
+
+    // Laporan Transaksi Penitip
+    public function laporanTransaksiPenitipForm()
+    {
+        $penitips = Penitip::where('status', 'aktif')->orderBy('nama')->get();
+        return view('pegawai.owner.laporan.transaksi-penitip-form', compact('penitips'));
+    }
+    
+    public function generateLaporanTransaksiPenitip(Request $request)
+    {
+        $request->validate([
+            'idPenitip' => 'required|exists:penitip,idPenitip',
+            'tahun' => 'required|digits:4|integer|min:2020',
+        ]);
+
+        $idPenitip = $request->input('idPenitip');
+        $tahun = $request->input('tahun');
+        $penitip = Penitip::findOrFail($idPenitip);
+
+        $transaksi = DetailTransaksiPenitipan::whereHas('produk.penitip', function ($query) use ($idPenitip) {
+            $query->where('idPenitip', $idPenitip);
+        })->whereHas('transaksiPenjualan', function ($query) use ($tahun) {
+            $query->whereYear('tgl_penjualan', $tahun)
+                  ->where('status_transaksi', 'selesai');
+        })->with(['produk', 'transaksiPenjualan'])->get();
+
+        $totals = [
+            'harga_jual' => $transaksi->sum('harga_produk'),
+            'komisi' => $transaksi->sum('komisi'),
+            'pendapatan' => $transaksi->sum(function ($item) {
+                return $item->harga_produk - $item->komisi;
+            })
+        ];
+
+        if ($request->has('download_pdf')) {
+            $pdf = Pdf::loadView('pegawai.owner.laporan.pdf.transaksi-penitip', compact('penitip', 'transaksi', 'tahun', 'totals'));
+            return $pdf->download('laporan-transaksi-'.$penitip->nama.'-'.$tahun.'.pdf');
+        }
+
+        return view('pegawai.owner.laporan.transaksi-penitip-index', compact('penitip', 'transaksi', 'tahun', 'totals'));
+    }
 }
