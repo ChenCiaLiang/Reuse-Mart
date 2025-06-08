@@ -502,4 +502,458 @@ class PegawaiController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Fungsionalitas 117: Menampilkan profil diri sendiri (Kurir)
+     */
+    public function getKurirProfile()
+    {
+        try {
+            $user = Auth::user();
+
+            // Pastikan user adalah Kurir (jabatan ID = 6)
+            if (!$user || $user->idJabatan != 6) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Kurir access required.'
+                ], 403);
+            }
+
+            // Ambil data kurir
+            $kurir = Pegawai::with('jabatan')
+                ->where('idPegawai', $user->idPegawai)
+                ->first();
+
+            if (!$kurir) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kurir not found'
+                ], 404);
+            }
+
+            // Hitung statistik pengiriman
+            $totalPengiriman = TransaksiPenjualan::where('idPegawai', $user->idPegawai)
+                ->whereNotNull('tanggalKirim')
+                ->count();
+
+            $pengirimanBulanIni = TransaksiPenjualan::where('idPegawai', $user->idPegawai)
+                ->whereNotNull('tanggalKirim')
+                ->whereMonth('tanggalKirim', now()->month)
+                ->whereYear('tanggalKirim', now()->year)
+                ->count();
+
+            $pengirimanHariIni = TransaksiPenjualan::where('idPegawai', $user->idPegawai)
+                ->whereNotNull('tanggalKirim')
+                ->whereDate('tanggalKirim', today())
+                ->count();
+
+            $data = [
+                'idPegawai' => $kurir->idPegawai,
+                'nama' => $kurir->nama,
+                'email' => $kurir->email,
+                'noTelp' => $kurir->noTelp,
+                'alamat' => $kurir->alamat,
+                'tanggalLahir' => $kurir->tanggalLahir,
+                'jabatan' => $kurir->jabatan->nama ?? 'Kurir',
+                'joinDate' => $kurir->created_at ? $kurir->created_at->format('Y-m-d') : null,
+                'totalPengiriman' => $totalPengiriman,
+                'pengirimanBulanIni' => $pengirimanBulanIni,
+                'pengirimanHariIni' => $pengirimanHariIni,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Kurir profile retrieved successfully',
+                'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving kurir profile: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Fungsionalitas 118: Menampilkan history tugas pengiriman (Kurir)
+     */
+    public function getKurirHistoryPengiriman(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            // Pastikan user adalah Kurir (jabatan ID = 6)
+            if (!$user || $user->idJabatan != 6) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Kurir access required.'
+                ], 403);
+            }
+
+            // Get filters
+            $tanggalMulai = $request->input('tanggal_mulai');
+            $tanggalSelesai = $request->input('tanggal_selesai');
+            $status = $request->input('status');
+            $limit = $request->input('limit', 50);
+
+            // Base query untuk transaksi yang ditangani kurir ini
+            $query = TransaksiPenjualan::with([
+                'pembeli',
+                'detailTransaksiPenjualan.produk.kategori'
+            ])
+                ->where('idPegawai', $user->idPegawai)
+                ->whereNotNull('tanggalKirim');
+
+            // Apply date filters
+            if ($tanggalMulai) {
+                $query->whereDate('tanggalKirim', '>=', $tanggalMulai);
+            }
+            if ($tanggalSelesai) {
+                $query->whereDate('tanggalKirim', '<=', $tanggalSelesai);
+            }
+            if ($status) {
+                $query->where('status', $status);
+            }
+
+            // Get data
+            $historyPengiriman = $query->orderBy('tanggalKirim', 'desc')
+                ->limit($limit)
+                ->get();
+
+            // Format data
+            $formattedHistory = $historyPengiriman->map(function ($transaksi) {
+                $alamatArray = json_decode($transaksi->alamatPengiriman, true);
+                $alamatLengkap = $alamatArray['alamatLengkap'] ?? 'Alamat tidak tersedia';
+
+                // Generate nomor nota
+                $nomorNota = $transaksi->created_at->year . '.' . 
+                            str_pad($transaksi->created_at->month, 2, '0', STR_PAD_LEFT) . '.' . 
+                            str_pad($transaksi->idTransaksiPenjualan, 3, '0', STR_PAD_LEFT);
+
+                // Ambil items dari detail transaksi
+                $items = $transaksi->detailTransaksiPenjualan->map(function ($detail) {
+                    return [
+                        'namaProduk' => $detail->produk->deskripsi ?? 'Produk tidak ditemukan',
+                        'quantity' => 1, // Karena setiap produk hanya 1 stock
+                        'harga' => $detail->produk->hargaJual ?? 0,
+                        'gambar' => $detail->produk->gambar ? explode(',', $detail->produk->gambar)[0] : null,
+                    ];
+                });
+
+                // Hitung total harga
+                $totalHarga = $transaksi->detailTransaksiPenjualan->sum(function ($detail) {
+                    return $detail->produk->hargaJual ?? 0;
+                });
+
+                return [
+                    'idTransaksiPenjualan' => $transaksi->idTransaksiPenjualan,
+                    'nomorNota' => $nomorNota,
+                    'tanggalPesan' => $transaksi->tanggalPesan ? $transaksi->tanggalPesan->toISOString() : null,
+                    'tanggalKirim' => $transaksi->tanggalKirim ? $transaksi->tanggalKirim->toISOString() : null,
+                    'tanggalSelesai' => ($transaksi->status === 'terjual' && $transaksi->tanggalKirim) ? 
+                                    $transaksi->tanggalKirim->toISOString() : null,
+                    'status' => $transaksi->status,
+                    'namaPembeli' => $transaksi->pembeli->nama ?? 'Pembeli tidak ditemukan',
+                    'alamatPengiriman' => $alamatLengkap,
+                    'metodePengiriman' => $transaksi->metodePengiriman,
+                    'items' => $items,
+                    'totalHarga' => $totalHarga,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Kurir history pengiriman retrieved successfully',
+                'data' => $formattedHistory
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving kurir history: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Fungsionalitas 119: Mengupdate status pengiriman menjadi "Selesai" (Kurir)
+     */
+    public function updateStatusPengirimanSelesai(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            // Pastikan user adalah Kurir (jabatan ID = 6)
+            if (!$user || $user->idJabatan != 6) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Kurir access required.'
+                ], 403);
+            }
+
+            $request->validate([
+                'idTransaksiPenjualan' => 'required|integer|exists:transaksi_penjualan,idTransaksiPenjualan'
+            ]);
+
+            $idTransaksiPenjualan = $request->input('idTransaksiPenjualan');
+
+            // Cari transaksi yang akan diupdate
+            $transaksi = TransaksiPenjualan::where('idTransaksiPenjualan', $idTransaksiPenjualan)
+                ->where('idPegawai', $user->idPegawai) // Pastikan ini tugas kurir yang login
+                ->where('status', 'kirim') // Hanya bisa update jika status masih "kirim"
+                ->first();
+
+            if (!$transaksi) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transaksi pengiriman tidak ditemukan atau tidak dapat diupdate.'
+                ], 404);
+            }
+
+            DB::beginTransaction();
+            try {
+                // Update status transaksi menjadi "terjual" (selesai)
+                $transaksi->status = 'terjual';
+                $transaksi->tanggalLaku = now();
+                $transaksi->save();
+
+                // Proses komisi dan update saldo penitip (mirip dengan konfirmasi di gudang)
+                foreach ($transaksi->detailTransaksiPenjualan as $detail) {
+                    $produk = $detail->produk;
+                    
+                    // Cari data penitipan untuk produk ini
+                    $detailPenitipan = $produk->detailTransaksiPenitipan()->first();
+                    if ($detailPenitipan && $detailPenitipan->transaksiPenitipan) {
+                        $transaksiPenitipan = $detailPenitipan->transaksiPenitipan;
+                        $penitip = $transaksiPenitipan->penitip;
+                        
+                        // Hitung komisi
+                        $hargaJual = $produk->hargaJual;
+                        $komisiRate = $transaksiPenitipan->statusPerpanjangan ? 0.30 : 0.20;
+                        $komisiTotal = $hargaJual * $komisiRate;
+                        
+                        // Komisi hunter (jika ada)
+                        $komisiHunter = 0;
+                        $hunterPegawai = $transaksiPenitipan->idHunter;
+                        if ($hunterPegawai) {
+                            $komisiHunter = $komisiTotal * 0.25; // 5% dari harga jual untuk hunter
+                            
+                            // Update komisi hunter
+                            $hunter = Pegawai::find($hunterPegawai);
+                            if ($hunter) {
+                                $hunter->komisi += $komisiHunter;
+                                $hunter->save();
+                            }
+                        }
+                        
+                        // Komisi ReuseMart
+                        $komisiReuse = $komisiTotal - $komisiHunter;
+                        
+                        // Komisi untuk penitip
+                        $komisiPenitip = $hargaJual - $komisiTotal;
+                        
+                        // Bonus jika terjual cepat (< 7 hari)
+                        $bonus = 0;
+                        $tanggalMasuk = $transaksiPenitipan->tanggalMasukPenitipan;
+                        $tanggalLaku = $transaksi->tanggalLaku;
+                        $selisihHari = $tanggalMasuk->diffInDays($tanggalLaku);
+                        
+                        if ($selisihHari < 7) {
+                            $bonus = $komisiTotal * 0.10; // 10% dari komisi ReuseMart
+                            $komisiReuse -= $bonus;
+                            $komisiPenitip += $bonus;
+                        }
+                        
+                        // Simpan data komisi
+                        Komisi::updateOrCreate(
+                            ['idDetailTransaksiPenjualan' => $detail->idDetailTransaksiPenjualan],
+                            [
+                                'komisiPenitip' => $komisiPenitip,
+                                'komisiHunter' => $komisiHunter,
+                                'komisiReuse' => $komisiReuse,
+                                'idPegawai' => $user->idPegawai, // Kurir yang mengkonfirmasi
+                                'idPenitip' => $penitip->idPenitip,
+                            ]
+                        );
+                        
+                        // Update saldo penitip
+                        $penitip->saldo += $komisiPenitip;
+                        $penitip->save();
+                        
+                        // Update status penitipan
+                        $transaksiPenitipan->statusPenitipan = 'Selesai';
+                        $transaksiPenitipan->pendapatan += $komisiPenitip;
+                        $transaksiPenitipan->save();
+                    }
+                    
+                    // Update status produk
+                    $produk->status = 'Terjual';
+                    $produk->save();
+                }
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Status pengiriman berhasil diupdate menjadi selesai'
+                ]);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating status pengiriman: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Mendapatkan statistik kurir
+     */
+    public function getKurirStats()
+    {
+        try {
+            $user = Auth::user();
+
+            if (!$user || $user->idJabatan != 6) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Kurir access required.'
+                ], 403);
+            }
+
+            // Total pengiriman
+            $totalPengiriman = TransaksiPenjualan::where('idPegawai', $user->idPegawai)
+                ->whereNotNull('tanggalKirim')
+                ->count();
+
+            // Pengiriman hari ini
+            $pengirimanHariIni = TransaksiPenjualan::where('idPegawai', $user->idPegawai)
+                ->whereDate('tanggalKirim', today())
+                ->count();
+
+            // Pengiriman minggu ini
+            $pengirimanMingguIni = TransaksiPenjualan::where('idPegawai', $user->idPegawai)
+                ->whereBetween('tanggalKirim', [now()->startOfWeek(), now()->endOfWeek()])
+                ->count();
+
+            // Pengiriman bulan ini
+            $pengirimanBulanIni = TransaksiPenjualan::where('idPegawai', $user->idPegawai)
+                ->whereMonth('tanggalKirim', now()->month)
+                ->whereYear('tanggalKirim', now()->year)
+                ->count();
+
+            // Pengiriman selesai
+            $pengirimanSelesai = TransaksiPenjualan::where('idPegawai', $user->idPegawai)
+                ->where('status', 'terjual')
+                ->count();
+
+            // Pengiriman dalam proses
+            $pengirimanDalamProses = TransaksiPenjualan::where('idPegawai', $user->idPegawai)
+                ->where('status', 'kirim')
+                ->count();
+
+            $stats = [
+                'totalPengiriman' => $totalPengiriman,
+                'pengirimanHariIni' => $pengirimanHariIni,
+                'pengirimanMingguIni' => $pengirimanMingguIni,
+                'pengirimanBulanIni' => $pengirimanBulanIni,
+                'pengirimanSelesai' => $pengirimanSelesai,
+                'pengirimanDalamProses' => $pengirimanDalamProses,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Kurir stats retrieved successfully',
+                'data' => $stats
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving kurir stats: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Mendapatkan tugas pengiriman hari ini
+     */
+    public function getTugasHariIni()
+    {
+        try {
+            $user = Auth::user();
+
+            if (!$user || $user->idJabatan != 6) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Kurir access required.'
+                ], 403);
+            }
+
+            // Ambil tugas pengiriman hari ini
+            $tugasHariIni = TransaksiPenjualan::with([
+                'pembeli',
+                'detailTransaksiPenjualan.produk.kategori'
+            ])
+                ->where('idPegawai', $user->idPegawai)
+                ->whereDate('tanggalKirim', today())
+                ->orWhere(function ($query) use ($user) {
+                    $query->where('idPegawai', $user->idPegawai)
+                        ->where('status', 'disiapkan')
+                        ->whereNotNull('tanggalLunas');
+                })
+                ->orderBy('tanggalKirim', 'asc')
+                ->get();
+
+            // Format data sama seperti history
+            $formattedTugas = $tugasHariIni->map(function ($transaksi) {
+                $alamatArray = json_decode($transaksi->alamatPengiriman, true);
+                $alamatLengkap = $alamatArray['alamatLengkap'] ?? 'Alamat tidak tersedia';
+
+                $nomorNota = $transaksi->created_at->year . '.' . 
+                            str_pad($transaksi->created_at->month, 2, '0', STR_PAD_LEFT) . '.' . 
+                            str_pad($transaksi->idTransaksiPenjualan, 3, '0', STR_PAD_LEFT);
+
+                $items = $transaksi->detailTransaksiPenjualan->map(function ($detail) {
+                    return [
+                        'namaProduk' => $detail->produk->deskripsi ?? 'Produk tidak ditemukan',
+                        'quantity' => 1,
+                        'harga' => $detail->produk->hargaJual ?? 0,
+                        'gambar' => $detail->produk->gambar ? explode(',', $detail->produk->gambar)[0] : null,
+                    ];
+                });
+
+                $totalHarga = $transaksi->detailTransaksiPenjualan->sum(function ($detail) {
+                    return $detail->produk->hargaJual ?? 0;
+                });
+
+                return [
+                    'idTransaksiPenjualan' => $transaksi->idTransaksiPenjualan,
+                    'nomorNota' => $nomorNota,
+                    'tanggalPesan' => $transaksi->tanggalPesan ? $transaksi->tanggalPesan->toISOString() : null,
+                    'tanggalKirim' => $transaksi->tanggalKirim ? $transaksi->tanggalKirim->toISOString() : null,
+                    'tanggalSelesai' => ($transaksi->status === 'terjual' && $transaksi->tanggalKirim) ? 
+                                    $transaksi->tanggalKirim->toISOString() : null,
+                    'status' => $transaksi->status,
+                    'namaPembeli' => $transaksi->pembeli->nama ?? 'Pembeli tidak ditemukan',
+                    'alamatPengiriman' => $alamatLengkap,
+                    'metodePengiriman' => $transaksi->metodePengiriman,
+                    'items' => $items,
+                    'totalHarga' => $totalHarga,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tugas hari ini retrieved successfully',
+                'data' => $formattedTugas
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving tugas hari ini: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

@@ -54,6 +54,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/detail-transaksi/{idTransaksiPenjualan}', [PenitipController::class, 'getDetailTransaksi']);
     });
 
+    Route::prefix('kurir')->middleware('Role:kurir')->group(function () {
+        Route::get('/profile', [PegawaiController::class, 'getKurirProfile']);
+        Route::get('/history-pengiriman', [PegawaiController::class, 'getKurirHistoryPengiriman']);
+        Route::post('/update-status-selesai', [PegawaiController::class, 'updateStatusPengirimanSelesai']);
+        Route::get('/stats', [PegawaiController::class, 'getKurirStats']);
+        Route::get('/tugas-hari-ini', [PegawaiController::class, 'getTugasHariIni']);
+    });
+
     Route::prefix('organisasi')->middleware('Role:organisasi')->group(function () {});
 
     Route::get('/logout', [AuthController::class, 'logout']);
