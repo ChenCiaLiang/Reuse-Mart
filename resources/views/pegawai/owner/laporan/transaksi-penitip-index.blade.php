@@ -26,7 +26,6 @@
         </div>
     </div>
 
-
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">Detail Transaksi</h6>
@@ -47,12 +46,12 @@
                     <tbody>
                         @forelse($transaksi as $item)
                             <tr>
-                                <td>{{ $item->produk->nama }}</td>
-                                <td>{{ \Carbon\Carbon::parse($item->produk->tgl_penitipan)->format('d/m/Y') }}</td>
-                                <td>{{ \Carbon\Carbon::parse($item->transaksiPenjualan->tgl_penjualan)->format('d/m/Y') }}</td>
-                                <td class="text-right">{{ number_format($item->harga_produk, 0, ',', '.') }}</td>
-                                <td class="text-right">{{ number_format($item->komisi, 0, ',', '.') }}</td>
-                                <td class="text-right">{{ number_format($item->harga_produk - $item->komisi, 0, ',', '.') }}</td>
+                                <td>{{ $item->nama_produk }}</td>
+                                <td>{{ \Carbon\Carbon::parse($item->tanggalMasukPenitipan)->format('d/m/Y') }}</td>
+                                <td>{{ \Carbon\Carbon::parse($item->tanggalLaku)->format('d/m/Y') }}</td>
+                                <td class="text-right">{{ number_format($item->hargaJual, 0, ',', '.') }}</td>
+                                <td class="text-right">{{ number_format($item->komisiReuse + $item->komisiHunter, 0, ',', '.') }}</td>
+                                <td class="text-right">{{ number_format($item->komisiPenitip, 0, ',', '.') }}</td>
                             </tr>
                         @empty
                             <tr>

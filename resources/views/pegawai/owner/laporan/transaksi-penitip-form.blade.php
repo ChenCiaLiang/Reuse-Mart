@@ -17,7 +17,7 @@
                     <select name="idPenitip" id="idPenitip" class="form-control @error('idPenitip') is-invalid @enderror" required>
                         <option value="">-- Pilih Salah Satu --</option>
                         @foreach($penitips as $penitip)
-                            <option value="{{ $penitip->idPenitip }}">{{ $penitip->nama }} ({{ $penitip->user->email }})</option>
+                            <option value="{{ $penitip->idPenitip }}">{{ $penitip->nama }} ({{ $penitip->email }})</option>
                         @endforeach
                     </select>
                     @error('idPenitip')
