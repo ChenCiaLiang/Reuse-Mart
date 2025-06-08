@@ -438,29 +438,36 @@ class LaporanController extends Controller
         return view('pegawai.owner.laporan.request-donasi-index', compact('requests'));
     }
 
+    // Perbaikan untuk method downloadLaporanRequestDonasiPdf di LaporanController.php
     public function downloadLaporanRequestDonasiPdf(Request $request)
     {
         $query = RequestDonasi::with('organisasi');
 
-         if ($request->filled('search')) {
+        if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('request', 'like', "%{$search}%")
-                  ->orWhere('status', 'like', "%{$search}%")
-                  ->orWhereHas('organisasi', function ($q2) use ($search) {
-                      $q2->where('nama', 'like', "%{$search}%");
-                  });
+                ->orWhere('status', 'like', "%{$search}%")
+                ->orWhere('penerima', 'like', "%{$search}%")
+                ->orWhereHas('organisasi', function ($q2) use ($search) {
+                    $q2->where('nama', 'like', "%{$search}%");
+                });
             });
         }
 
         $requests = $query->latest('tanggalRequest')->get();
+        
         $pdf = Pdf::loadView('pegawai.owner.laporan.pdf.request-donasi', [
             'requests' => $requests,
             'search' => $request->input('search')
         ]);
-        return $pdf->download('laporan-request-donasi-'.date('Y-m-d').'.pdf');
+        
+        $pdf->setPaper('A4', 'portrait');
+        
+        $filename = 'Laporan_Request_Donasi_' . date('Y-m-d_His') . '.pdf';
+        
+        return $pdf->download($filename);
     }
-
     // Laporan Donasi Barang - DIPERBAIKI
     public function laporanDonasiBarang(Request $request)
     {
@@ -479,25 +486,34 @@ class LaporanController extends Controller
         return view('pegawai.owner.laporan.donasi-barang-index', compact('donations'));
     }
 
+    // Perbaikan untuk method downloadLaporanDonasiBarangPdf di LaporanController.php
     public function downloadLaporanDonasiBarangPdf(Request $request)
     {
-         $query = TransaksiDonasi::with('requestDonasi.organisasi', 'produk');
+        $query = TransaksiDonasi::with(['requestDonasi.organisasi', 'produk.kategori']);
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->whereHas('produk', function($q) use ($search) {
-                $q->where('deskripsi', 'like', "%{$search}%");
-            })->orWhereHas('requestDonasi.organisasi', function($q) use ($search) {
-                $q->where('nama', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('produk', function($q2) use ($search) {
+                    $q2->where('deskripsi', 'like', "%{$search}%");
+                })->orWhereHas('requestDonasi.organisasi', function($q2) use ($search) {
+                    $q2->where('nama', 'like', "%{$search}%");
+                })->orWhere('namaPenerima', 'like', "%{$search}%");
             });
         }
         
         $donations = $query->latest('tanggalPemberian')->get();
+        
         $pdf = Pdf::loadView('pegawai.owner.laporan.pdf.donasi-barang', [
             'donations' => $donations,
             'search' => $request->input('search')
         ]);
-        return $pdf->download('laporan-donasi-barang-'.date('Y-m-d').'.pdf');
+        
+        $pdf->setPaper('A4', 'portrait');
+        
+        $filename = 'Laporan_Donasi_Barang_' . date('Y-m-d_His') . '.pdf';
+        
+        return $pdf->download($filename);
     }
 
     // Laporan Transaksi Penitip - DIPERBAIKI
@@ -508,6 +524,7 @@ class LaporanController extends Controller
         return view('pegawai.owner.laporan.transaksi-penitip-form', compact('penitips'));
     }
     
+    // Perbaikan untuk method generateLaporanTransaksiPenitip di LaporanController.php
     public function generateLaporanTransaksiPenitip(Request $request)
     {
         $request->validate([
@@ -519,16 +536,20 @@ class LaporanController extends Controller
         $tahun = $request->input('tahun');
         $penitip = Penitip::findOrFail($idPenitip);
 
-        // Query yang diperbaiki berdasarkan struktur database yang ada
+        // Query yang diperbaiki untuk mendapatkan data transaksi yang selesai
         $transaksi = DB::table('transaksi_penitipan as tp')
             ->join('detail_transaksi_penitipan as dtp', 'tp.idTransaksiPenitipan', '=', 'dtp.idTransaksiPenitipan')
             ->join('produk as p', 'dtp.idProduk', '=', 'p.idProduk')
             ->join('detail_transaksi_penjualan as dtpj', 'p.idProduk', '=', 'dtpj.idProduk')
             ->join('transaksi_penjualan as tpj', 'dtpj.idTransaksiPenjualan', '=', 'tpj.idTransaksiPenjualan')
-            ->leftJoin('komisi as k', 'dtpj.idDetailTransaksiPenjualan', '=', 'k.idDetailTransaksiPenjualan')
+            ->leftJoin('komisi as k', function($join) {
+                $join->on('dtpj.idDetailTransaksiPenjualan', '=', 'k.idDetailTransaksiPenjualan')
+                    ->on('tp.idPenitip', '=', 'k.idPenitip');
+            })
             ->where('tp.idPenitip', $idPenitip)
             ->whereYear('tpj.tanggalLaku', $tahun)
             ->where('tpj.status', 'terjual')
+            ->whereNotNull('tpj.tanggalLaku')
             ->select(
                 'p.deskripsi as nama_produk',
                 'tp.tanggalMasukPenitipan',
@@ -538,8 +559,10 @@ class LaporanController extends Controller
                 'k.komisiReuse',
                 'k.komisiHunter'
             )
+            ->orderBy('tpj.tanggalLaku', 'desc')
             ->get();
 
+        // Hitung totals dengan lebih akurat
         $totals = [
             'harga_jual' => $transaksi->sum('hargaJual'),
             'komisi' => $transaksi->sum('komisiReuse') + $transaksi->sum('komisiHunter'),
@@ -548,7 +571,11 @@ class LaporanController extends Controller
 
         if ($request->has('download_pdf')) {
             $pdf = Pdf::loadView('pegawai.owner.laporan.pdf.transaksi-penitip', compact('penitip', 'transaksi', 'tahun', 'totals'));
-            return $pdf->download('laporan-transaksi-'.$penitip->nama.'-'.$tahun.'.pdf');
+            $pdf->setPaper('A4', 'portrait');
+            
+            $filename = 'Laporan_Transaksi_' . str_replace(' ', '_', $penitip->nama) . '_' . $tahun . '_' . date('Y-m-d_His') . '.pdf';
+            
+            return $pdf->download($filename);
         }
 
         return view('pegawai.owner.laporan.transaksi-penitip-index', compact('penitip', 'transaksi', 'tahun', 'totals'));
