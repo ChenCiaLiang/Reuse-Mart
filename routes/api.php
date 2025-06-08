@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\TopSellerController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PegawaiController;
 use App\Http\Controllers\PembeliController;
@@ -15,6 +16,12 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('produk', [ProdukController::class, 'index']);
 Route::get('produk/{id}', [ProdukController::class, 'show']);
 Route::get('kategori', [ProdukController::class, 'kategori']);
+
+Route::prefix('top-seller')->group(function () {
+    Route::get('/current', [TopSellerController::class, 'getCurrentTopSeller']);
+    Route::get('/history', [TopSellerController::class, 'getTopSellerHistory']);
+    Route::get('/stats', [TopSellerController::class, 'getTopSellerStats']);
+});
 Route::middleware('auth:sanctum')->group(function () {
     //umum
 

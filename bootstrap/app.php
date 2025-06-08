@@ -45,6 +45,18 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->job(new CheckPenitipanExpiryJob)->daily();
         $schedule->command('notifications:penitipan-reminders')
             ->dailyAt('09:00');
+
+        $schedule->command('calculate:top-seller')
+            ->monthlyOn(1, '00:00')
+            ->timezone('Asia/Jakarta')
+            ->withoutOverlapping()
+            ->runInBackground();
+
+        $schedule->command('update:expired-products')
+            ->dailyAt('01:00')
+            ->timezone('Asia/Jakarta')
+            ->withoutOverlapping()
+            ->runInBackground();
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

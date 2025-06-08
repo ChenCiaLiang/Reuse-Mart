@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-
+use Carbon\Carbon;
 class TransaksiPenitipan extends Model
 {
     use HasFactory;
@@ -26,6 +26,14 @@ class TransaksiPenitipan extends Model
         'idPenitip',
         'idPegawai',
         'idHunter',
+    ];
+
+    protected $casts = [
+        'tanggalMasukPenitipan' => 'datetime',
+        'tanggalAkhirPenitipan' => 'datetime',
+        'batasAmbil' => 'datetime',
+        'tanggalPengambilan' => 'datetime',
+        'statusPerpanjangan' => 'boolean'
     ];
 
     public function penitip(): BelongsTo
