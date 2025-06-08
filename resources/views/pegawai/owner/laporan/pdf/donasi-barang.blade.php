@@ -206,31 +206,50 @@
         <table class="main-table">
             <thead>
                 <tr>
-                    <th style="width: 8%;">No</th>
-                    <th style="width: 15%;">Kode Donasi</th>
-                    <th style="width: 30%;">Nama Produk</th>
-                    <th style="width: 22%;">Organisasi Penerima</th>
-                    <th style="width: 15%;">Nama Penerima</th>
-                    <th style="width: 10%;">Tanggal Donasi</th>
+                    <th style="width: 5%;">No</th>
+                    <th style="width: 12%;">Kode Produk</th>
+                    <th style="width: 25%;">Nama Produk</th>
+                    <th style="width: 8%;">Id Penitip</th>
+                    <th style="width: 15%;">Nama Penitip</th>
+                    <th style="width: 12%;">Tanggal Donasi</th>
+                    <th style="width: 15%;">Organisasi</th>
+                    <th style="width: 8%;">Nama Penerima</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($donations as $index => $donasi)
+                    @php
+                        $penitip = null;
+                        $detailPenitipan = $donasi->produk->detailTransaksiPenitipan->first();
+                        if ($detailPenitipan && $detailPenitipan->transaksiPenitipan) {
+                            $penitip = $detailPenitipan->transaksiPenitipan->penitip;
+                        }
+                    @endphp
                     <tr>
                         <td class="text-center">{{ $index + 1 }}</td>
                         <td class="text-center">
-                            <span class="kode-donasi">DON-{{ str_pad($donasi->idTransaksiDonasi, 4, '0', STR_PAD_LEFT) }}</span>
+                            <span class="kode-donasi">{{ strtoupper(substr($donasi->produk->deskripsi, 0, 1)) }}{{ $donasi->produk->idProduk }}</span>
                         </td>
                         <td>
                             <strong>{{ $donasi->produk->deskripsi }}</strong><br>
                             <small style="color: #666;">{{ $donasi->produk->kategori->nama }}</small>
                         </td>
+                        <td class="text-center">
+                            @if($penitip)
+                                T{{ str_pad($penitip->idPenitip, 2, '0', STR_PAD_LEFT) }}
+                            @else
+                                -
+                            @endif
+                        </td>
+                        <td>
+                            {{ $penitip ? $penitip->nama : 'Tidak diketahui' }}
+                        </td>
+                        <td class="text-center">{{ \Carbon\Carbon::parse($donasi->tanggalPemberian)->format('d/m/Y') }}</td>
                         <td>
                             <strong>{{ $donasi->requestDonasi->organisasi->nama }}</strong><br>
-                            <small style="color: #666;">{{ Str::limit($donasi->requestDonasi->organisasi->alamat, 40) }}</small>
+                            <small style="color: #666;">{{ Str::limit($donasi->requestDonasi->organisasi->alamat, 30) }}</small>
                         </td>
                         <td class="text-center">{{ $donasi->namaPenerima }}</td>
-                        <td class="text-center">{{ \Carbon\Carbon::parse($donasi->tanggalPemberian)->format('d/m/Y') }}</td>
                     </tr>
                 @endforeach
             </tbody>
