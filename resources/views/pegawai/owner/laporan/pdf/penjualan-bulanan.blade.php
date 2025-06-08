@@ -7,36 +7,24 @@
         body {
             font-family: Arial, sans-serif;
             font-size: 12px;
-            margin: 0;
-            padding: 20px;
+            margin: 20px;
         }
+        
         .header {
             text-align: center;
             margin-bottom: 30px;
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px;
-        }
-        .company-name {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .company-address {
-            font-size: 10px;
-            margin-bottom: 15px;
-        }
-        .report-title {
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .report-info {
-            font-size: 10px;
-            margin-bottom: 5px;
         }
         
-        .content {
-            margin-top: 20px;
+        .company-info {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .summary-box {
+            border: 1px solid #333;
+            padding: 15px;
+            margin: 20px 0;
+            background-color: #f5f5f5;
         }
         
         table {
@@ -45,8 +33,11 @@
             margin: 20px 0;
         }
         
+        table, th, td {
+            border: 1px solid #333;
+        }
+        
         th, td {
-            border: 1px solid #000;
             padding: 8px;
             text-align: left;
         }
@@ -54,125 +45,208 @@
         th {
             background-color: #f0f0f0;
             font-weight: bold;
-            text-align: center;
         }
         
-        .total-row {
-            font-weight: bold;
-            background-color: #f5f5f5;
-        }
-        
-        .number {
+        .text-right {
             text-align: right;
         }
         
-        .chart-section {
-            margin: 30px 0;
+        .text-center {
             text-align: center;
         }
         
-        .chart-placeholder {
-            border: 2px dashed #ccc;
-            height: 200px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #f9f9f9;
+        /* SIMPLE BAR CHART USING TABLE */
+        .chart-table {
+            border: 1px solid #333;
             margin: 20px 0;
+            background-color: #fafafa;
         }
         
-        .summary {
+        .chart-table td {
+            padding: 2px;
+            vertical-align: bottom;
+            text-align: center;
+            width: 8.33%; /* 100% / 12 months */
+        }
+        
+        .chart-bar {
+            background-color: #4a90e2;
+            color: white;
+            font-size: 8px;
+            font-weight: bold;
+            margin: 2px auto;
+            writing-mode: vertical-lr;
+            text-orientation: mixed;
+        }
+        
+        .chart-label {
+            font-size: 9px;
+            font-weight: bold;
+            padding: 5px 2px;
+        }
+        
+        .chart-value {
+            font-size: 8px;
+            color: #666;
+            padding: 2px;
+        }
+        
+        .chart-info {
+            margin-top: 20px;
+            font-size: 11px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+        }
+        
+        .analysis {
             margin-top: 30px;
-            padding: 15px;
-            background-color: #f0f8ff;
-            border: 1px solid #000;
+            border-top: 1px solid #ccc;
+            padding-top: 20px;
         }
         
-        .summary-item {
-            margin: 5px 0;
+        .footer {
+            margin-top: 50px;
+            text-align: right;
+            font-size: 10px;
+            color: #666;
+        }
+        
+        /* Page break */
+        .page-break {
+            page-break-before: always;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="company-name">ReUse Mart</div>
-        <div class="company-address">Jl. Green Eco Park No. 456 Yogyakarta</div>
-        <div class="report-title">LAPORAN PENJUALAN BULANAN</div>
-        <div class="report-info">Tahun : {{ $tahun }}</div>
-        <div class="report-info">Tanggal cetak: {{ \Carbon\Carbon::now()->format('d F Y') }}</div>
+    <!-- HALAMAN 1 -->
+    <div class="company-info">
+        <h2>ReUse Mart</h2>
+        <p>Jl. Green Eco Park No. 456 Yogyakarta</p>
     </div>
 
-    <div class="content">
-        <!-- Summary Section -->
-        <div class="summary">
-            <div class="summary-item"><strong>Total Barang Terjual:</strong> {{ $totalBarang }} item</div>
-            <div class="summary-item"><strong>Total Penjualan Kotor:</strong> Rp {{ number_format($totalPenjualan, 0, ',', '.') }}</div>
-            <div class="summary-item"><strong>Periode:</strong> Januari - Desember {{ $tahun }}</div>
-        </div>
+    <div class="header">
+        <h3>LAPORAN PENJUALAN BULANAN</h3>
+        <p>Tahun : {{ $tahun }}</p>
+        <p>Tanggal cetak: {{ date('d F Y') }}</p>
+    </div>
 
-        <!-- Table Section -->
-        <table>
-            <thead>
-                <tr>
-                    <th>Bulan</th>
-                    <th>Jumlah Barang Terjual</th>
-                    <th>Jumlah Penjualan Kotor</th>
-                </tr>
-            </thead>
-            <tbody>
+    <div class="summary-box">
+        <strong>Total Barang Terjual:</strong> {{ $totalBarang }} item<br>
+        <strong>Total Penjualan Kotor:</strong> Rp {{ number_format($totalPenjualan, 0, ',', '.') }}<br>
+        <strong>Periode:</strong> Januari - Desember {{ $tahun }}
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Bulan</th>
+                <th class="text-center">Jumlah Barang Terjual</th>
+                <th class="text-right">Jumlah Penjualan Kotor</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($dataFormatted as $data)
+            <tr>
+                <td>{{ $data['bulan'] }}</td>
+                <td class="text-center">{{ $data['jumlah_barang'] }}</td>
+                <td class="text-right">{{ number_format($data['jumlah_penjualan'], 0, ',', '.') }}</td>
+            </tr>
+            @endforeach
+            
+            <tr style="font-weight: bold; background-color: #f0f0f0;">
+                <td>Total</td>
+                <td class="text-center">{{ $totalBarang }}</td>
+                <td class="text-right">{{ number_format($totalPenjualan, 0, ',', '.') }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- HALAMAN 2 - GRAFIK -->
+    <div class="page-break">
+        <h3 style="text-align: center; margin-bottom: 20px;">Grafik Penjualan Bulanan {{ $tahun }}</h3>
+        
+        @php
+            $maxPenjualan = collect($dataFormatted)->max('jumlah_penjualan');
+            $maxHeight = 100; // tinggi maksimal dalam pixel
+        @endphp
+        
+        <table class="chart-table">
+            <!-- ROW 1: BARS -->
+            <tr style="height: 120px;">
                 @foreach($dataFormatted as $data)
-                <tr>
-                    <td>{{ $data['bulan'] }}</td>
-                    <td class="number">{{ $data['jumlah_barang'] }}</td>
-                    <td class="number">{{ number_format($data['jumlah_penjualan'], 0, ',', '.') }}</td>
-                </tr>
+                    @php
+                        $height = $maxPenjualan > 0 ? round(($data['jumlah_penjualan'] / $maxPenjualan) * $maxHeight) : 0;
+                        // Format raw untuk display di dalam chart (tanpa desimal)
+                        $displayValue = $data['jumlah_penjualan'] >= 1000000 ? 
+                            round($data['jumlah_penjualan'] / 1000000) . 'M' : 
+                            ($data['jumlah_penjualan'] >= 1000 ? 
+                                round($data['jumlah_penjualan'] / 1000) . 'K' : 
+                                $data['jumlah_penjualan']);
+                    @endphp
+                    <td style="vertical-align: bottom;">
+                        @if($height > 0)
+                            <div class="chart-bar" style="height: {{ $height }}px; width: 20px;">
+                                {{ $displayValue }}
+                            </div>
+                        @else
+                            <div style="height: 5px; width: 20px; background-color: #ddd; margin: 2px auto;"></div>
+                        @endif
+                    </td>
                 @endforeach
-                <tr class="total-row">
-                    <td><strong>Total</strong></td>
-                    <td class="number"><strong>{{ $totalBarang }}</strong></td>
-                    <td class="number"><strong>{{ number_format($totalPenjualan, 0, ',', '.') }}</strong></td>
-                </tr>
-            </tbody>
+            </tr>
+            
+            <!-- ROW 2: VALUES -->
+            <tr>
+                @foreach($dataFormatted as $data)
+                    <td class="chart-value">
+                        {{ $data['jumlah_barang'] }} item<br>
+                        @php
+                            // Format raw untuk values di chart (tanpa desimal)
+                            $valueDisplay = $data['jumlah_penjualan'] >= 1000 ? 
+                                round($data['jumlah_penjualan'] / 1000) . 'K' : 
+                                $data['jumlah_penjualan'];
+                        @endphp
+                        {{ $valueDisplay }}
+                    </td>
+                @endforeach
+            </tr>
+            
+            <!-- ROW 3: LABELS -->
+            <tr>
+                @foreach($dataFormatted as $data)
+                    <td class="chart-label">{{ substr($data['bulan'], 0, 3) }}</td>
+                @endforeach
+            </tr>
         </table>
-
-        <!-- Chart Section -->
-        <div class="chart-section">
-            <h3>Grafik Penjualan Bulanan {{ $tahun }}</h3>
-            <div class="chart-placeholder">
-                <div>
-                    <strong>Grafik Penjualan Bulanan</strong><br>
-                    <small>Nilai tertinggi: Rp {{ number_format(collect($dataFormatted)->max('jumlah_penjualan'), 0, ',', '.') }}</small><br>
-                    <small>Nilai terendah: Rp {{ number_format(collect($dataFormatted)->min('jumlah_penjualan'), 0, ',', '.') }}</small><br>
-                    <small>Rata-rata: Rp {{ number_format(collect($dataFormatted)->avg('jumlah_penjualan'), 0, ',', '.') }}</small>
-                </div>
-            </div>
+        
+        <div class="chart-info">
+            <strong>Informasi Grafik:</strong><br>
+            • Nilai tertinggi: Rp {{ number_format($maxPenjualan, 0, ',', '.') }}<br>
+            • Nilai terendah: Rp {{ number_format(collect($dataFormatted)->where('jumlah_penjualan', '>', 0)->min('jumlah_penjualan') ?: 0, 0, ',', '.') }}<br>
+            • Rata-rata per bulan: Rp {{ number_format($totalPenjualan / 12, 0, ',', '.') }}
         </div>
 
-        <!-- Analysis Section -->
-        <div style="margin-top: 30px;">
+        <div class="analysis">
             <h3>Analisis Penjualan:</h3>
             @php
-                $bestMonth = collect($dataFormatted)->sortByDesc('jumlah_penjualan')->first();
-                $worstMonth = collect($dataFormatted)->sortBy('jumlah_penjualan')->where('jumlah_penjualan', '>', 0)->first();
+                $tertinggi = collect($dataFormatted)->sortByDesc('jumlah_penjualan')->first();
+                $terendah = collect($dataFormatted)->where('jumlah_penjualan', '>', 0)->sortBy('jumlah_penjualan')->first();
             @endphp
             
-            <ul style="margin-left: 20px;">
-                @if($bestMonth && $bestMonth['jumlah_penjualan'] > 0)
-                <li>Bulan dengan penjualan tertinggi: <strong>{{ $bestMonth['bulan'] }}</strong> (Rp {{ number_format($bestMonth['jumlah_penjualan'], 0, ',', '.') }})</li>
-                @endif
-                
-                @if($worstMonth && $worstMonth['jumlah_penjualan'] > 0)
-                <li>Bulan dengan penjualan terendah: <strong>{{ $worstMonth['bulan'] }}</strong> (Rp {{ number_format($worstMonth['jumlah_penjualan'], 0, ',', '.') }})</li>
-                @endif
-                
-                <li>Total barang terjual sepanjang tahun: <strong>{{ $totalBarang }}</strong> item</li>
-                <li>Rata-rata penjualan per bulan: <strong>Rp {{ number_format($totalPenjualan / 12, 0, ',', '.') }}</strong></li>
-            </ul>
+            <p>• Bulan dengan penjualan tertinggi: <strong>{{ $tertinggi['bulan'] }}</strong> (Rp {{ number_format($tertinggi['jumlah_penjualan'], 0, ',', '.') }})</p>
+            
+            @if($terendah)
+                <p>• Bulan dengan penjualan terendah: <strong>{{ $terendah['bulan'] }}</strong> (Rp {{ number_format($terendah['jumlah_penjualan'], 0, ',', '.') }})</p>
+            @endif
+            
+            <p>• Total barang terjual sepanjang tahun: <strong>{{ $totalBarang }} item</strong></p>
+            <p>• Rata-rata penjualan per bulan: <strong>Rp {{ number_format($totalPenjualan / 12, 0, ',', '.') }}</strong></p>
         </div>
-    </div>
 
-    <div style="margin-top: 50px; text-align: right; font-size: 10px;">
-        <p>Dicetak pada: {{ \Carbon\Carbon::now()->format('d F Y H:i:s') }}</p>
+        <div class="footer">
+            Dicetak pada: {{ date('d F Y H:i:s') }}
+        </div>
     </div>
 </body>
 </html>
