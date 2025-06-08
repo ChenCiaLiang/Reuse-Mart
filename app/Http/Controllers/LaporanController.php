@@ -471,14 +471,23 @@ class LaporanController extends Controller
     // Laporan Donasi Barang - DIPERBAIKI
     public function laporanDonasiBarang(Request $request)
     {
-        $query = TransaksiDonasi::with('requestDonasi.organisasi', 'produk');
+        $query = TransaksiDonasi::with([
+            'requestDonasi.organisasi', 
+            'produk.kategori',
+            'produk.detailTransaksiPenitipan.transaksiPenitipan.penitip'
+        ]);
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->whereHas('produk', function($q) use ($search) {
-                $q->where('deskripsi', 'like', "%{$search}%");
-            })->orWhereHas('requestDonasi.organisasi', function($q) use ($search) {
-                $q->where('nama', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('produk', function($q2) use ($search) {
+                    $q2->where('deskripsi', 'like', "%{$search}%");
+                })->orWhereHas('requestDonasi.organisasi', function($q2) use ($search) {
+                    $q2->where('nama', 'like', "%{$search}%");
+                })->orWhere('namaPenerima', 'like', "%{$search}%")
+                ->orWhereHas('produk.detailTransaksiPenitipan.transaksiPenitipan.penitip', function($q2) use ($search) {
+                    $q2->where('nama', 'like', "%{$search}%");
+                });
             });
         }
 
@@ -489,7 +498,11 @@ class LaporanController extends Controller
     // Perbaikan untuk method downloadLaporanDonasiBarangPdf di LaporanController.php
     public function downloadLaporanDonasiBarangPdf(Request $request)
     {
-        $query = TransaksiDonasi::with(['requestDonasi.organisasi', 'produk.kategori']);
+        $query = TransaksiDonasi::with([
+            'requestDonasi.organisasi', 
+            'produk.kategori',
+            'produk.detailTransaksiPenitipan.transaksiPenitipan.penitip'
+        ]);
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -498,7 +511,10 @@ class LaporanController extends Controller
                     $q2->where('deskripsi', 'like', "%{$search}%");
                 })->orWhereHas('requestDonasi.organisasi', function($q2) use ($search) {
                     $q2->where('nama', 'like', "%{$search}%");
-                })->orWhere('namaPenerima', 'like', "%{$search}%");
+                })->orWhere('namaPenerima', 'like', "%{$search}%")
+                ->orWhereHas('produk.detailTransaksiPenitipan.transaksiPenitipan.penitip', function($q2) use ($search) {
+                    $q2->where('nama', 'like', "%{$search}%");
+                });
             });
         }
         

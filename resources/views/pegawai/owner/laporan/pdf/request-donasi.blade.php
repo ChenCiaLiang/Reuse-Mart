@@ -60,21 +60,22 @@
         .main-table { 
             width: 100%; 
             border-collapse: collapse; 
-            font-size: 12px;
+            font-size: 11px;
             margin: 20px 0;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .main-table th, .main-table td { 
             border: 1px solid #ddd; 
-            padding: 10px 8px; 
+            padding: 8px 6px; 
             text-align: left; 
+            vertical-align: top;
         }
         .main-table th { 
             background-color: #2196F3; 
             color: white;
             font-weight: bold;
             text-align: center;
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
         }
         .main-table tbody tr:nth-child(even) {
@@ -116,6 +117,16 @@
             border-radius: 4px;
             font-weight: bold;
             color: #1976d2;
+            font-size: 10px;
+        }
+        
+        .kode-organisasi {
+            background-color: #f3e5f5;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: #7b1fa2;
+            font-size: 10px;
         }
         
         .status-terpenuhi {
@@ -123,7 +134,7 @@
             color: #2e7d32;
             padding: 3px 8px;
             border-radius: 12px;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: bold;
             text-align: center;
         }
@@ -133,15 +144,30 @@
             color: #856404;
             padding: 3px 8px;
             border-radius: 12px;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: bold;
             text-align: center;
         }
         
         .request-description {
-            max-width: 300px;
+            max-width: 250px;
             word-wrap: break-word;
             line-height: 1.3;
+            font-size: 10px;
+        }
+        
+        .organisasi-info {
+            line-height: 1.3;
+        }
+        .organisasi-nama {
+            font-weight: bold;
+            font-size: 11px;
+            color: #1976d2;
+        }
+        .organisasi-alamat {
+            font-size: 9px;
+            color: #666;
+            margin-top: 2px;
         }
         
         @media print {
@@ -169,7 +195,16 @@
             @if($search)
             <tr>
                 <td>Filter Pencarian</td>
-                <td colspan="3">: "{{ $search }}"</td>
+                <td>: "{{ $search }}"</td>
+                <td>Status Filter</td>
+                <td>: @if(request('status_filter') == 'pending') Belum Terpenuhi @elseif(request('status_filter') == 'completed') Terpenuhi @else Semua Status @endif</td>
+            </tr>
+            @else
+            <tr>
+                <td>Scope Laporan</td>
+                <td>: Semua Request Donasi</td>
+                <td>Status Filter</td>
+                <td>: @if(request('status_filter') == 'pending') Belum Terpenuhi @elseif(request('status_filter') == 'completed') Terpenuhi @else Semua Status @endif</td>
             </tr>
             @endif
         </table>
@@ -213,13 +248,14 @@
         <table class="main-table">
             <thead>
                 <tr>
-                    <th style="width: 5%;">No</th>
-                    <th style="width: 12%;">Kode Request</th>
-                    <th style="width: 20%;">Organisasi</th>
-                    <th style="width: 35%;">Deskripsi Request</th>
-                    <th style="width: 15%;">Penerima</th>
+                    <th style="width: 4%;">No</th>
+                    <th style="width: 10%;">Kode Request</th>
+                    <th style="width: 8%;">ID Organisasi</th>
+                    <th style="width: 22%;">Organisasi & Alamat</th>
+                    <th style="width: 30%;">Deskripsi Request</th>
+                    <th style="width: 12%;">Penerima</th>
                     <th style="width: 8%;">Tanggal</th>
-                    <th style="width: 5%;">Status</th>
+                    <th style="width: 6%;">Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -229,32 +265,68 @@
                         <td class="text-center">
                             <span class="kode-request">REQ-{{ str_pad($request->idRequest, 4, '0', STR_PAD_LEFT) }}</span>
                         </td>
+                        <td class="text-center">
+                            <span class="kode-organisasi">ORG{{ str_pad($request->organisasi->idOrganisasi, 2, '0', STR_PAD_LEFT) }}</span>
+                        </td>
                         <td>
-                            <strong>{{ $request->organisasi->nama }}</strong><br>
-                            <small style="color: #666;">{{ Str::limit($request->organisasi->alamat, 30) }}</small>
+                            <div class="organisasi-info">
+                                <div class="organisasi-nama">{{ $request->organisasi->nama }}</div>
+                                <div class="organisasi-alamat">{{ $request->organisasi->alamat }}</div>
+                            </div>
                         </td>
                         <td>
                             <div class="request-description">
                                 {{ $request->request }}
                             </div>
                         </td>
-                        <td class="text-center">
+                        <td class="text-center" style="font-size: 10px;">
                             {{ $request->penerima }}
                         </td>
-                        <td class="text-center">{{ \Carbon\Carbon::parse($request->tanggalRequest)->format('d/m/Y') }}</td>
+                        <td class="text-center" style="font-size: 10px;">{{ \Carbon\Carbon::parse($request->tanggalRequest)->format('d/m/Y') }}</td>
                         <td class="text-center">
                             @if($request->status == 'Terpenuhi')
                                 <span class="status-terpenuhi">TERPENUHI</span>
                             @elseif($request->status == 'Belum Terpenuhi')
                                 <span class="status-menunggu">MENUNGGU</span>
                             @else
-                                <span style="font-size: 10px;">{{ strtoupper($request->status) }}</span>
+                                <span style="font-size: 9px;">{{ strtoupper($request->status) }}</span>
                             @endif
                         </td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
+
+        <!-- Tambahan: Fokus pada request yang belum terpenuhi jika ada -->
+        @if($requestMenunggu > 0)
+        <div style="margin-top: 30px; padding: 20px; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 8px;">
+            <h3 style="margin-top: 0; color: #856404; text-align: center;">
+                <i class="fas fa-exclamation-triangle"></i> Request Donasi Yang Belum Terpenuhi
+            </h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 15px;">
+                <thead>
+                    <tr style="background-color: #ffc107; color: #856404;">
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 10px;">ID Organisasi</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 10px;">Nama Organisasi</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 10px;">Alamat</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 10px;">Request</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($requests->where('status', 'Belum Terpenuhi') as $pending)
+                    <tr>
+                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">
+                            <span class="kode-organisasi">ORG{{ str_pad($pending->organisasi->idOrganisasi, 2, '0', STR_PAD_LEFT) }}</span>
+                        </td>
+                        <td style="border: 1px solid #ddd; padding: 8px; font-weight: bold; color: #856404;">{{ $pending->organisasi->nama }}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px; font-size: 10px;">{{ $pending->organisasi->alamat }}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px; font-size: 10px;">{{ $pending->request }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
 
         <div style="margin-top: 20px;">
             <div style="display: table; width: 100%;">
@@ -276,6 +348,15 @@
                 </div>
             </div>
         </div>
+
+        <!-- Keterangan Format ID -->
+        <div style="margin-top: 20px; padding: 15px; background-color: #f0f8ff; border: 1px solid #2196F3; border-radius: 5px;">
+            <h4 style="margin: 0 0 10px 0; color: #1565C0;">Keterangan Format Kode:</h4>
+            <div style="font-size: 12px; color: #1565C0; line-height: 1.5;">
+                <p style="margin: 0;"><strong>REQ-xxxx:</strong> Kode unik untuk setiap request donasi</p>
+                <p style="margin: 0;"><strong>ORGxx:</strong> ID organisasi pengaju request (sesuai template dokumen)</p>
+            </div>
+        </div>
     @else
         <div class="empty-state">
             <p><strong>Tidak ada data request donasi untuk dilaporkan</strong></p>
@@ -292,6 +373,9 @@
         <p>Dicetak oleh: {{ auth()->user()->nama ?? 'Sistem' }}</p>
         <hr style="margin: 10px 0; border: none; border-top: 1px solid #ddd;">
         <p style="font-size: 10px;">Dokumen ini digenerate secara otomatis oleh sistem ReUseMart</p>
+        <p style="font-size: 10px; margin-top: 5px; color: #1565C0;">
+            Format laporan mengikuti template dokumen ReUseMart dengan penambahan informasi detail untuk analisis manajemen
+        </p>
     </div>
 </body>
 </html>

@@ -73,6 +73,15 @@ class Produk extends Model
         return $this->hasMany(TransaksiDonasi::class, 'idProduk', 'idProduk');
     }
 
+    public function getPenitipAttribute()
+    {
+        $detailPenitipan = $this->detailTransaksiPenitipan()->first();
+        if ($detailPenitipan && $detailPenitipan->transaksiPenitipan) {
+            return $detailPenitipan->transaksiPenitipan->penitip;
+        }
+        return null;
+    }
+
     public function isInWarranty()
     {
         if (!$this->tanggalGaransi) {

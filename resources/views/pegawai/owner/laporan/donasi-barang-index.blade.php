@@ -125,10 +125,13 @@
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Donasi
+                                    Kode Produk
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Produk
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Penitip
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                     Organisasi Penerima
@@ -143,19 +146,26 @@
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             @foreach ($donations as $donasi)
+                                @php
+                                    $penitip = null;
+                                    $detailPenitipan = $donasi->produk->detailTransaksiPenitipan->first();
+                                    if ($detailPenitipan && $detailPenitipan->transaksiPenitipan) {
+                                        $penitip = $detailPenitipan->transaksiPenitipan->penitip;
+                                    }
+                                @endphp
                                 <tr class="hover:bg-gray-50 transition duration-150">
                                     <td class="px-6 py-4">
                                         <div class="flex items-center">
                                             <div class="flex-shrink-0">
                                                 <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                                                    <i class="fas fa-hand-holding-heart text-green-600"></i>
+                                                    <i class="fas fa-box text-green-600"></i>
                                                 </div>
                                             </div>
                                             <div class="ml-3">
                                                 <p class="text-sm font-medium text-gray-900">
-                                                    DON-{{ str_pad($donasi->idTransaksiDonasi, 4, '0', STR_PAD_LEFT) }}
+                                                    {{ strtoupper(substr($donasi->produk->deskripsi, 0, 1)) }}{{ $donasi->produk->idProduk }}
                                                 </p>
-                                                <p class="text-xs text-gray-500">ID: {{ $donasi->idTransaksiDonasi }}</p>
+                                                <p class="text-xs text-gray-500">Kode Produk</p>
                                             </div>
                                         </div>
                                     </td>
@@ -169,6 +179,23 @@
                                             <div class="ml-3">
                                                 <p class="text-sm font-medium text-gray-900 line-clamp-1">{{ $donasi->produk->deskripsi }}</p>
                                                 <p class="text-xs text-gray-500">Kategori: {{ $donasi->produk->kategori->nama }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0">
+                                                <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                                                    <i class="fas fa-user text-indigo-600 text-sm"></i>
+                                                </div>
+                                            </div>
+                                            <div class="ml-3">
+                                                @if($penitip)
+                                                    <p class="text-sm font-medium text-gray-900">{{ $penitip->nama }}</p>
+                                                    <p class="text-xs text-gray-500">T{{ str_pad($penitip->idPenitip, 2, '0', STR_PAD_LEFT) }}</p>
+                                                @else
+                                                    <p class="text-sm text-gray-500">Tidak diketahui</p>
+                                                @endif
                                             </div>
                                         </div>
                                     </td>
