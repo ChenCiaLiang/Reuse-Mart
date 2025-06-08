@@ -147,7 +147,6 @@ class ProdukController extends Controller
                         'nama' => (string) $item->nama
                     ];
                 });
-
                 return response()->json([
                     'success' => true,
                     'status' => 'success',

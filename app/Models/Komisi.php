@@ -12,7 +12,7 @@ class Komisi extends Model
 
     public $timestamps = false;
     protected $table = 'komisi';
-    protected $primaryKey = 'idTransaksiPenjualan';
+    protected $primaryKey = 'idDetailTransaksiPenjualan';
     public $incrementing = false;
 
     protected $fillable = [

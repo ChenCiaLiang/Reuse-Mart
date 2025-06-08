@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Jabatan;
+use App\Models\Komisi;
 use App\Models\Organisasi;
 use App\Models\Pegawai;
 use App\Models\Pembeli;
@@ -16,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
 
 class PegawaiController extends Controller
 {
@@ -262,5 +264,242 @@ class PegawaiController extends Controller
             'transaksiTerakhir',
             'barangHampirHabis'
         ));
+    }
+
+    /**
+     * Get Hunter Profile with total komisi
+     */
+    public function getHunterProfile()
+    {
+        try {
+            $user = Auth::user();
+
+            // Pastikan user adalah Hunter (jabatan ID = 5)
+            if (!$user || $user->idJabatan != 5) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Hunter access required.'
+                ], 403);
+            }
+
+            // Ambil data hunter
+            $hunter = Pegawai::with('jabatan')
+                ->where('idPegawai', $user->idPegawai)
+                ->first();
+
+            if (!$hunter) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Hunter not found'
+                ], 404);
+            }
+
+            // // Hitung total komisi hunter
+            // $totalKomisi = Komisi::where('idPegawai', $user->idPegawai)
+            //     ->sum('komisiHunter');
+
+            // Hitung jumlah transaksi yang ada komisinya
+            $totalTransaksi = Komisi::where('idPegawai', $user->idPegawai)
+                ->where('komisiHunter', '>', 0)
+                ->count();
+
+            // Komisi bulan ini
+            $komisiBulanIni = Komisi::where('idPegawai', $user->idPegawai)
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->sum('komisiHunter');
+
+            $data = [
+                'idPegawai' => $hunter->idPegawai,
+                'nama' => $hunter->nama,
+                'email' => $hunter->email,
+                'noTelp' => $hunter->noTelp,
+                'alamat' => $hunter->alamat,
+                'tanggalLahir' => $hunter->tanggalLahir,
+                'jabatan' => $hunter->jabatan->nama ?? 'Hunter',
+                'totalKomisi' => (float) $hunter->komisi,
+                'komisiBulanIni' => (float) $komisiBulanIni,
+                'totalTransaksi' => $totalTransaksi,
+                'joinDate' => $hunter->created_at ? $hunter->created_at->format('Y-m-d') : null,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Hunter profile retrieved successfully',
+                'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving hunter profile: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get Hunter History Komisi with filters
+     */
+    public function getHunterHistoryKomisi(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            // Pastikan user adalah Hunter (jabatan ID = 5)
+            if (!$user || $user->idJabatan != 5) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Hunter access required.'
+                ], 403);
+            }
+
+            // Get filters
+            $tanggalMulai = $request->input('tanggal_mulai');
+            $tanggalSelesai = $request->input('tanggal_selesai');
+            $limit = $request->input('limit', 50);
+
+            // Base query
+            $query = Komisi::with([
+                'detailTransaksiPenjualan.produk.kategori',
+                'detailTransaksiPenjualan.transaksiPenjualan',
+                'penitip'
+            ])
+                ->where('idPegawai', $user->idPegawai)
+                ->where('komisiHunter', '>', 0);
+
+            // Apply date filters
+            if ($tanggalMulai) {
+                $query->whereDate('created_at', '>=', $tanggalMulai);
+            }
+            if ($tanggalSelesai) {
+                $query->whereDate('created_at', '<=', $tanggalSelesai);
+            }
+
+            // Get summary data
+            $totalKomisi = (clone $query)->sum('komisiHunter');
+            $totalTransaksi = (clone $query)->count();
+
+            // Get paginated data
+            $historyKomisi = $query->orderBy('created_at', 'desc')
+                ->limit($limit)
+                ->get();
+
+            // Format data
+            $formattedHistory = $historyKomisi->map(function ($komisi) {
+                $produk = $komisi->detailTransaksiPenjualan->produk ?? null;
+                $transaksi = $komisi->detailTransaksiPenjualan->transaksiPenjualan ?? null;
+
+                return [
+                    'idKomisi' => $komisi->idDetailTransaksiPenjualan,
+                    'tanggal' => $komisi->created_at ? $komisi->created_at->format('Y-m-d H:i:s') : null,
+                    'komisiHunter' => (float) $komisi->komisiHunter,
+                    'komisiReuse' => (float) $komisi->komisiReuse,
+                    'komisiPenitip' => (float) $komisi->komisiPenitip,
+                    'produk' => [
+                        'idProduk' => $produk->idProduk ?? null,
+                        'nama' => $produk->deskripsi ?? 'Produk tidak ditemukan',
+                        'hargaJual' => $produk ? (float) $produk->hargaJual : 0,
+                        'kategori' => $produk->kategori->nama ?? null,
+                        'gambarUtama' => $produk && $produk->gambar ?
+                            explode(',', $produk->gambar)[0] : null,
+                    ],
+                    'penitip' => [
+                        'idPenitip' => $komisi->penitip->idPenitip ?? null,
+                        'nama' => $komisi->penitip->nama ?? 'Penitip tidak ditemukan',
+                    ],
+                    'transaksi' => [
+                        'idTransaksiPenjualan' => $transaksi->idTransaksiPenjualan ?? null,
+                        'tanggalLaku' => $transaksi && $transaksi->tanggalLaku ?
+                            $transaksi->tanggalLaku->format('Y-m-d H:i:s') : null,
+                        'status' => $transaksi->status ?? null,
+                    ]
+                ];
+            });
+
+            // Create summary
+            $summary = [
+                'totalKomisi' => (float) $totalKomisi,
+                'totalTransaksi' => $totalTransaksi,
+                'rataRataKomisi' => $totalTransaksi > 0 ? (float) ($totalKomisi / $totalTransaksi) : 0,
+                'filterTanggal' => [
+                    'tanggal_mulai' => $tanggalMulai,
+                    'tanggal_selesai' => $tanggalSelesai
+                ]
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Hunter history komisi retrieved successfully',
+                'summary' => $summary,
+                'data' => $formattedHistory
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving hunter history komisi: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get Hunter Stats Dashboard
+     */
+    public function getHunterStats()
+    {
+        try {
+            $user = Auth::user();
+
+            if (!$user || $user->idJabatan != 5) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Hunter access required.'
+                ], 403);
+            }
+
+            // Komisi hari ini
+            $komisiHariIni = Komisi::where('idPegawai', $user->idPegawai)
+                ->whereDate('created_at', today())
+                ->sum('komisiHunter');
+
+            // Komisi minggu ini
+            $komisiMingguIni = Komisi::where('idPegawai', $user->idPegawai)
+                ->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])
+                ->sum('komisiHunter');
+
+            // Komisi bulan ini
+            $komisiBulanIni = Komisi::where('idPegawai', $user->idPegawai)
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->sum('komisiHunter');
+
+            // Total komisi all time
+            $totalKomisi = Komisi::where('idPegawai', $user->idPegawai)
+                ->sum('komisiHunter');
+
+            // Transaksi bulan ini
+            $transaksiBulanIni = Komisi::where('idPegawai', $user->idPegawai)
+                ->whereMonth('created_at', now()->month)
+                ->whereYear('created_at', now()->year)
+                ->where('komisiHunter', '>', 0)
+                ->count();
+
+            $stats = [
+                'komisiHariIni' => (float) $komisiHariIni,
+                'komisiMingguIni' => (float) $komisiMingguIni,
+                'komisiBulanIni' => (float) $komisiBulanIni,
+                'totalKomisi' => (float) $totalKomisi,
+                'transaksiBulanIni' => $transaksiBulanIni,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Hunter stats retrieved successfully',
+                'data' => $stats
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving hunter stats: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
