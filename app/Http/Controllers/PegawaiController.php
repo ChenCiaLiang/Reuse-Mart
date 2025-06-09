@@ -294,7 +294,7 @@ class PegawaiController extends Controller
                 ], 404);
             }
 
-            // // Hitung total komisi hunter
+            // Hitung total komisi hunter
             // $totalKomisi = Komisi::where('idPegawai', $user->idPegawai)
             //     ->sum('komisiHunter');
 
@@ -337,9 +337,9 @@ class PegawaiController extends Controller
     }
 
     /**
-     * Get Hunter History Komisi with filters
+     * Get Hunter History Komisi (All)
      */
-    public function getHunterHistoryKomisi(Request $request)
+    public function getHunterHistoryKomisi()
     {
         try {
             $user = Auth::user();
@@ -352,12 +352,7 @@ class PegawaiController extends Controller
                 ], 403);
             }
 
-            // Get filters
-            $tanggalMulai = $request->input('tanggal_mulai');
-            $tanggalSelesai = $request->input('tanggal_selesai');
-            $limit = $request->input('limit', 50);
-
-            // Base query
+            // Base query - ambil semua komisi hunter
             $query = Komisi::with([
                 'detailTransaksiPenjualan.produk.kategori',
                 'detailTransaksiPenjualan.transaksiPenjualan',
@@ -366,21 +361,12 @@ class PegawaiController extends Controller
                 ->where('idPegawai', $user->idPegawai)
                 ->where('komisiHunter', '>', 0);
 
-            // Apply date filters
-            if ($tanggalMulai) {
-                $query->whereDate('created_at', '>=', $tanggalMulai);
-            }
-            if ($tanggalSelesai) {
-                $query->whereDate('created_at', '<=', $tanggalSelesai);
-            }
-
             // Get summary data
             $totalKomisi = (clone $query)->sum('komisiHunter');
             $totalTransaksi = (clone $query)->count();
 
-            // Get paginated data
+            // Get all data, ordered by latest
             $historyKomisi = $query->orderBy('created_at', 'desc')
-                ->limit($limit)
                 ->get();
 
             // Format data
@@ -390,7 +376,7 @@ class PegawaiController extends Controller
 
                 return [
                     'idKomisi' => $komisi->idDetailTransaksiPenjualan,
-                    'tanggal' => $komisi->created_at ? $komisi->created_at->format('Y-m-d H:i:s') : null,
+                    'tanggal' => $komisi->created_at,
                     'komisiHunter' => (float) $komisi->komisiHunter,
                     'komisiReuse' => (float) $komisi->komisiReuse,
                     'komisiPenitip' => (float) $komisi->komisiPenitip,
@@ -420,10 +406,6 @@ class PegawaiController extends Controller
                 'totalKomisi' => (float) $totalKomisi,
                 'totalTransaksi' => $totalTransaksi,
                 'rataRataKomisi' => $totalTransaksi > 0 ? (float) ($totalKomisi / $totalTransaksi) : 0,
-                'filterTanggal' => [
-                    'tanggal_mulai' => $tanggalMulai,
-                    'tanggal_selesai' => $tanggalSelesai
-                ]
             ];
 
             return response()->json([
@@ -626,9 +608,9 @@ class PegawaiController extends Controller
                 $alamatLengkap = $alamatArray['alamatLengkap'] ?? 'Alamat tidak tersedia';
 
                 // Generate nomor nota
-                $nomorNota = $transaksi->created_at->year . '.' . 
-                            str_pad($transaksi->created_at->month, 2, '0', STR_PAD_LEFT) . '.' . 
-                            str_pad($transaksi->idTransaksiPenjualan, 3, '0', STR_PAD_LEFT);
+                $nomorNota = $transaksi->created_at->year . '.' .
+                    str_pad($transaksi->created_at->month, 2, '0', STR_PAD_LEFT) . '.' .
+                    str_pad($transaksi->idTransaksiPenjualan, 3, '0', STR_PAD_LEFT);
 
                 // Ambil items dari detail transaksi
                 $items = $transaksi->detailTransaksiPenjualan->map(function ($detail) {
@@ -650,8 +632,8 @@ class PegawaiController extends Controller
                     'nomorNota' => $nomorNota,
                     'tanggalPesan' => $transaksi->tanggalPesan ? $transaksi->tanggalPesan->toISOString() : null,
                     'tanggalKirim' => $transaksi->tanggalKirim ? $transaksi->tanggalKirim->toISOString() : null,
-                    'tanggalSelesai' => ($transaksi->status === 'terjual' && $transaksi->tanggalKirim) ? 
-                                    $transaksi->tanggalKirim->toISOString() : null,
+                    'tanggalSelesai' => ($transaksi->status === 'terjual' && $transaksi->tanggalKirim) ?
+                        $transaksi->tanggalKirim->toISOString() : null,
                     'status' => $transaksi->status,
                     'namaPembeli' => $transaksi->pembeli->nama ?? 'Pembeli tidak ditemukan',
                     'alamatPengiriman' => $alamatLengkap,
@@ -719,24 +701,24 @@ class PegawaiController extends Controller
                 // Proses komisi dan update saldo penitip (mirip dengan konfirmasi di gudang)
                 foreach ($transaksi->detailTransaksiPenjualan as $detail) {
                     $produk = $detail->produk;
-                    
+
                     // Cari data penitipan untuk produk ini
                     $detailPenitipan = $produk->detailTransaksiPenitipan()->first();
                     if ($detailPenitipan && $detailPenitipan->transaksiPenitipan) {
                         $transaksiPenitipan = $detailPenitipan->transaksiPenitipan;
                         $penitip = $transaksiPenitipan->penitip;
-                        
+
                         // Hitung komisi
                         $hargaJual = $produk->hargaJual;
                         $komisiRate = $transaksiPenitipan->statusPerpanjangan ? 0.30 : 0.20;
                         $komisiTotal = $hargaJual * $komisiRate;
-                        
+
                         // Komisi hunter (jika ada)
                         $komisiHunter = 0;
                         $hunterPegawai = $transaksiPenitipan->idHunter;
                         if ($hunterPegawai) {
                             $komisiHunter = $komisiTotal * 0.25; // 5% dari harga jual untuk hunter
-                            
+
                             // Update komisi hunter
                             $hunter = Pegawai::find($hunterPegawai);
                             if ($hunter) {
@@ -744,25 +726,25 @@ class PegawaiController extends Controller
                                 $hunter->save();
                             }
                         }
-                        
+
                         // Komisi ReuseMart
                         $komisiReuse = $komisiTotal - $komisiHunter;
-                        
+
                         // Komisi untuk penitip
                         $komisiPenitip = $hargaJual - $komisiTotal;
-                        
+
                         // Bonus jika terjual cepat (< 7 hari)
                         $bonus = 0;
                         $tanggalMasuk = $transaksiPenitipan->tanggalMasukPenitipan;
                         $tanggalLaku = $transaksi->tanggalLaku;
                         $selisihHari = $tanggalMasuk->diffInDays($tanggalLaku);
-                        
+
                         if ($selisihHari < 7) {
                             $bonus = $komisiTotal * 0.10; // 10% dari komisi ReuseMart
                             $komisiReuse -= $bonus;
                             $komisiPenitip += $bonus;
                         }
-                        
+
                         // Simpan data komisi
                         Komisi::updateOrCreate(
                             ['idDetailTransaksiPenjualan' => $detail->idDetailTransaksiPenjualan],
@@ -774,17 +756,17 @@ class PegawaiController extends Controller
                                 'idPenitip' => $penitip->idPenitip,
                             ]
                         );
-                        
+
                         // Update saldo penitip
                         $penitip->saldo += $komisiPenitip;
                         $penitip->save();
-                        
+
                         // Update status penitipan
                         $transaksiPenitipan->statusPenitipan = 'Selesai';
                         $transaksiPenitipan->pendapatan += $komisiPenitip;
                         $transaksiPenitipan->save();
                     }
-                    
+
                     // Update status produk
                     $produk->status = 'Terjual';
                     $produk->save();
@@ -911,9 +893,9 @@ class PegawaiController extends Controller
                 $alamatArray = json_decode($transaksi->alamatPengiriman, true);
                 $alamatLengkap = $alamatArray['alamatLengkap'] ?? 'Alamat tidak tersedia';
 
-                $nomorNota = $transaksi->created_at->year . '.' . 
-                            str_pad($transaksi->created_at->month, 2, '0', STR_PAD_LEFT) . '.' . 
-                            str_pad($transaksi->idTransaksiPenjualan, 3, '0', STR_PAD_LEFT);
+                $nomorNota = $transaksi->created_at->year . '.' .
+                    str_pad($transaksi->created_at->month, 2, '0', STR_PAD_LEFT) . '.' .
+                    str_pad($transaksi->idTransaksiPenjualan, 3, '0', STR_PAD_LEFT);
 
                 $items = $transaksi->detailTransaksiPenjualan->map(function ($detail) {
                     return [
@@ -933,8 +915,8 @@ class PegawaiController extends Controller
                     'nomorNota' => $nomorNota,
                     'tanggalPesan' => $transaksi->tanggalPesan ? $transaksi->tanggalPesan->toISOString() : null,
                     'tanggalKirim' => $transaksi->tanggalKirim ? $transaksi->tanggalKirim->toISOString() : null,
-                    'tanggalSelesai' => ($transaksi->status === 'terjual' && $transaksi->tanggalKirim) ? 
-                                    $transaksi->tanggalKirim->toISOString() : null,
+                    'tanggalSelesai' => ($transaksi->status === 'terjual' && $transaksi->tanggalKirim) ?
+                        $transaksi->tanggalKirim->toISOString() : null,
                     'status' => $transaksi->status,
                     'namaPembeli' => $transaksi->pembeli->nama ?? 'Pembeli tidak ditemukan',
                     'alamatPengiriman' => $alamatLengkap,
