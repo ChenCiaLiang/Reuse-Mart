@@ -101,7 +101,7 @@ class AlamatController extends Controller
             }
             return response()->json(['alamat' => $alamat]);
         } else {
-            if (session('user') != $alamat->idPembeli) {
+            if (session('user')['idPembeli'] != $alamat->idPembeli) {
                 return redirect()->route('unauthorized');
             }
             return view('customer.pembeli.alamat.show', ['alamat' => $alamat]);
@@ -192,7 +192,7 @@ class AlamatController extends Controller
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
         } else {
-            if (session('user') != $alamat->idPembeli) {
+            if (session('user')['idPembeli'] != $alamat->idPembeli) {
                 return redirect()->route('unauthorized');
             }
         }

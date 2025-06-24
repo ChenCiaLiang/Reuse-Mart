@@ -204,7 +204,7 @@ class PenitipController extends Controller
         $endDate = $request->input('end_date') ? Carbon::parse($request->input('end_date'))->endOfDay() : Carbon::now()->endOfDay();
 
         // Query yang diperbaiki menggunakan relasi komisi
-        $transaksiPenjualan = TransaksiPenjualan::join('komisi', 'transaksi_penjualan.idTransaksiPenjualan', '=', 'komisi.idTransaksiPenjualan')
+        $transaksiPenjualan = TransaksiPenjualan::join('komisi', 'transaksi_penjualan.idTransaksiPenjualan', '=', 'komisi.idDetailTransaksiPenjualan')
             ->join('detail_transaksi_penjualan', 'transaksi_penjualan.idTransaksiPenjualan', '=', 'detail_transaksi_penjualan.idTransaksiPenjualan')
             ->join('produk', 'detail_transaksi_penjualan.idProduk', '=', 'produk.idProduk')
             ->where('komisi.idPenitip', $idPenitip)
