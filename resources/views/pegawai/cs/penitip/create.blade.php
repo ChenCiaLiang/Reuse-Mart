@@ -67,13 +67,16 @@
                 </div>
                 
                 <div>
-                    <label for="nik" class="block text-sm font-medium text-gray-700 mb-1">Foto KTP</label>
-                    <input type="file" id="fotoKtp" name="fotoKtp" required>
+                    <label for="fotoKTP" class="block text-sm font-medium text-gray-700 mb-1">Foto KTP</label>
+                    <input type="file" id="fotoKTP" name="fotoKTP" required>
                     <!-- <label for="fotoKtp" 
                             class="cursor-pointer bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg inline-flex items-center space-x-2">
                         <i class="fa-solid fa-plus"></i>
                         <span>Foto Ktp</span>
                     </label> -->
+                    @error('fotoKTP')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
 
             </div>

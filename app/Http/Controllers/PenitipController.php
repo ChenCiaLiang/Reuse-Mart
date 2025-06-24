@@ -67,7 +67,6 @@ class PenitipController extends Controller
         }
 
         $penitip = Penitip::create([
-            'idPenitip' => $request->idPenitip,
             'nama' => $request->nama,
             'email' => $request->email,
             'password' => Hash::make($request->password),
@@ -273,15 +272,15 @@ class PenitipController extends Controller
                 'auth_user_type' => get_class(Auth::user()),
                 'auth_check' => Auth::check(),
             ]);
-            
+
             $penitip = Auth::user();
-            
+
             // ✅ Cek apakah user adalah instance Penitip
             if (!$penitip || !($penitip instanceof \App\Models\Penitip)) {
                 Log::warning('Unauthorized penitip access attempt', [
                     'user_type' => $penitip ? get_class($penitip) : 'null',
                 ]);
-                
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized access'
@@ -313,13 +312,12 @@ class PenitipController extends Controller
                     'profile' => $profileData,
                 ],
             ], 200);
-
         } catch (\Exception $e) {
             Log::error('Error in getProfile penitip', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
@@ -331,7 +329,7 @@ class PenitipController extends Controller
     {
         try {
             $penitip = Auth::user();
-            
+
             if (!$penitip || !($penitip instanceof \App\Models\Penitip)) {
                 return response()->json([
                     'success' => false,
@@ -411,7 +409,7 @@ class PenitipController extends Controller
 
                 // Tentukan status dan tanggal yang akan ditampilkan
                 $isTerjual = !is_null($item->idTransaksiPenjualan) && !is_null($item->tanggal_lunas);
-                
+
                 return [
                     'idTransaksiPenitipan' => (int) $item->idTransaksiPenitipan,
                     'idTransaksiPenjualan' => $item->idTransaksiPenjualan ? (int) $item->idTransaksiPenjualan : null,
@@ -420,10 +418,10 @@ class PenitipController extends Controller
                     'harga_jual' => (float) $item->harga_jual,
                     'gambar' => $gambar,
                     'kategori' => $item->kategori,
-                    'tanggal_pesan' => $isTerjual ? 
-                        Carbon::parse($item->tanggal_pesan)->format('d/m/Y') : 
+                    'tanggal_pesan' => $isTerjual ?
+                        Carbon::parse($item->tanggal_pesan)->format('d/m/Y') :
                         Carbon::parse($item->tanggal_penitipan)->format('d/m/Y'),
-                    'tanggal_lunas' => $item->tanggal_lunas ? 
+                    'tanggal_lunas' => $item->tanggal_lunas ?
                         Carbon::parse($item->tanggal_lunas)->format('d/m/Y') : null,
                     'status' => $isTerjual ? $item->status_penjualan : $item->status_produk,
                     'status_penitipan' => $item->status_penitipan,
@@ -460,7 +458,6 @@ class PenitipController extends Controller
                     'filter' => $filterInfo,
                 ],
             ], 200);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -472,7 +469,7 @@ class PenitipController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
@@ -484,7 +481,7 @@ class PenitipController extends Controller
     {
         try {
             $penitip = Auth::user();
-            
+
             if (!$penitip || !($penitip instanceof \App\Models\Penitip)) {
                 return response()->json([
                     'success' => false,
@@ -538,7 +535,7 @@ class PenitipController extends Controller
                     'email' => $transaksi->pembeli->email,
                 ],
                 'produk' => $transaksi->detailTransaksiPenjualan
-                    ->filter(function($detail) use ($penitip) {
+                    ->filter(function ($detail) use ($penitip) {
                         // Filter hanya produk milik penitip ini
                         return DB::table('detail_transaksi_penitipan as dtp')
                             ->join('transaksi_penitipan as tp', 'dtp.idTransaksiPenitipan', '=', 'tp.idTransaksiPenitipan')
@@ -548,7 +545,7 @@ class PenitipController extends Controller
                     })
                     ->map(function ($detail) {
                         $gambar = $detail->produk->gambar ? explode(',', $detail->produk->gambar)[0] : null;
-                        
+
                         return [
                             'idProduk' => $detail->produk->idProduk,
                             'nama' => $detail->produk->deskripsi,
@@ -572,13 +569,12 @@ class PenitipController extends Controller
                 'message' => 'Detail transaksi berhasil diambil',
                 'data' => $detailData,
             ], 200);
-
         } catch (\Exception $e) {
             Log::error('Error in getDetailTransaksi penitip', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
