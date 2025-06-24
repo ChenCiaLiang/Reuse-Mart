@@ -1163,7 +1163,6 @@ class TransaksiPenjualanController extends Controller
                     $updateData['tanggalKirim'] = $jadwalData['tanggal_kirim'];
                     \Log::info('Jadwal pengiriman kurir ditetapkan', [
                         'transaction_id' => $idTransaksi,
-                        'tanggal_kirim' => $jadwalData['tanggal_kirim']->format('Y-m-d H:i:s'),
                         'alasan' => $jadwalData['alasan']
                     ]);
                 } else {
@@ -1172,8 +1171,6 @@ class TransaksiPenjualanController extends Controller
                     $updateData['tanggalBatasAmbil'] = $jadwalData['tanggal_batas_ambil'];
                     \Log::info('Jadwal pengambilan mandiri ditetapkan', [
                         'transaction_id' => $idTransaksi,
-                        'tanggal_ambil' => $jadwalData['tanggal_ambil']->format('Y-m-d H:i:s'),
-                        'tanggal_batas_ambil' => $jadwalData['tanggal_batas_ambil']->format('Y-m-d H:i:s'),
                         'alasan' => $jadwalData['alasan']
                     ]);
                 }
