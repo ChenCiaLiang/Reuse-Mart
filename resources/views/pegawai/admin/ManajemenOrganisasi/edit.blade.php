@@ -73,7 +73,7 @@
                 </div>
                 
                 <!-- Logo -->
-                <div class="md:col-span-2">
+                <!-- <div class="md:col-span-2">
                     <label for="logo" class="block text-sm font-medium text-gray-700 mb-1">Logo Organisasi</label>
                     <div class="flex items-start space-x-4">
                         <div class="flex-shrink-0">
@@ -89,7 +89,7 @@
                             @enderror
                         </div>
                     </div>
-                </div>
+                </div> -->
             </div>
             
             <!-- Buttons -->

@@ -94,9 +94,9 @@ class OrganisasiController extends Controller
         $organisasi = Organisasi::findOrFail($id);
 
         // Hapus logo jika bukan default
-        if ($organisasi->logo != 'organisasi/default_logo.png') {
-            Storage::disk('public')->delete($organisasi->logo);
-        }
+        // if ($organisasi->logo != 'organisasi/default_logo.png') {
+        //     Storage::disk('public')->delete($organisasi->logo);
+        // }
 
         $organisasi->delete();
 

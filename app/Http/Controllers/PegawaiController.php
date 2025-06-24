@@ -73,6 +73,7 @@ class PegawaiController extends Controller
             'noTelp' => $request->noTelp,
             'alamat' => $request->alamat,
             'tanggalLahir' => $request->tanggalLahir,
+            'komisi' => 0.00,
             'idJabatan' => $request->idJabatan,
         ]);
 

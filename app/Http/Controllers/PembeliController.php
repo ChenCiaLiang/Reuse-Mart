@@ -243,7 +243,7 @@ class PembeliController extends Controller
             $transaksiExists = TransaksiPenjualan::join('detail_transaksi_penjualan', 'transaksi_penjualan.idTransaksiPenjualan', '=', 'detail_transaksi_penjualan.idTransaksiPenjualan')
                 ->where('transaksi_penjualan.idPembeli', $idPembeli)
                 ->where('detail_transaksi_penjualan.idProduk', $idProduk)
-                ->whereIn('transaksi_penjualan.status', ['diambil', 'kirim'])
+                ->whereIn('transaksi_penjualan.status', ['diambil', 'dikirim'])
                 ->whereNotNull('transaksi_penjualan.tanggalLunas')
                 ->exists();
 

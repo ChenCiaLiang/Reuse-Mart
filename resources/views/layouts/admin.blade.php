@@ -34,10 +34,10 @@
                 <span>Manajemen Organisasi</span>
             </a>
             
-            <a href="#" class="flex items-center px-6 py-3 hover:bg-green-700">
+            <!-- <a href="#" class="flex items-center px-6 py-3 hover:bg-green-700">
                 <i class="fas fa-gift mr-3"></i>
                 <span>Manajemen Merchandise</span>
-            </a>
+            </a> -->
         </nav>
         
         <div class="absolute bottom-0 w-full p-4 border-t border-green-700">

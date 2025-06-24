@@ -29,10 +29,10 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Logo Organisasi -->
-            <div class="md:col-span-1 flex flex-col items-center">
+            <!-- <div class="md:col-span-1 flex flex-col items-center">
                 <img src="{{ asset($organisasi->logo) }}" alt="{{ $organisasi->nama }}" class="w-full max-w-[200px] rounded-lg mb-4">
                 <p class="text-sm text-gray-500">Logo Organisasi</p>
-            </div>
+            </div> -->
             
             <!-- Informasi Organisasi -->
             <div class="md:col-span-2">
@@ -55,7 +55,7 @@
                         
                         <div>
                             <dt class="text-sm font-medium text-gray-500">Tanggal Pendaftaran</dt>
-                            <dd class="mt-1 text-gray-900">{{ $organisasi->created_at->format('d F Y H:i') }}</dd>
+                            <dd class="mt-1 text-gray-900">{{ $organisasi->created_at}}</dd>
                         </div>
                     </dl>
                 </div>
@@ -80,7 +80,7 @@
                         <tbody class="text-gray-600 text-sm">
                             @foreach($requestDonasi as $request)
                                 <tr class="border-b hover:bg-gray-50">
-                                    <td class="py-3 px-4">{{ $request->tanggalRequest->format('d M Y') }}</td>
+                                    <td class="py-3 px-4">{{ $request->tanggalRequest}}</td>
                                     <td class="py-3 px-4">{{ $request->request }}</td>
                                     <td class="py-3 px-4">
                                         <span class="px-2 py-1 rounded-full text-xs 

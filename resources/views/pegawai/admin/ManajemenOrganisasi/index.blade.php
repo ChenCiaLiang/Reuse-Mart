@@ -37,7 +37,7 @@
                 <thead>
                     <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal">
                         <th class="py-3 px-6 text-left">ID Organisasi</th>
-                        <th class="py-3 px-6 text-left">Logo</th>
+                        <!-- <th class="py-3 px-6 text-left">Logo</th> -->
                         <th class="py-3 px-6 text-left">Nama</th>
                         <th class="py-3 px-6 text-left">Email</th>
                         <th class="py-3 px-6 text-center">Aksi</th>
@@ -47,9 +47,9 @@
                     @forelse($organisasi as $org)
                     <tr class="border-b border-gray-200 hover:bg-gray-50">
                         <td class="py-3 px-6 text-left">{{ $org->idOrganisasi }}</td>
-                        <td class="py-3 px-6 text-left">
+                        <!-- <td class="py-3 px-6 text-left">
                             <img src="{{ asset($org->logo) }}" alt="{{ $org->nama }}" class="h-10 w-10 rounded-full object-cover">
-                        </td>
+                        </td> -->
                         <td class="py-3 px-6 text-left">{{ $org->nama }}</td>
                         <td class="py-3 px-6 text-left">{{ $org->email }}</td>
                         <td class="py-3 px-6 text-center">
