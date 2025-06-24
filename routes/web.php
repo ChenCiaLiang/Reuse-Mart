@@ -72,6 +72,8 @@ Route::prefix('pegawai')->middleware('RolePegawai:pegawai')->group(function () {
             Route::get('/edit/{id}', [PegawaiController::class, 'edit'])->name('edit');
             Route::put('/{id}', [PegawaiController::class, 'update'])->name('update');
             Route::delete('/{id}', [PegawaiController::class, 'destroy'])->name('destroy');
+
+            Route::post('/{id}/reset-password', [PegawaiController::class, 'resetPassword'])->name('reset-password');
         });
 
         //manajemen organisasi

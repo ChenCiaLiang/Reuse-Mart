@@ -68,6 +68,13 @@
                                 <a href="{{ route('admin.pegawai.edit', $p->idPegawai) }}" class="text-yellow-600 hover:text-yellow-900 mx-1" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </a>
+                                <!-- Reset Password -->
+                                <form action="{{ route('admin.pegawai.reset-password', $p->idPegawai) }}" method="POST" class="inline-block mx-1" onsubmit="return confirmResetPassword('{{ $p->nama }}', '{{ \Carbon\Carbon::parse($p->tanggalLahir)->format('d/m/Y') }}');">
+                                    @csrf
+                                    <button type="submit" class="text-green-600 hover:text-green-900" title="Reset Password">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                </form>
                                 <!-- Delete -->
                                 <form action="{{ route('admin.pegawai.destroy', $p->idPegawai) }}" method="POST" class="inline-block mx-1" onsubmit="return confirm('Apakah Anda yakin ingin menghapus pegawai ini?');">
                                     @csrf
@@ -77,7 +84,7 @@
                                     </button>
                                 </form>
                             </div>
-                        </td>
+                        </td>                        
                     </tr>
                     @empty
                     <tr class="border-b border-gray-200">
@@ -106,3 +113,12 @@
     </div>
 </div>
 @endsection
+
+{{-- Tambahkan sebelum tag penutup body --}}
+<script>
+function confirmResetPassword(nama, tanggalLahir) {
+    const tanggalFormatted = tanggalLahir.replace(/\//g, '');
+    const message = `Apakah Anda yakin ingin mereset password untuk ${nama}?\n\nPassword akan direset ke: ${tanggalFormatted}\n(Format: tanggal-bulan-tahun tanpa pemisah)`;
+    return confirm(message);
+}
+</script>

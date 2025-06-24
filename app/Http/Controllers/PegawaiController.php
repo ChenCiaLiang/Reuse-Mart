@@ -938,4 +938,44 @@ class PegawaiController extends Controller
             ], 500);
         }
     }
+
+    // Tambahkan di app/Http/Controllers/PegawaiController.php
+
+    /**
+     * Reset password pegawai ke tanggal lahir
+     */
+    public function resetPassword(Request $request, $id)
+    {
+        try {
+            $pegawai = Pegawai::findOrFail($id);
+            
+            // Format tanggal lahir menjadi password (DDMMYYYY)
+            $tanggalLahir = \Carbon\Carbon::parse($pegawai->tanggalLahir);
+            $newPassword = $tanggalLahir->format('dmY'); // Contoh: 15052025
+            
+            // Update password
+            $pegawai->password = Hash::make($newPassword);
+            $pegawai->save();
+            
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Password berhasil direset ke tanggal lahir',
+                    'new_password' => $newPassword
+                ]);
+            }
+            
+            return redirect()->back()->with('success', 
+                "Password pegawai {$pegawai->nama} berhasil direset ke tanggal lahir ({$newPassword})"
+            );
+            
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Gagal mereset password: ' . $e->getMessage()
+                ], 500);
+            }
+            
+            return redirect()->back()->with('error', 'Gagal mereset password pegawai');
+        }
+    }
 }
