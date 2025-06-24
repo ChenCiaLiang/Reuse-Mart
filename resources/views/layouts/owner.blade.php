@@ -93,7 +93,7 @@
 
         </nav>
         
-        <div class="absolute bottom-0 w-full p-4 border-t border-green-700">
+        <div class="absolute-cinema bottom-0 w-full p-4 border-t border-green-700">
             <form action="{{ route('logout') }}" method="POST">
                 @csrf
                 <button type="submit" class="flex items-center text-green-300 hover:text-white w-full">

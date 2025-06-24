@@ -54,20 +54,15 @@
                 </div>
             </div>
             
-            <div class="mt-6 pt-4 border-t border-gray-200">
+            <!-- <div class="mt-6 pt-4 border-t border-gray-200">
                 <h3 class="text-lg font-medium mb-4">Informasi Organisasi</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <span class="block text-sm font-medium text-gray-700 mb-1">Organisasi</span>
-                        <span class="block px-3 py-2 bg-gray-100 rounded-md">{{ $donasi->request->organisasi->nama }}</span>
-                    </div>
-                    
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">              
                     <div>
                         <span class="block text-sm font-medium text-gray-700 mb-1">Request</span>
-                        <span class="block px-3 py-2 bg-gray-100 rounded-md">{{ $donasi->request->request }}</span>
+                        <span class="block px-3 py-2 bg-gray-100 rounded-md">{{ $donasi->request}}</span>
                     </div>
                 </div>
-            </div>
+            </div> -->
             
             <div class="mt-6 flex justify-end space-x-3">
                 <a href="{{ route('owner.donasi.history') }}" class="px-4 py-2 bg-gray-300 rounded-md text-gray-800">Batal</a>

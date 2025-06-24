@@ -42,7 +42,7 @@
                         <th class="py-3 px-6 text-left">ID Transaksi</th>
                         <th class="py-3 px-6 text-left">Tanggal Donasi</th>
                         <th class="py-3 px-6 text-left">Barang</th>
-                        <th class="py-3 px-6 text-left">Organisasi</th>
+                        <!-- <th class="py-3 px-6 text-left">Organisasi</th> -->
                         <th class="py-3 px-6 text-left">Penerima</th>
                         <th class="py-3 px-6 text-left">Aksi</th>
                     </tr>
@@ -53,7 +53,7 @@
                         <td class="py-3 px-6">{{ $d->idTransaksiDonasi }}</td>
                         <td class="py-3 px-6">{{ \Carbon\Carbon::parse(time: $d->tanggalPemberian)->format('d/m/Y') }}</td>
                         <td class="py-3 px-6">{{ $d->produk->deskripsi }}</td>
-                        <td class="py-3 px-6">{{ $d->request->organisasi->nama }}</td>
+                        <!-- <td class="py-3 px-6">{{ $d->request}}</td> -->
                         <td class="py-3 px-6">{{ $d->namaPenerima }}</td>
                         <td class="py-3 px-6">
                             <a href="{{ route('owner.donasi.edit', $d->idTransaksiDonasi) }}" class="text-blue-600 hover:text-blue-900">Edit</a>
