@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\KategoriProduk;
 use App\Models\RequestDonasi;
-use App\Models\TransaksiDonasi; 
+use App\Models\TransaksiDonasi;
 use App\Models\Penitip;
 use App\Models\DetailTransaksiPenitipan;
 use Illuminate\Http\Request;
@@ -320,28 +320,40 @@ class LaporanController extends Controller
 
         foreach ($kategoris as $kategori) {
             // Hitung item terjual per kategori berdasarkan tahun tanggalLaku
-            $itemTerjual = DB::table('produk')
+            $itemTerjualPerHunter = DB::table('produk')
                 ->join('detail_transaksi_penjualan', 'produk.idProduk', '=', 'detail_transaksi_penjualan.idProduk')
                 ->join('transaksi_penjualan', 'detail_transaksi_penjualan.idTransaksiPenjualan', '=', 'transaksi_penjualan.idTransaksiPenjualan')
+                ->join('detail_transaksi_penitipan', 'produk.idProduk', '=', 'detail_transaksi_penitipan.idProduk')
+                ->join('transaksi_penitipan', 'detail_transaksi_penitipan.idTransaksiPenitipan', '=', 'transaksi_penitipan.idTransaksiPenitipan')
+                ->join('pegawai as hunter', 'transaksi_penitipan.idHunter', '=', 'hunter.idPegawai')
                 ->where('produk.idKategori', $kategori->idKategori)
                 ->where('produk.status', 'Terjual')
-                ->whereNotNull('transaksi_penjualan.tanggalLaku')  // Pastikan ada tanggalLaku
-                ->whereYear('transaksi_penjualan.tanggalLaku', $tahun)  // Filter berdasarkan tahun tanggalLaku
-                ->count();
+                ->whereNotNull('transaksi_penjualan.tanggalLaku')
+                ->whereYear('transaksi_penjualan.tanggalLaku', $tahun)
+                ->groupBy('hunter.idPegawai', 'hunter.nama')
+                ->select(
+                    'hunter.idPegawai',
+                    'hunter.nama',
+                    DB::raw('COUNT(*) as jumlah_terjual')
+                )
+                ->get();
 
             // Hitung item gagal terjual per kategori berdasarkan status produk
             $itemGagalTerjual = DB::table('produk')
+                ->join('detail_transaksi_penitipan', 'produk.idProduk', '=', 'detail_transaksi_penitipan.idProduk')
+                ->join('transaksi_penitipan', 'detail_transaksi_penitipan.idTransaksiPenitipan', '=', 'transaksi_penitipan.idTransaksiPenitipan')
                 ->where('produk.idKategori', $kategori->idKategori)
                 ->whereIn('produk.status', ['barang untuk donasi', 'Didonasikan', 'Diambil Kembali'])
+                ->whereNotNull('transaksi_penitipan.idHunter')
                 ->count();
 
             $data[] = [
                 'kategori' => $kategori->nama,
-                'item_terjual' => $itemTerjual,
+                'item_terjual' => $itemTerjualPerHunter->SUM('jumlah_terjual'),
                 'item_gagal_terjual' => $itemGagalTerjual
             ];
 
-            $totalTerjual += $itemTerjual;
+            $totalTerjual += $itemTerjualPerHunter->SUM('jumlah_terjual');
             $totalGagalTerjual += $itemGagalTerjual;
         }
 
@@ -427,10 +439,10 @@ class LaporanController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('request', 'like', "%{$search}%")
-                  ->orWhere('status', 'like', "%{$search}%")
-                  ->orWhereHas('organisasi', function ($q2) use ($search) {
-                      $q2->where('nama', 'like', "%{$search}%");
-                  });
+                    ->orWhere('status', 'like', "%{$search}%")
+                    ->orWhereHas('organisasi', function ($q2) use ($search) {
+                        $q2->where('nama', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -447,32 +459,32 @@ class LaporanController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('request', 'like', "%{$search}%")
-                ->orWhere('status', 'like', "%{$search}%")
-                ->orWhere('penerima', 'like', "%{$search}%")
-                ->orWhereHas('organisasi', function ($q2) use ($search) {
-                    $q2->where('nama', 'like', "%{$search}%");
-                });
+                    ->orWhere('status', 'like', "%{$search}%")
+                    ->orWhere('penerima', 'like', "%{$search}%")
+                    ->orWhereHas('organisasi', function ($q2) use ($search) {
+                        $q2->where('nama', 'like', "%{$search}%");
+                    });
             });
         }
 
         $requests = $query->latest('tanggalRequest')->get();
-        
+
         $pdf = Pdf::loadView('pegawai.owner.laporan.pdf.request-donasi', [
             'requests' => $requests,
             'search' => $request->input('search')
         ]);
-        
+
         $pdf->setPaper('A4', 'portrait');
-        
+
         $filename = 'Laporan_Request_Donasi_' . date('Y-m-d_His') . '.pdf';
-        
+
         return $pdf->download($filename);
     }
     // Laporan Donasi Barang - DIPERBAIKI
     public function laporanDonasiBarang(Request $request)
     {
         $query = TransaksiDonasi::with([
-            'requestDonasi.organisasi', 
+            'requestDonasi.organisasi',
             'produk.kategori',
             'produk.detailTransaksiPenitipan.transaksiPenitipan.penitip'
         ]);
@@ -480,14 +492,14 @@ class LaporanController extends Controller
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
-                $q->whereHas('produk', function($q2) use ($search) {
+                $q->whereHas('produk', function ($q2) use ($search) {
                     $q2->where('deskripsi', 'like', "%{$search}%");
-                })->orWhereHas('requestDonasi.organisasi', function($q2) use ($search) {
+                })->orWhereHas('requestDonasi.organisasi', function ($q2) use ($search) {
                     $q2->where('nama', 'like', "%{$search}%");
                 })->orWhere('namaPenerima', 'like', "%{$search}%")
-                ->orWhereHas('produk.detailTransaksiPenitipan.transaksiPenitipan.penitip', function($q2) use ($search) {
-                    $q2->where('nama', 'like', "%{$search}%");
-                });
+                    ->orWhereHas('produk.detailTransaksiPenitipan.transaksiPenitipan.penitip', function ($q2) use ($search) {
+                        $q2->where('nama', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -499,7 +511,7 @@ class LaporanController extends Controller
     public function downloadLaporanDonasiBarangPdf(Request $request)
     {
         $query = TransaksiDonasi::with([
-            'requestDonasi.organisasi', 
+            'requestDonasi.organisasi',
             'produk.kategori',
             'produk.detailTransaksiPenitipan.transaksiPenitipan.penitip'
         ]);
@@ -507,28 +519,28 @@ class LaporanController extends Controller
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
-                $q->whereHas('produk', function($q2) use ($search) {
+                $q->whereHas('produk', function ($q2) use ($search) {
                     $q2->where('deskripsi', 'like', "%{$search}%");
-                })->orWhereHas('requestDonasi.organisasi', function($q2) use ($search) {
+                })->orWhereHas('requestDonasi.organisasi', function ($q2) use ($search) {
                     $q2->where('nama', 'like', "%{$search}%");
                 })->orWhere('namaPenerima', 'like', "%{$search}%")
-                ->orWhereHas('produk.detailTransaksiPenitipan.transaksiPenitipan.penitip', function($q2) use ($search) {
-                    $q2->where('nama', 'like', "%{$search}%");
-                });
+                    ->orWhereHas('produk.detailTransaksiPenitipan.transaksiPenitipan.penitip', function ($q2) use ($search) {
+                        $q2->where('nama', 'like', "%{$search}%");
+                    });
             });
         }
-        
+
         $donations = $query->latest('tanggalPemberian')->get();
-        
+
         $pdf = Pdf::loadView('pegawai.owner.laporan.pdf.donasi-barang', [
             'donations' => $donations,
             'search' => $request->input('search')
         ]);
-        
+
         $pdf->setPaper('A4', 'portrait');
-        
+
         $filename = 'Laporan_Donasi_Barang_' . date('Y-m-d_His') . '.pdf';
-        
+
         return $pdf->download($filename);
     }
 
@@ -539,7 +551,7 @@ class LaporanController extends Controller
         $penitips = Penitip::orderBy('nama')->get();
         return view('pegawai.owner.laporan.transaksi-penitip-form', compact('penitips'));
     }
-    
+
     // Perbaikan untuk method generateLaporanTransaksiPenitip di LaporanController.php
     public function generateLaporanTransaksiPenitip(Request $request)
     {
@@ -558,7 +570,7 @@ class LaporanController extends Controller
             ->join('produk as p', 'dtp.idProduk', '=', 'p.idProduk')
             ->join('detail_transaksi_penjualan as dtpj', 'p.idProduk', '=', 'dtpj.idProduk')
             ->join('transaksi_penjualan as tpj', 'dtpj.idTransaksiPenjualan', '=', 'tpj.idTransaksiPenjualan')
-            ->leftJoin('komisi as k', function($join) {
+            ->leftJoin('komisi as k', function ($join) {
                 $join->on('dtpj.idDetailTransaksiPenjualan', '=', 'k.idDetailTransaksiPenjualan')
                     ->on('tp.idPenitip', '=', 'k.idPenitip');
             })
@@ -588,9 +600,9 @@ class LaporanController extends Controller
         if ($request->has('download_pdf')) {
             $pdf = Pdf::loadView('pegawai.owner.laporan.pdf.transaksi-penitip', compact('penitip', 'transaksi', 'tahun', 'totals'));
             $pdf->setPaper('A4', 'portrait');
-            
+
             $filename = 'Laporan_Transaksi_' . str_replace(' ', '_', $penitip->nama) . '_' . $tahun . '_' . date('Y-m-d_His') . '.pdf';
-            
+
             return $pdf->download($filename);
         }
 

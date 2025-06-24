@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\TopSellerController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\MerchandiseController;
 use App\Http\Controllers\PegawaiController;
 use App\Http\Controllers\PembeliController;
 use App\Http\Controllers\PenitipController;
@@ -26,6 +27,8 @@ Route::prefix('top-seller')->group(function () {
     Route::get('/stats', [TopSellerController::class, 'getTopSellerStats']);
 });
 
+Route::get('/merchandise/katalog', [MerchandiseController::class, 'katalog'])->name('api.mobile.merchandise.katalog');
+
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('admin')->middleware('Role:admin')->group(function () {
@@ -46,6 +49,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('pembeli')->middleware('Role:pembeli')->group(function () {
         Route::get('/profile', [PembeliController::class, 'getProfile']);
         Route::get('/history-transaksi', [PembeliController::class, 'getHistoryTransaksi']);
+
+        Route::prefix('merchandise')->group(function () {
+            // Klaim merchandise
+            Route::post('/klaim', [MerchandiseController::class, 'klaimMerchandise'])->name('klaimMerchandise');
+
+            // History klaim merchandise
+            Route::get('/history', [MerchandiseController::class, 'historyKlaim'])->name('historyKlaim');
+
+            // Detail klaim merchandise
+            Route::get('/klaim/{idPenukaran}', [MerchandiseController::class, 'detailKlaim'])->name('detailKlaim');
+        });
+
+        // Get poin pembeli
+        Route::get('/poin', [MerchandiseController::class, 'getPoin'])->name('getPoin');
     });
 
     Route::prefix('penitip')->middleware('Role:penitip')->group(function () {

@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('nama', 50);
             $table->integer('jumlahPoin');
             $table->integer('stok')->default(0);
+            $table->string('gambar');
             $table->timestamps();
         });
     }

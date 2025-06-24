@@ -17,7 +17,8 @@ class Merchandise extends Model
     protected $fillable = [
         'nama',
         'jumlahPoin',
-        'stok'
+        'stok',
+        'gambar'
     ];
 
     public function penukaran(): HasMany
