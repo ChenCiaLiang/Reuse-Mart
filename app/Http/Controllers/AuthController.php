@@ -233,6 +233,15 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        if ($request->expectsJson()) {
+            // $user = $request->user();
+            // $user->currentAccessToken()->delete();
+
+            return response()->json([
+                'message' => 'Logout successful'
+            ]);
+        }
+
         $guard = Auth::getDefaultDriver();
 
         // Logout dari guard yang aktif
@@ -244,14 +253,6 @@ class AuthController extends Controller
         // Regenerate CSRF token
         $request->session()->regenerateToken();
 
-        if ($request->expectsJson()) {
-            $user = $request->user();
-            $user->currentAccessToken()->delete();
-
-            return response()->json([
-                'message' => 'Logout successful'
-            ]);
-        }
 
         return redirect()->route('loginPage')->with('success', 'Logout successful');
     }

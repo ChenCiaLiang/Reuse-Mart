@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout']);
 
 //umum
 Route::prefix('produk')->group(function () {
@@ -80,8 +81,6 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::prefix('organisasi')->middleware('Role:organisasi')->group(function () {});
-
-    Route::get('/logout', [AuthController::class, 'logout']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
