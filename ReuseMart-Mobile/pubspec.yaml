@@ -1,0 +1,58 @@
+name: p3l_mobile
+description: "ReuseMart Mobile Application"
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # WebSocket dan Push Notifications
+  web_socket_channel: ^2.4.0
+  pusher_channels_flutter: ^2.2.1
+  awesome_notifications: ^0.10.1 # Tambahkan ini
+  # flutter_local_notifications: ^13.0.0  # Comment atau hapus ini
+
+  # HTTP requests
+  http: ^1.1.0
+
+  # State management
+  provider: ^6.1.1
+
+  # Local storage
+  shared_preferences: ^2.2.2
+
+  # Loading indicators
+  flutter_spinkit: ^5.2.0
+
+  # Icons
+  flutter_svg: ^2.0.9
+
+  # Form validation
+  form_field_validator: ^1.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
